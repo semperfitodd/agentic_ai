@@ -65,8 +65,8 @@ module "step_function" {
         Parameters = {
           statusCode = 400
           body = {
-            "error"       = "Failed to parse repository URLs"
-            "details.$"   = "$.parsedRepos.body.error"
+            "error"     = "Failed to parse repository URLs"
+            "details.$" = "$.parsedRepos.body.error"
           }
         }
         End = true
@@ -140,9 +140,9 @@ module "step_function" {
         Type = "Choice"
         Choices = [
           {
-            Variable      = "$.preparedData.body.totalPRs"
+            Variable           = "$.preparedData.body.totalPRs"
             NumericGreaterThan = 0
-            Next          = "FetchPRDetails"
+            Next               = "FetchPRDetails"
           }
         ]
         Default = "NoPRsFound"
@@ -193,9 +193,14 @@ module "step_function" {
                   "githubToken.$" = "$.githubToken"
                 }
               }
-              ResultSelector = {
-                "statusCode.$" = "$.Payload.statusCode"
-                "body.$"       = "$.Payload.body"
+              ResultPath = "$.prDetails"
+              Next       = "AddReadme"
+            }
+            AddReadme = {
+              Type = "Pass"
+              Parameters = {
+                "statusCode.$" = "$.prDetails.Payload.statusCode"
+                "body.$"       = "$.prDetails.Payload.body"
                 "readme.$"     = "$.readme"
               }
               End = true
