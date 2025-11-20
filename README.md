@@ -66,23 +66,28 @@ The final report includes:
    - Runtime: Node.js 20.x, Timeout: 60s, Memory: 512MB
 
 5. **Analyze PR** (`lambda_analyze_pr`)
-   - Analyzes individual PRs using LLM (currently mocked for demo)
-   - Generates per-PR summaries with context
+   - Analyzes individual PRs using AWS Bedrock Claude 3.5 Sonnet
+   - Generates comprehensive per-PR summaries with technical insights
    - Categorizes changes and assesses impact
-   - Runtime: Node.js 20.x, Timeout: 120s, Memory: 1024MB
+   - Runtime: Node.js 20.x, Timeout: 180s, Memory: 1024MB
 
 6. **Aggregate Sprint** (`lambda_aggregate_sprint`)
-   - Combines all PR analyses into final sprint report
-   - Calculates statistics and generates insights
-   - Produces markdown-formatted report
-   - Runtime: Node.js 20.x, Timeout: 60s, Memory: 512MB
+   - Combines all PR analyses into final sprint report using Claude
+   - Generates executive-level sprint summaries and recommendations
+   - Produces markdown-formatted comprehensive reports
+   - Runtime: Node.js 20.x, Timeout: 300s, Memory: 1024MB
 
 7. **Workflow Proxy** (`lambda_workflow`)
-   - Accepts API requests and invokes Step Functions workflow
-   - Returns synchronous execution results
+   - Accepts API requests and invokes Step Functions workflow asynchronously
+   - Returns execution ARN for tracking
    - Runtime: Node.js 20.x, Timeout: 30s, Memory: 256MB
 
-8. **Authorizer** (`lambda_authorizer`)
+8. **Store Results** (`lambda_store_results`)
+   - Stores completed sprint reports to S3
+   - Saves both JSON and Markdown formats
+   - Runtime: Node.js 20.x, Timeout: 30s, Memory: 256MB
+
+9. **Authorizer** (`lambda_authorizer`)
    - Validates API keys from Secrets Manager
    - Returns authorization decision for API Gateway
    - Runtime: Node.js 20.x, Timeout: 30s, Memory: 256MB
@@ -114,8 +119,11 @@ The `sprint_pr_intelligence` state machine orchestrates the entire process:
 6. AggregateSprint (Task)
    └─> Generate final sprint report
    
-7. Success
-   └─> Return complete report
+7. StoreResults (Task)
+   └─> Store report to S3
+   
+8. Success
+   └─> Return complete report with S3 location
 ```
 
 **GitHub Integration**
@@ -130,10 +138,10 @@ The `sprint_pr_intelligence` state machine orchestrates the entire process:
 - **Cloud Provider**: AWS (fully serverless)
 - **API Layer**: API Gateway HTTP API v2
 - **Compute**: AWS Lambda (TypeScript/Node.js 20.x)
-- **Orchestration**: AWS Step Functions (Standard workflow)
+- **Orchestration**: AWS Step Functions (Express workflow)
 - **Secrets Management**: AWS Secrets Manager
 - **GitHub Integration**: Octokit REST API
-- **LLM Integration**: Placeholder for OpenAI/Anthropic (currently mocked)
+- **AI/LLM**: AWS Bedrock with Claude 3.5 Sonnet
 - **Logging**: CloudWatch Logs
 
 ## GitHub Token Permissions Quick Reference
@@ -341,21 +349,23 @@ chmod +x test_sprint_intelligence.sh
 
 ### Response Format
 
-**Success Response** (HTTP 200):
+**Success Response** (HTTP 202 - Accepted):
 ```json
 {
-  "statusCode": 200,
-  "body": {
-    "sprintName": "Sprint 2024-Q4",
-    "since": "2024-10-01T00:00:00Z",
-    "until": "2024-10-15T23:59:59Z",
-    "repos": [{"owner": "octocat", "repo": "Hello-World"}],
-    "totalPRs": 15,
-    "report": "# Sprint Report: Sprint 2024-Q4\n\n## Executive Summary...",
-    "generatedAt": "2024-10-16T10:30:00.000Z"
-  }
+  "message": "Sprint analysis started",
+  "executionArn": "arn:aws:states:us-east-1:123456789012:execution:sprint_pr_intelligence:execution-1234567890",
+  "executionName": "execution-1234567890-abc123",
+  "startDate": "2024-10-16T10:30:00.000Z",
+  "status": "RUNNING",
+  "statusUrl": "https://console.aws.amazon.com/states/home?region=us-east-1#/executions/details/...",
+  "note": "This is an asynchronous operation. The analysis may take several minutes to complete. Check CloudWatch Logs or Step Functions console for results."
 }
 ```
+
+The report will be stored in S3 when complete. You can:
+- Monitor execution in Step Functions console using the statusUrl
+- Check CloudWatch Logs for progress
+- Retrieve results from S3 bucket after completion
 
 **Error Response** (HTTP 500):
 ```json
@@ -438,48 +448,24 @@ After deployment, Terraform will output:
 - Step Functions ARN
 - Lambda function names
 
-### Adding LLM Integration (Optional)
+### AWS Bedrock Configuration
 
-The current implementation uses mocked LLM responses. To integrate real LLM services:
+The application uses AWS Bedrock with Claude 3.5 Sonnet for AI-powered analysis.
 
-1. **Update Lambda Functions**
+**Prerequisites:**
+1. Ensure AWS Bedrock is available in your region (us-east-1 recommended)
+2. Request access to Claude 3.5 Sonnet model in AWS Bedrock console
+3. Verify model access is granted before deployment
 
-Edit `lambda_analyze_pr/index.ts` and `lambda_aggregate_sprint/index.ts`:
+**IAM Permissions:**
+The Lambda functions have been configured with the following Bedrock permissions:
+- `bedrock:InvokeModel`
+- `bedrock:InvokeModelWithResponseStream`
 
-```typescript
-// Replace mockLLMAnalysis with actual API call
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-async function analyzePRWithLLM(input: PRAnalysisInput): Promise<string> {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      { role: "system", content: "You are a code analysis expert..." },
-      { role: "user", content: JSON.stringify(input) }
-    ]
-  });
-  return response.choices[0].message.content;
-}
-```
-
-2. **Add API Keys to Lambda Environment**
-
-Update the Lambda Terraform modules to include:
-```hcl
-environment_variables = {
-  OPENAI_API_KEY = var.openai_api_key
-}
-```
-
-3. **Redeploy**
-
-```bash
-terraform apply
-```
+**Model Configuration:**
+- Model ID: `anthropic.claude-3-5-sonnet-20241022-v2:0`
+- Max Tokens: 4096 (PR analysis), 8192 (sprint aggregation)
+- Temperature: 0.7
 
 ## Project Structure
 
@@ -661,7 +647,7 @@ aws logs tail /aws/lambda/dev_analyze_pr --follow
 ## Future Enhancements
 
 ### Planned Features
-- [ ] Real LLM integration (OpenAI GPT-4, Anthropic Claude)
+- [x] Real LLM integration (AWS Bedrock with Claude 3.5 Sonnet)
 - [ ] React frontend for report visualization
 - [ ] S3 storage for historical reports
 - [ ] Slack/Teams integration for report delivery

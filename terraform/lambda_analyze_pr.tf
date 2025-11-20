@@ -7,8 +7,12 @@ module "lambda_analyze_pr" {
   handler       = "index.handler"
   publish       = true
   runtime       = "nodejs20.x"
-  timeout       = 120
+  timeout       = 180
   memory_size   = 1024
+
+  environment_variables = {
+    BEDROCK_MODEL_ID = local.bedrock_model_id
+  }
 
   source_path = [
     {
@@ -24,6 +28,21 @@ module "lambda_analyze_pr" {
 
   attach_policies = true
   policies        = ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"]
+
+  attach_policy_statements = true
+  policy_statements = {
+    bedrock = {
+      effect = "Allow"
+      actions = [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ]
+      resources = [
+        "arn:aws:bedrock:${var.region}:*:inference-profile/${local.bedrock_model_id}",
+        "arn:aws:bedrock:*::foundation-model/*anthropic.claude*"
+      ]
+    }
+  }
 
   cloudwatch_logs_retention_in_days = 3
 

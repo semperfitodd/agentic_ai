@@ -7,8 +7,12 @@ module "lambda_aggregate_sprint" {
   handler       = "index.handler"
   publish       = true
   runtime       = "nodejs20.x"
-  timeout       = 60
-  memory_size   = 512
+  timeout       = 300
+  memory_size   = 1024
+
+  environment_variables = {
+    BEDROCK_MODEL_ID = local.bedrock_model_id
+  }
 
   source_path = [
     {
@@ -24,6 +28,21 @@ module "lambda_aggregate_sprint" {
 
   attach_policies = true
   policies        = ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"]
+
+  attach_policy_statements = true
+  policy_statements = {
+    bedrock = {
+      effect = "Allow"
+      actions = [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ]
+      resources = [
+        "arn:aws:bedrock:${var.region}:*:inference-profile/${local.bedrock_model_id}",
+        "arn:aws:bedrock:*::foundation-model/*anthropic.claude*"
+      ]
+    }
+  }
 
   cloudwatch_logs_retention_in_days = 3
 

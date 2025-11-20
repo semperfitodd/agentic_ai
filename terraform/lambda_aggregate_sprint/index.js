@@ -1,20 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
+const client_bedrock_runtime_1 = require("@aws-sdk/client-bedrock-runtime");
+const bedrockClient = new client_bedrock_runtime_1.BedrockRuntimeClient({ region: process.env.AWS_REGION });
 /**
- * Mock LLM Aggregation Function
- * In production, this would call OpenAI/Anthropic/etc. API to generate
- * a comprehensive sprint summary from all PR analyses
+ * Aggregate PR analyses into comprehensive sprint report using Claude
  */
-async function mockLLMAggregate(input) {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 200));
+async function aggregateSprintWithClaude(input) {
     const { sprintName, since, until, repos, analyses } = input;
-    // Calculate statistics
+    // Calculate statistics for context with safe defaults
     const totalPRs = analyses.length;
-    const totalAdditions = analyses.reduce((sum, a) => sum + a.metadata.additions, 0);
-    const totalDeletions = analyses.reduce((sum, a) => sum + a.metadata.deletions, 0);
-    const totalFiles = analyses.reduce((sum, a) => sum + a.metadata.changed_files, 0);
+    const totalAdditions = analyses.reduce((sum, a) => sum + (a.metadata?.additions || 0), 0);
+    const totalDeletions = analyses.reduce((sum, a) => sum + (a.metadata?.deletions || 0), 0);
+    const totalFiles = analyses.reduce((sum, a) => sum + (a.metadata?.changed_files || 0), 0);
     // Group by repository
     const byRepo = {};
     analyses.forEach(analysis => {
@@ -24,95 +22,164 @@ async function mockLLMAggregate(input) {
         }
         byRepo[repoKey].push(analysis);
     });
-    // Extract categories from analyses
-    const categories = {};
-    analyses.forEach(analysis => {
-        const match = analysis.analysis.match(/\*\*Category:\*\* (.+)/);
-        if (match) {
-            const category = match[1];
-            categories[category] = (categories[category] || 0) + 1;
-        }
-    });
     // Get top contributors
     const contributors = {};
     analyses.forEach(analysis => {
-        const author = analysis.metadata.author || 'Unknown';
+        const author = analysis.metadata?.author || 'Unknown';
         contributors[author] = (contributors[author] || 0) + 1;
     });
-    const topContributors = Object.entries(contributors)
+    // Build comprehensive context for Claude
+    const repoBreakdown = Object.entries(byRepo)
+        .map(([repo, prs]) => {
+        const repoAdditions = prs.reduce((s, p) => s + (p.metadata?.additions || 0), 0);
+        const repoDeletions = prs.reduce((s, p) => s + (p.metadata?.deletions || 0), 0);
+        return `${repo}: ${prs.length} PR(s), +${repoAdditions}/-${repoDeletions}`;
+    })
+        .join('\n  - ');
+    const contributorList = Object.entries(contributors)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
         .map(([author, count]) => `${author} (${count} PRs)`)
         .join(', ');
-    // Generate executive summary
-    const executiveSummary = `
-# Sprint Report${sprintName ? `: ${sprintName}` : ''}
+    // Compile all PR analyses
+    const allAnalyses = analyses
+        .map(a => {
+        return `
+---
+Repository: ${a.owner}/${a.repo}
+PR #${a.prNumber}: ${a.prTitle}
+Author: ${a.metadata?.author || 'Unknown'}
+Stats: +${a.metadata?.additions || 0}/-${a.metadata?.deletions || 0}, ${a.metadata?.changed_files || 0} files
 
-**Sprint Period:** ${new Date(since).toLocaleDateString()} - ${new Date(until).toLocaleDateString()}
+${a.analysis}
+`;
+    })
+        .join('\n');
+    // Build the prompt for Claude
+    const prompt = `You are an expert engineering manager and technical writer. Generate a comprehensive, executive-level sprint report from the following Pull Request analyses.
 
-## Executive Summary
-
-This sprint saw **${totalPRs} pull requests** merged across **${repos.length} repositories**, with a total of **${totalAdditions} additions** and **${totalDeletions} deletions** affecting **${totalFiles} files**.
-
-### Key Metrics
-- Total PRs Merged: ${totalPRs}
+Sprint Information:
+- Sprint Name: ${sprintName || 'Unnamed Sprint'}
+- Sprint Period: ${new Date(since).toLocaleDateString()} to ${new Date(until).toLocaleDateString()}
 - Repositories: ${repos.length}
-- Lines Added: ${totalAdditions}
-- Lines Deleted: ${totalDeletions}
-- Files Changed: ${totalFiles}
-- Top Contributors: ${topContributors || 'None'}
+  - ${repoBreakdown}
 
-### Work Breakdown by Category
-${Object.entries(categories).map(([cat, count]) => `- ${cat}: ${count} PRs`).join('\n')}
+Summary Statistics:
+- Total PRs Merged: ${totalPRs}
+- Total Lines Added: ${totalAdditions}
+- Total Lines Deleted: ${totalDeletions}
+- Total Files Changed: ${totalFiles}
+- Contributors: ${contributorList}
 
-### Activity by Repository
-${Object.entries(byRepo).map(([repo, prs]) => `- **${repo}**: ${prs.length} PR(s), ${prs.reduce((s, p) => s + p.metadata.additions, 0)} additions, ${prs.reduce((s, p) => s + p.metadata.deletions, 0)} deletions`).join('\n')}
+Individual PR Analyses:
+${allAnalyses}
 
----
+Please generate a comprehensive sprint report that includes:
 
-## Detailed PR Analyses
+1. **Executive Summary**: High-level overview of sprint accomplishments, key themes, and overall impact
 
-${Object.entries(byRepo).map(([repo, prs]) => `
-### Repository: ${repo}
+2. **Key Metrics Dashboard**: Present the statistics in a clear, scannable format
 
-${prs.map(pr => pr.analysis).join('\n\n---\n\n')}
-`).join('\n')}
+3. **Work Breakdown**: 
+   - Categorize PRs by type (features, bug fixes, refactoring, documentation, etc.)
+   - Highlight major themes and initiatives
+   - Group related work items
 
----
+4. **Technical Highlights**:
+   - Most impactful changes
+   - Notable technical decisions or patterns
+   - Quality improvements or technical debt addressed
 
-## Sprint Highlights
+5. **Repository Insights**: Analysis by repository with highlights from each
 
-${totalPRs > 10 ? '- High productivity sprint with significant development activity!' : ''}
-${Object.keys(categories).includes('Bug Fix') ? '- Bug fixes were addressed this sprint' : ''}
-${Object.keys(categories).includes('Feature') ? '- New features were delivered' : ''}
-${Object.keys(categories).includes('Documentation') ? '- Documentation improvements were made' : ''}
+6. **Team Collaboration**:
+   - Contribution patterns
+   - Code review effectiveness
+   - Cross-functional collaboration
 
-## Recommendations for Next Sprint
+7. **Sprint Retrospective**:
+   - What went well
+   - Areas for improvement
+   - Patterns observed
 
-1. ${totalPRs > 15 ? 'Consider breaking down larger features to maintain PR quality' : 'Continue current development pace'}
-2. ${totalAdditions > totalDeletions * 3 ? 'Review opportunities for code refactoring and cleanup' : 'Good balance of additions and deletions'}
-3. ${repos.length > 5 ? 'Focus efforts on fewer repositories for deeper impact' : 'Good repository focus'}
+8. **Recommendations**: 
+   - Actionable suggestions for next sprint
+   - Technical debt to address
+   - Process improvements
 
----
-
-*Report generated on ${new Date().toLocaleString()}*
-`.trim();
-    return executiveSummary;
+Format the report in clear, professional markdown with appropriate headers, bullet points, and emphasis. Make it suitable for both technical and non-technical stakeholders.`;
+    try {
+        const modelId = process.env.BEDROCK_MODEL_ID;
+        if (!modelId) {
+            throw new Error('BEDROCK_MODEL_ID environment variable is not set');
+        }
+        const command = new client_bedrock_runtime_1.InvokeModelCommand({
+            modelId,
+            contentType: 'application/json',
+            accept: 'application/json',
+            body: JSON.stringify({
+                anthropic_version: 'bedrock-2023-05-31',
+                max_tokens: 8192,
+                temperature: 0.7,
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt,
+                    },
+                ],
+            }),
+        });
+        const response = await bedrockClient.send(command);
+        const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+        return responseBody.content[0].text;
+    }
+    catch (error) {
+        console.error('Error calling Bedrock:', error);
+        throw new Error(`Failed to aggregate sprint report with Claude: ${error.message}`);
+    }
 }
 const handler = async (event) => {
     console.log('Aggregating sprint report:', JSON.stringify({
         sprintName: event.sprintName,
         since: event.since,
         until: event.until,
-        repoCount: event.repos.length,
-        analysisCount: event.analyses.length,
+        repoCount: event.repos?.length || 0,
+        analysisCount: event.analyses?.length || 0,
     }, null, 2));
     try {
-        // In production, this would call an actual LLM API:
-        // const report = await callOpenAI(event);
-        // or
-        // const report = await callAnthropic(event);
-        const report = await mockLLMAggregate(event);
+        // Validate input
+        if (!event.analyses || !Array.isArray(event.analyses)) {
+            throw new Error('Analyses array is missing or invalid');
+        }
+        // Filter out failed analyses and validate metadata
+        const validAnalyses = event.analyses.filter(analysis => {
+            if (!analysis || !analysis.metadata) {
+                console.warn('Skipping analysis with missing metadata:', analysis);
+                return false;
+            }
+            return true;
+        });
+        console.log(`Processing ${validAnalyses.length} valid analyses out of ${event.analyses.length} total`);
+        if (validAnalyses.length === 0) {
+            return {
+                statusCode: 200,
+                body: {
+                    sprintName: event.sprintName,
+                    since: event.since,
+                    until: event.until,
+                    repos: event.repos || [],
+                    totalPRs: 0,
+                    report: 'No valid PR analyses were available to generate a sprint report.',
+                    generatedAt: new Date().toISOString(),
+                    warning: 'All PR analyses failed validation',
+                },
+            };
+        }
+        // Use validated analyses
+        const aggregateInput = {
+            ...event,
+            analyses: validAnalyses,
+        };
+        const report = await aggregateSprintWithClaude(aggregateInput);
         console.log('Sprint report aggregation complete');
         return {
             statusCode: 200,
@@ -120,19 +187,23 @@ const handler = async (event) => {
                 sprintName: event.sprintName,
                 since: event.since,
                 until: event.until,
-                repos: event.repos,
-                totalPRs: event.analyses.length,
+                repos: event.repos || [],
+                totalPRs: validAnalyses.length,
                 report,
                 generatedAt: new Date().toISOString(),
+                skippedAnalyses: event.analyses.length - validAnalyses.length,
             },
         };
     }
     catch (error) {
         console.error('Error aggregating sprint report:', error);
+        console.error('Event data:', JSON.stringify(event, null, 2));
         return {
             statusCode: 500,
             body: {
                 error: error.message || 'Failed to aggregate sprint report',
+                sprintName: event.sprintName,
+                totalPRs: 0,
             },
         };
     }

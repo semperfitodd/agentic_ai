@@ -1,21 +1,23 @@
-module "lambda_workflow" {
+module "lambda_get_results" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "~> 8.1"
 
-  function_name = "${var.environment}_workflow_proxy"
-  description   = "${replace(var.environment, "_", " ")} workflow proxy function"
+  function_name = "${var.environment}_get_results"
+  description   = "${replace(var.environment, "_", " ")} retrieve sprint results"
   handler       = "index.handler"
   publish       = true
   runtime       = "nodejs20.x"
   timeout       = 30
+  memory_size   = 256
 
   environment_variables = {
-    STATE_MACHINE_ARN = module.step_function.state_machine_arn
+    RESULTS_BUCKET = module.s3_results_bucket.s3_bucket_id
+    API_URL        = "https://${local.api_domain_name}"
   }
 
   source_path = [
     {
-      path             = "${path.module}/lambda_workflow"
+      path             = "${path.module}/lambda_get_results"
       npm_requirements = true
       commands = [
         "npm install",
@@ -30,12 +32,23 @@ module "lambda_workflow" {
 
   attach_policy_statements = true
   policy_statements = {
-    stepfunctions = {
+    s3_read = {
       effect = "Allow"
       actions = [
-        "states:StartExecution"
+        "s3:GetObject",
+        "s3:ListBucket"
       ]
-      resources = [module.step_function.state_machine_arn]
+      resources = [
+        module.s3_results_bucket.s3_bucket_arn,
+        "${module.s3_results_bucket.s3_bucket_arn}/*"
+      ]
+    }
+    sfn_describe = {
+      effect = "Allow"
+      actions = [
+        "states:DescribeExecution"
+      ]
+      resources = ["${module.step_function.state_machine_arn}:*"]
     }
   }
 

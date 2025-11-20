@@ -247,7 +247,64 @@ module "step_function" {
                 "statusCode.$" = "$.Payload.statusCode"
                 "body.$"       = "$.Payload.body"
               }
+              Retry = [
+                {
+                  ErrorEquals = [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ]
+                  IntervalSeconds = 2
+                  MaxAttempts     = 3
+                  BackoffRate     = 2
+                }
+              ]
+              Catch = [
+                {
+                  ErrorEquals = ["States.ALL"]
+                  ResultPath  = "$.error"
+                  Next        = "AnalysisErrorHandler"
+                }
+              ]
+              Next = "CheckAnalysisSuccess"
+            }
+            CheckAnalysisSuccess = {
+              Type = "Choice"
+              Choices = [
+                {
+                  Variable      = "$.statusCode"
+                  NumericEquals = 200
+                  Next          = "AnalysisSuccess"
+                }
+              ]
+              Default = "AnalysisErrorHandler"
+            }
+            AnalysisErrorHandler = {
+              Type = "Pass"
+              Parameters = {
+                "statusCode" = 200
+                "body" = {
+                  "owner.$"   = "$.owner"
+                  "repo.$"    = "$.repo"
+                  "prNumber"  = 0
+                  "prTitle"   = "Analysis Failed"
+                  "analysis"  = "This PR analysis failed and was skipped"
+                  "metadata" = {
+                    "additions"     = 0
+                    "deletions"     = 0
+                    "changed_files" = 0
+                    "merged_at"     = null
+                    "author"        = "Unknown"
+                    "labels"        = []
+                  }
+                }
+              }
               End = true
+            }
+            AnalysisSuccess = {
+              Type = "Pass"
+              End  = true
             }
           }
         }
@@ -274,6 +331,25 @@ module "step_function" {
           "body.$"       = "$.Payload.body"
         }
         ResultPath = "$.finalReport"
+        Next       = "StoreResults"
+      }
+
+      # Step 7: Store results to S3
+      StoreResults = {
+        Type     = "Task"
+        Resource = "arn:aws:states:::lambda:invoke"
+        Parameters = {
+          FunctionName = module.lambda_store_results.lambda_function_arn
+          Payload = {
+            "statusCode.$" = "$.finalReport.statusCode"
+            "body.$"       = "$.finalReport.body"
+          }
+        }
+        ResultSelector = {
+          "statusCode.$" = "$.Payload.statusCode"
+          "body.$"       = "$.Payload.body"
+        }
+        ResultPath = "$.storedResults"
         Next       = "Success"
       }
 
@@ -282,7 +358,7 @@ module "step_function" {
         Type = "Pass"
         Parameters = {
           "statusCode" = 200
-          "body.$"     = "$.finalReport.body"
+          "body.$"     = "$.storedResults.body"
         }
         End = true
       }
@@ -297,7 +373,8 @@ module "step_function" {
         module.lambda_prepare_data.lambda_function_arn,
         module.lambda_fetch_pr_details.lambda_function_arn,
         module.lambda_analyze_pr.lambda_function_arn,
-        module.lambda_aggregate_sprint.lambda_function_arn
+        module.lambda_aggregate_sprint.lambda_function_arn,
+        module.lambda_store_results.lambda_function_arn
       ]
     }
   }

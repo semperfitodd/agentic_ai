@@ -1,98 +1,113 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
+const client_bedrock_runtime_1 = require("@aws-sdk/client-bedrock-runtime");
+const bedrockClient = new client_bedrock_runtime_1.BedrockRuntimeClient({ region: process.env.AWS_REGION });
 /**
- * Mock LLM Analysis Function
- * In production, this would call OpenAI/Anthropic/etc. API
- * For now, it generates a structured analysis based on PR data
+ * Analyze PR using AWS Bedrock Claude
  */
-async function mockLLMAnalysis(input) {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
+async function analyzePRWithClaude(input) {
     const { owner, repo, readme, pr, comments, reviews, files } = input;
-    // Extract key information
-    const filesSummary = files.map(f => `${f.filename} (+${f.additions}/-${f.deletions})`).join(', ');
-    const labelsSummary = pr.labels.length > 0 ? pr.labels.join(', ') : 'none';
-    const hasDescription = pr.body && pr.body.length > 50;
-    const commentCount = comments.issueComments.length + comments.reviewComments.length;
-    const reviewCount = reviews.length;
-    // Determine PR category based on files and labels
-    let category = 'General';
-    if (files.some(f => f.filename.includes('test'))) {
-        category = 'Testing';
+    // Prepare comprehensive context for Claude
+    const filesSummary = files
+        .map(f => `  - ${f.filename} (${f.status}): +${f.additions}/-${f.deletions} (${f.changes} changes)`)
+        .join('\n');
+    const issueCommentsSummary = comments.issueComments
+        .map(c => `  - ${c.user} (${c.created_at}): ${c.body}`)
+        .join('\n');
+    const reviewCommentsSummary = comments.reviewComments
+        .map(c => `  - ${c.user} on ${c.path} (${c.created_at}): ${c.body}`)
+        .join('\n');
+    const reviewsSummary = reviews
+        .map(r => `  - ${r.user} (${r.state}) at ${r.submitted_at}: ${r.body}`)
+        .join('\n');
+    // Build the prompt for Claude
+    const prompt = `You are an expert software engineering analyst. Analyze the following GitHub Pull Request and provide a comprehensive, insightful summary.
+
+Repository: ${owner}/${repo}
+Repository Description: ${readme.substring(0, 500)}${readme.length > 500 ? '...' : ''}
+
+Pull Request Details:
+- Number: #${pr.number}
+- Title: ${pr.title}
+- Author: ${pr.user?.login || 'Unknown'}
+- State: ${pr.state}
+- Merged: ${pr.merged_at ? new Date(pr.merged_at).toLocaleDateString() : 'Not merged'}
+- Labels: ${pr.labels.length > 0 ? pr.labels.join(', ') : 'none'}
+- Link: ${pr.html_url}
+
+PR Description:
+${pr.body || 'No description provided'}
+
+Statistics:
+- Files Changed: ${pr.changed_files}
+- Additions: ${pr.additions}
+- Deletions: ${pr.deletions}
+- Total Changes: ${pr.additions + pr.deletions}
+
+Files Modified:
+${filesSummary}
+
+${comments.issueComments.length > 0 ? `Issue Comments (${comments.issueComments.length}):\n${issueCommentsSummary}` : ''}
+
+${comments.reviewComments.length > 0 ? `Review Comments (${comments.reviewComments.length}):\n${reviewCommentsSummary}` : ''}
+
+${reviews.length > 0 ? `Reviews (${reviews.length}):\n${reviewsSummary}` : ''}
+
+Please analyze this PR and provide:
+1. A clear category/type (e.g., Feature, Bug Fix, Refactoring, Documentation, Configuration, Testing, etc.)
+2. An impact assessment (Low/Medium/High) based on scope and complexity
+3. A summary of what changed and why
+4. Technical insights about the implementation
+5. Assessment of the review process and team collaboration
+6. Any notable patterns, risks, or highlights
+
+Format your response in clear markdown with appropriate sections and bullet points.`;
+    try {
+        const modelId = process.env.BEDROCK_MODEL_ID;
+        if (!modelId) {
+            throw new Error('BEDROCK_MODEL_ID environment variable is not set');
+        }
+        const command = new client_bedrock_runtime_1.InvokeModelCommand({
+            modelId,
+            contentType: 'application/json',
+            accept: 'application/json',
+            body: JSON.stringify({
+                anthropic_version: 'bedrock-2023-05-31',
+                max_tokens: 4096,
+                temperature: 0.7,
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt,
+                    },
+                ],
+            }),
+        });
+        const response = await bedrockClient.send(command);
+        const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+        return responseBody.content[0].text;
     }
-    else if (files.some(f => f.filename.includes('.md') || f.filename.includes('README'))) {
-        category = 'Documentation';
+    catch (error) {
+        console.error('Error calling Bedrock:', error);
+        throw new Error(`Failed to analyze PR with Claude: ${error.message}`);
     }
-    else if (files.some(f => f.filename.includes('config') || f.filename.includes('.yml') || f.filename.includes('.yaml'))) {
-        category = 'Configuration';
-    }
-    else if (pr.labels.includes('bug') || pr.labels.includes('bugfix')) {
-        category = 'Bug Fix';
-    }
-    else if (pr.labels.includes('feature') || pr.labels.includes('enhancement')) {
-        category = 'Feature';
-    }
-    // Generate impact assessment
-    const totalChanges = pr.additions + pr.deletions;
-    let impact = 'Low';
-    if (totalChanges > 500) {
-        impact = 'High';
-    }
-    else if (totalChanges > 100) {
-        impact = 'Medium';
-    }
-    // Generate summary (mocked LLM output)
-    const summary = `
-**PR #${pr.number}: ${pr.title}**
-
-**Category:** ${category}
-**Impact:** ${impact}
-**Author:** ${pr.user?.login || 'Unknown'}
-**Merged:** ${pr.merged_at ? new Date(pr.merged_at).toLocaleDateString() : 'Not merged'}
-
-**What Changed:**
-${hasDescription
-        ? `According to the PR description: ${pr.body?.substring(0, 200)}${pr.body && pr.body.length > 200 ? '...' : ''}`
-        : `This PR modified ${pr.changed_files} file(s) with ${pr.additions} additions and ${pr.deletions} deletions.`}
-
-**Files Modified:**
-${filesSummary || 'No files listed'}
-
-**Code Analysis:**
-${files.length > 0
-        ? `The changes touch ${files.length} file(s). Key modifications include:\n` +
-            files.slice(0, 3).map(f => `- ${f.filename}: ${f.status} (${f.changes} changes)`).join('\n')
-        : 'No file details available.'}
-
-**Review Process:**
-- ${commentCount} comment(s) from the team
-- ${reviewCount} review(s) submitted
-${reviews.length > 0 ? `- Final review states: ${reviews.map(r => r.state).join(', ')}` : ''}
-
-**Context in Repository:**
-${readme.length > 0
-        ? `This change is part of ${repo}, which is: ${readme.substring(0, 150)}...`
-        : `This change is part of the ${repo} repository.`}
-
-**Labels:** ${labelsSummary}
-
-**Link:** ${pr.html_url}
-`.trim();
-    return summary;
 }
 const handler = async (event) => {
     console.log('Analyzing PR:', JSON.stringify({
         owner: event.owner,
         repo: event.repo,
-        prNumber: event.pr.number
+        prNumber: event.pr?.number
     }, null, 2));
     try {
-        // In production, this would call an actual LLM API:
-        // const analysis = await callOpenAI(event);
-        // or
-        // const analysis = await callAnthropic(event);
-        const analysis = await mockLLMAnalysis(event);
+        // Validate input
+        if (!event.pr) {
+            throw new Error('PR data is missing');
+        }
+        if (!event.owner || !event.repo) {
+            throw new Error('Owner and repo are required');
+        }
+        const analysis = await analyzePRWithClaude(event);
         console.log(`Analysis complete for PR #${event.pr.number}`);
         return {
             statusCode: 200,
@@ -100,28 +115,37 @@ const handler = async (event) => {
                 owner: event.owner,
                 repo: event.repo,
                 prNumber: event.pr.number,
-                prTitle: event.pr.title,
+                prTitle: event.pr.title || 'Untitled',
                 analysis,
                 metadata: {
-                    additions: event.pr.additions,
-                    deletions: event.pr.deletions,
-                    changed_files: event.pr.changed_files,
-                    merged_at: event.pr.merged_at,
-                    author: event.pr.user?.login,
-                    labels: event.pr.labels,
+                    additions: event.pr.additions || 0,
+                    deletions: event.pr.deletions || 0,
+                    changed_files: event.pr.changed_files || 0,
+                    merged_at: event.pr.merged_at || null,
+                    author: event.pr.user?.login || 'Unknown',
+                    labels: event.pr.labels || [],
                 },
             },
         };
     }
     catch (error) {
         console.error('Error analyzing PR:', error);
+        console.error('Event data:', JSON.stringify(event, null, 2));
         return {
             statusCode: 500,
             body: {
                 error: error.message || 'Failed to analyze PR',
-                owner: event.owner,
-                repo: event.repo,
-                prNumber: event.pr.number,
+                owner: event.owner || 'unknown',
+                repo: event.repo || 'unknown',
+                prNumber: event.pr?.number || 0,
+                metadata: {
+                    additions: 0,
+                    deletions: 0,
+                    changed_files: 0,
+                    merged_at: null,
+                    author: 'Unknown',
+                    labels: [],
+                },
             },
         };
     }
