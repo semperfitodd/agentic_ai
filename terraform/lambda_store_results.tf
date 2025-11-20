@@ -1,21 +1,22 @@
-module "lambda_workflow" {
+module "lambda_store_results" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "~> 8.1"
 
-  function_name = "${var.environment}_workflow_proxy"
-  description   = "${replace(var.environment, "_", " ")} workflow proxy function"
+  function_name = "${var.environment}_store_results"
+  description   = "${replace(var.environment, "_", " ")} store sprint results to S3"
   handler       = "index.handler"
   publish       = true
   runtime       = "nodejs20.x"
   timeout       = 30
+  memory_size   = 256
 
   environment_variables = {
-    STATE_MACHINE_ARN = module.step_function.state_machine_arn
+    RESULTS_BUCKET = module.s3_results_bucket.s3_bucket_id
   }
 
   source_path = [
     {
-      path             = "${path.module}/lambda_workflow"
+      path             = "${path.module}/lambda_store_results"
       npm_requirements = true
       commands = [
         "npm install",
@@ -30,19 +31,13 @@ module "lambda_workflow" {
 
   attach_policy_statements = true
   policy_statements = {
-    stepfunctions = {
+    s3_write = {
       effect = "Allow"
       actions = [
-        "states:StartExecution"
+        "s3:PutObject",
+        "s3:PutObjectAcl"
       ]
-      resources = [module.step_function.state_machine_arn]
-    }
-  }
-
-  allowed_triggers = {
-    AllowExecutionFromAPIGateway = {
-      service    = "apigateway"
-      source_arn = "${module.api_gateway.api_execution_arn}/*/*"
+      resources = ["${module.s3_results_bucket.s3_bucket_arn}/*"]
     }
   }
 
