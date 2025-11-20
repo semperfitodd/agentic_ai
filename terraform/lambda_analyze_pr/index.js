@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const client_bedrock_runtime_1 = require("@aws-sdk/client-bedrock-runtime");
-const bedrockClient = new client_bedrock_runtime_1.BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const bedrockClient = new client_bedrock_runtime_1.BedrockRuntimeClient({ region: process.env.AWS_REGION });
 /**
  * Analyze PR using AWS Bedrock Claude
  */
@@ -64,8 +64,12 @@ Please analyze this PR and provide:
 
 Format your response in clear markdown with appropriate sections and bullet points.`;
     try {
+        const modelId = process.env.BEDROCK_MODEL_ID;
+        if (!modelId) {
+            throw new Error('BEDROCK_MODEL_ID environment variable is not set');
+        }
         const command = new client_bedrock_runtime_1.InvokeModelCommand({
-            modelId: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+            modelId,
             contentType: 'application/json',
             accept: 'application/json',
             body: JSON.stringify({

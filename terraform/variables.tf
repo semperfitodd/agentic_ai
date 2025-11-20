@@ -31,3 +31,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "bedrock_model_id" {
+  description = "AWS Bedrock model ID for AI analysis"
+  type        = string
+  default     = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+}

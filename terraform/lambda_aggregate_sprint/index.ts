@@ -3,7 +3,7 @@ import {
   InvokeModelCommand,
 } from '@aws-sdk/client-bedrock-runtime';
 
-const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION });
 
 interface PRAnalysis {
   owner: string;
@@ -145,8 +145,13 @@ Please generate a comprehensive sprint report that includes:
 Format the report in clear, professional markdown with appropriate headers, bullet points, and emphasis. Make it suitable for both technical and non-technical stakeholders.`;
 
   try {
+    const modelId = process.env.BEDROCK_MODEL_ID;
+    if (!modelId) {
+      throw new Error('BEDROCK_MODEL_ID environment variable is not set');
+    }
+
     const command = new InvokeModelCommand({
-      modelId: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+      modelId,
       contentType: 'application/json',
       accept: 'application/json',
       body: JSON.stringify({

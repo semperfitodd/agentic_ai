@@ -39,7 +39,9 @@ export const handler = async (event: any) => {
         executionName: executionName,
         startDate: response.startDate?.toISOString(),
         status: 'RUNNING',
-        statusUrl: `https://console.aws.amazon.com/states/home?region=${process.env.AWS_REGION}#/executions/details/${response.executionArn}`,
+        statusUrl: process.env.CONSOLE_URL ? 
+          `${process.env.CONSOLE_URL}/states/home?region=${process.env.AWS_REGION}#/executions/details/${response.executionArn}` :
+          `https://console.aws.amazon.com/states/home?region=${process.env.AWS_REGION}#/executions/details/${response.executionArn}`,
         note: 'This is an asynchronous operation. The analysis may take several minutes to complete. Check CloudWatch Logs or Step Functions console for results.',
       }),
     };

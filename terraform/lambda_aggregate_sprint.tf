@@ -10,6 +10,10 @@ module "lambda_aggregate_sprint" {
   timeout       = 300
   memory_size   = 1024
 
+  environment_variables = {
+    BEDROCK_MODEL_ID = local.bedrock_model_id
+  }
+
   source_path = [
     {
       path             = "${path.module}/lambda_aggregate_sprint"
@@ -34,8 +38,8 @@ module "lambda_aggregate_sprint" {
         "bedrock:InvokeModelWithResponseStream"
       ]
       resources = [
-        "arn:aws:bedrock:*::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
-        "arn:aws:bedrock:us-east-1:*:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+        "arn:aws:bedrock:${var.region}:*:inference-profile/${local.bedrock_model_id}",
+        "arn:aws:bedrock:*::foundation-model/*anthropic.claude*"
       ]
     }
   }
