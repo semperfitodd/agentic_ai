@@ -48,6 +48,8 @@ export const handler = async (event: RepoInput) => {
     const sinceDate = new Date(since);
     const untilDate = new Date(until);
 
+    const perPage = parseInt(process.env.GITHUB_PER_PAGE || '100', 10);
+
     // Get all merged PRs (closed + merged)
     const { data: pullRequests } = await octokit.pulls.list({
       owner,
@@ -55,7 +57,7 @@ export const handler = async (event: RepoInput) => {
       state: 'closed',
       sort: 'updated',
       direction: 'desc',
-      per_page: 100, // Max per page
+      per_page: perPage,
     });
 
     // Filter for merged PRs in date range

@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
-const s3Client = new client_s3_1.S3Client({ region: process.env.AWS_REGION });
+const s3Client = new client_s3_1.S3Client({});
 const handler = async (event) => {
     console.log('Get markdown request:', JSON.stringify(event, null, 2));
     const bucketName = process.env.RESULTS_BUCKET;

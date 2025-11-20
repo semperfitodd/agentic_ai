@@ -166,7 +166,7 @@ module "step_function" {
         End = true
       }
 
-      # Step 4: Fetch detailed info for each PR (parallel)
+      # Step 4: Fetch detailed info for each PR (parallel) - stores to S3 only
       FetchPRDetails = {
         Type           = "Map"
         ItemsPath      = "$.preparedData.body.prDetailsInputs"
@@ -175,8 +175,7 @@ module "step_function" {
           "owner.$"       = "$$.Map.Item.Value.owner"
           "repo.$"        = "$$.Map.Item.Value.repo"
           "prNumber.$"    = "$$.Map.Item.Value.prNumber"
-          "readme.$"      = "$$.Map.Item.Value.readme"
-          "githubToken.$" = "$$.Map.Item.Value.githubToken"
+          "githubToken.$" = "$.githubToken"
         }
         Iterator = {
           StartAt = "FetchSinglePRDetails"
@@ -193,43 +192,50 @@ module "step_function" {
                   "githubToken.$" = "$.githubToken"
                 }
               }
-              ResultPath = "$.prDetails"
-              Next       = "AddReadme"
-            }
-            AddReadme = {
-              Type = "Pass"
-              Parameters = {
-                "owner.$"      = "$.prDetails.Payload.body.owner"
-                "repo.$"       = "$.prDetails.Payload.body.repo"
-                "pr.$"         = "$.prDetails.Payload.body.pr"
-                "comments.$"   = "$.prDetails.Payload.body.comments"
-                "reviews.$"    = "$.prDetails.Payload.body.reviews"
-                "files.$"      = "$.prDetails.Payload.body.files"
-                "statistics.$" = "$.prDetails.Payload.body.statistics"
-                "readme.$"     = "$.readme"
-              }
               End = true
             }
           }
         }
-        ResultPath = "$.prDetailsResults"
-        Next       = "AnalyzePRs"
+        ResultPath = null
+        Next       = "PrepareAnalysisInput"
       }
 
-      # Step 5: Analyze each PR with LLM (parallel)
+      # Prepare input for analysis step - REPLACE state with minimal data only
+      PrepareAnalysisInput = {
+        Type = "Pass"
+        Parameters = {
+          "since.$"       = "$.since"
+          "until.$"       = "$.until"
+          "sprintName.$"  = "$.sprintName"
+          "repos.$"       = "$.repos"
+          "githubToken.$" = "$.githubToken"
+          "prList.$"      = "$.preparedData.body.prDetailsInputs"
+          "readmeS3Key.$" = "$.preparedData.body.readmeS3Key"
+          "s3Bucket.$"    = "$.preparedData.body.s3Bucket"
+          "totalPRs.$"    = "$.preparedData.body.totalPRs"
+        }
+        OutputPath = "$"
+        Next       = "LogPRDetailsSize"
+      }
+
+      # Log the count of PR details results
+      LogPRDetailsSize = {
+        Type    = "Pass"
+        Comment = "PR details fetched and stored in S3"
+        Next    = "AnalyzePRs"
+      }
+
+      # Step 5: Analyze each PR with LLM (parallel) - stores to S3 only
       AnalyzePRs = {
         Type           = "Map"
-        ItemsPath      = "$.prDetailsResults"
+        ItemsPath      = "$.prList"
         MaxConcurrency = 10
         Parameters = {
-          "owner.$"      = "$$.Map.Item.Value.owner"
-          "repo.$"       = "$$.Map.Item.Value.repo"
-          "readme.$"     = "$$.Map.Item.Value.readme"
-          "pr.$"         = "$$.Map.Item.Value.pr"
-          "comments.$"   = "$$.Map.Item.Value.comments"
-          "reviews.$"    = "$$.Map.Item.Value.reviews"
-          "files.$"      = "$$.Map.Item.Value.files"
-          "statistics.$" = "$$.Map.Item.Value.statistics"
+          "owner.$"       = "$$.Map.Item.Value.owner"
+          "repo.$"        = "$$.Map.Item.Value.repo"
+          "prNumber.$"    = "$$.Map.Item.Value.prNumber"
+          "readmeS3Key.$" = "$.readmeS3Key"
+          "s3Bucket.$"    = "$.s3Bucket"
         }
         Iterator = {
           StartAt = "AnalyzeSinglePR"
@@ -240,19 +246,12 @@ module "step_function" {
               Parameters = {
                 FunctionName = module.lambda_analyze_pr.lambda_function_arn
                 Payload = {
-                  "owner.$"      = "$.owner"
-                  "repo.$"       = "$.repo"
-                  "readme.$"     = "$.readme"
-                  "pr.$"         = "$.pr"
-                  "comments.$"   = "$.comments"
-                  "reviews.$"    = "$.reviews"
-                  "files.$"      = "$.files"
-                  "statistics.$" = "$.statistics"
+                  "owner.$"       = "$.owner"
+                  "repo.$"        = "$.repo"
+                  "prNumber.$"    = "$.prNumber"
+                  "readmeS3Key.$" = "$.readmeS3Key"
+                  "s3Bucket.$"    = "$.s3Bucket"
                 }
-              }
-              ResultSelector = {
-                "statusCode.$" = "$.Payload.statusCode"
-                "body.$"       = "$.Payload.body"
               }
               Retry = [
                 {
@@ -274,52 +273,39 @@ module "step_function" {
                   Next        = "AnalysisErrorHandler"
                 }
               ]
-              Next = "CheckAnalysisSuccess"
-            }
-            CheckAnalysisSuccess = {
-              Type = "Choice"
-              Choices = [
-                {
-                  Variable      = "$.statusCode"
-                  NumericEquals = 200
-                  Next          = "AnalysisSuccess"
-                }
-              ]
-              Default = "AnalysisErrorHandler"
+              End = true
             }
             AnalysisErrorHandler = {
               Type = "Pass"
               Parameters = {
-                "statusCode" = 200
-                "body" = {
-                  "owner.$"  = "$.owner"
-                  "repo.$"   = "$.repo"
-                  "prNumber" = 0
-                  "prTitle"  = "Analysis Failed"
-                  "analysis" = "This PR analysis failed and was skipped"
-                  "metadata" = {
-                    "additions"     = 0
-                    "deletions"     = 0
-                    "changed_files" = 0
-                    "merged_at"     = null
-                    "author"        = "Unknown"
-                    "labels"        = []
-                  }
-                }
+                "owner.$"    = "$.owner"
+                "repo.$"     = "$.repo"
+                "prNumber.$" = "$.prNumber"
+                "error"      = "Analysis failed"
               }
               End = true
             }
-            AnalysisSuccess = {
-              Type = "Pass"
-              End  = true
-            }
           }
         }
-        ResultPath = "$.analysisResults"
-        Next       = "AggregateSprint"
+        ResultPath = null
+        Next       = "PrepareAggregationInput"
       }
 
-      # Step 6: Aggregate all analyses into final sprint report
+      # Aggregation uses same state - no preparation needed
+      PrepareAggregationInput = {
+        Type       = "Pass"
+        OutputPath = "$"
+        Next       = "LogAnalysisSize"
+      }
+
+      # Log the count of analysis results
+      LogAnalysisSize = {
+        Type    = "Pass"
+        Comment = "PR analyses complete and stored in S3"
+        Next    = "AggregateSprint"
+      }
+
+      # Step 6: Aggregate all analyses into final sprint report (markdown only)
       AggregateSprint = {
         Type     = "Task"
         Resource = "arn:aws:states:::lambda:invoke"
@@ -330,44 +316,48 @@ module "step_function" {
             "since.$"      = "$.since"
             "until.$"      = "$.until"
             "repos.$"      = "$.repos"
-            "analyses.$"   = "$.analysisResults[*].body"
+            "analyses.$"   = "$.prList"
           }
         }
         ResultSelector = {
-          "statusCode.$" = "$.Payload.statusCode"
-          "body.$"       = "$.Payload.body"
+          "sprintName.$"      = "$.Payload.body.sprintName"
+          "since.$"           = "$.Payload.body.since"
+          "until.$"           = "$.Payload.body.until"
+          "repos.$"           = "$.Payload.body.repos"
+          "totalPRs.$"        = "$.Payload.body.totalPRs"
+          "markdownS3Key.$"   = "$.Payload.body.markdownS3Key"
+          "s3Bucket.$"        = "$.Payload.body.s3Bucket"
+          "generatedAt.$"     = "$.Payload.body.generatedAt"
+          "skippedAnalyses.$" = "$.Payload.body.skippedAnalyses"
         }
-        ResultPath = "$.finalReport"
-        Next       = "StoreResults"
+        Next = "StoreResults"
       }
 
-      # Step 7: Store results to S3
+      # Step 7: Store results to S3 (markdown)
       StoreResults = {
         Type     = "Task"
         Resource = "arn:aws:states:::lambda:invoke"
         Parameters = {
           FunctionName = module.lambda_store_results.lambda_function_arn
           Payload = {
-            "statusCode.$" = "$.finalReport.statusCode"
-            "body.$"       = "$.finalReport.body"
+            "statusCode" = 200
+            "body.$"     = "$"
           }
         }
         ResultSelector = {
-          "statusCode.$" = "$.Payload.statusCode"
-          "body.$"       = "$.Payload.body"
+          "sprintName.$" = "$.Payload.body.sprintName"
+          "since.$"      = "$.Payload.body.since"
+          "until.$"      = "$.Payload.body.until"
+          "totalPRs.$"   = "$.Payload.body.totalPRs"
+          "s3Location.$" = "$.Payload.body.s3Location"
         }
-        ResultPath = "$.storedResults"
-        Next       = "Success"
+        Next = "Success"
       }
 
-      # Final success state
+      # Final success state - return S3 location metadata only
       Success = {
         Type = "Pass"
-        Parameters = {
-          "statusCode" = 200
-          "body.$"     = "$.storedResults.body"
-        }
-        End = true
+        End  = true
       }
     }
   })

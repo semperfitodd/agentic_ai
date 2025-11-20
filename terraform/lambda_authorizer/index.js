@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const client_secrets_manager_1 = require("@aws-sdk/client-secrets-manager");
-const secretsManager = new client_secrets_manager_1.SecretsManagerClient({ region: process.env.AWS_REGION });
+const secretsManager = new client_secrets_manager_1.SecretsManagerClient({});
 async function getSecret(secretName) {
     try {
         const command = new client_secrets_manager_1.GetSecretValueCommand({

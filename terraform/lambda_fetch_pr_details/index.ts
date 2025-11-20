@@ -1,4 +1,7 @@
 import { Octokit } from '@octokit/rest';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+
+const s3Client = new S3Client({});
 
 interface PRDetailsInput {
   owner: string;
@@ -62,11 +65,9 @@ interface PRSummary {
   };
 }
 
-/**
- * Intelligently summarize comments - keep most recent and most relevant
- */
-function summarizeComments(comments: any[], maxComments: number = 15): CommentThread[] {
-  if (comments.length <= maxComments) {
+function summarizeComments(comments: any[], maxComments?: number): CommentThread[] {
+  const limit = maxComments || parseInt(process.env.MAX_COMMENTS_PER_PR || '15', 10);
+  if (comments.length <= limit) {
     return comments.map(c => ({
       user: c.user?.login || 'unknown',
       body: c.body || '',
@@ -83,16 +84,16 @@ function summarizeComments(comments: any[], maxComments: number = 15): CommentTh
   });
 
   // Take mix of recent comments and longer/substantial ones
-  const recentComments = sorted.slice(0, Math.floor(maxComments * 0.7));
+  const recentComments = sorted.slice(0, Math.floor(limit * 0.7));
   const substantialComments = sorted
     .filter(c => c.body && c.body.length > 100)
-    .slice(0, Math.floor(maxComments * 0.3));
+    .slice(0, Math.floor(limit * 0.3));
 
   // Combine and deduplicate
   const combined = [...recentComments, ...substantialComments];
   const unique = Array.from(new Map(combined.map(c => [c.id, c])).values());
 
-  return unique.slice(0, maxComments).map(c => ({
+  return unique.slice(0, limit).map(c => ({
     user: c.user?.login || 'unknown',
     body: c.body || '',
     created_at: c.created_at,
@@ -100,11 +101,9 @@ function summarizeComments(comments: any[], maxComments: number = 15): CommentTh
   }));
 }
 
-/**
- * Prioritize files by changes and relevance
- */
-function prioritizeFiles(files: any[], maxFiles: number = 25): PRFile[] {
-  if (files.length <= maxFiles) {
+function prioritizeFiles(files: any[], maxFiles?: number): PRFile[] {
+  const limit = maxFiles || parseInt(process.env.MAX_FILES_PER_PR || '25', 10);
+  if (files.length <= limit) {
     return files.map(f => ({
       filename: f.filename,
       status: f.status,
@@ -119,24 +118,24 @@ function prioritizeFiles(files: any[], maxFiles: number = 25): PRFile[] {
   const sorted = [...files].sort((a, b) => b.changes - a.changes);
 
   // Take top changed files
-  const topFiles = sorted.slice(0, Math.floor(maxFiles * 0.6));
+  const topFiles = sorted.slice(0, Math.floor(limit * 0.6));
   
   // Add some test files if present
   const testFiles = sorted
     .filter(f => f.filename.includes('test') || f.filename.includes('spec'))
-    .slice(0, Math.floor(maxFiles * 0.2));
+    .slice(0, Math.floor(limit * 0.2));
 
   // Add some config/doc files
   const configFiles = sorted
     .filter(f => f.filename.includes('config') || f.filename.includes('.md') || 
                  f.filename.includes('.yml') || f.filename.includes('.yaml'))
-    .slice(0, Math.floor(maxFiles * 0.2));
+    .slice(0, Math.floor(limit * 0.2));
 
   // Combine and deduplicate
   const combined = [...topFiles, ...testFiles, ...configFiles];
   const unique = Array.from(new Map(combined.map(f => [f.filename, f])).values());
 
-  return unique.slice(0, maxFiles).map(f => ({
+  return unique.slice(0, limit).map(f => ({
     filename: f.filename,
     status: f.status,
     additions: f.additions,
@@ -146,16 +145,15 @@ function prioritizeFiles(files: any[], maxFiles: number = 25): PRFile[] {
   }));
 }
 
-/**
- * Calculate discussion intensity based on activity
- */
 function calculateDiscussionIntensity(
   commentCount: number, 
   reviewCount: number
 ): 'low' | 'medium' | 'high' {
+  const highThreshold = parseInt(process.env.DISCUSSION_HIGH_THRESHOLD || '20', 10);
+  const mediumThreshold = parseInt(process.env.DISCUSSION_MEDIUM_THRESHOLD || '5', 10);
   const total = commentCount + reviewCount;
-  if (total > 20) return 'high';
-  if (total > 5) return 'medium';
+  if (total > highThreshold) return 'high';
+  if (total > mediumThreshold) return 'medium';
   return 'low';
 }
 
@@ -176,12 +174,14 @@ export const handler = async (event: PRDetailsInput) => {
       pull_number: prNumber,
     });
 
+    const perPage = parseInt(process.env.GITHUB_PER_PAGE || '100', 10);
+
     // Fetch PR comments (issue comments)
     const { data: issueComments } = await octokit.issues.listComments({
       owner,
       repo,
       issue_number: prNumber,
-      per_page: 100,
+      per_page: perPage,
     });
 
     // Fetch PR review comments (code review comments)
@@ -189,7 +189,7 @@ export const handler = async (event: PRDetailsInput) => {
       owner,
       repo,
       pull_number: prNumber,
-      per_page: 100,
+      per_page: perPage,
     });
 
     // Fetch PR reviews
@@ -197,7 +197,7 @@ export const handler = async (event: PRDetailsInput) => {
       owner,
       repo,
       pull_number: prNumber,
-      per_page: 100,
+      per_page: perPage,
     });
 
     // Fetch PR files (diffs)
@@ -205,13 +205,12 @@ export const handler = async (event: PRDetailsInput) => {
       owner,
       repo,
       pull_number: prNumber,
-      per_page: 100,
+      per_page: perPage,
     });
 
-    // Intelligently summarize all the data
-    const summarizedIssueComments = summarizeComments(issueComments, 15);
-    const summarizedReviewComments = summarizeComments(reviewComments, 15);
-    const prioritizedFiles = prioritizeFiles(files, 25);
+    const summarizedIssueComments = summarizeComments(issueComments);
+    const summarizedReviewComments = summarizeComments(reviewComments);
+    const prioritizedFiles = prioritizeFiles(files);
 
     // Get unique participants
     const participants = new Set<string>();
@@ -239,7 +238,7 @@ export const handler = async (event: PRDetailsInput) => {
         const dateB = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
         return dateB - dateA;
       })
-      .slice(0, 15)
+      .slice(0, parseInt(process.env.MAX_REVIEWS_PER_PR || '15', 10))
       .map((review: any) => ({
         user: review.user ? review.user.login : 'unknown',
         state: review.state,
@@ -290,10 +289,43 @@ export const handler = async (event: PRDetailsInput) => {
       `intensity: ${summary.statistics.discussionIntensity}`
     );
 
-    return {
-      statusCode: 200,
-      body: summary,
+    const bucketName = process.env.RESULTS_BUCKET;
+    if (!bucketName) {
+      throw new Error('RESULTS_BUCKET environment variable is not set');
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const s3Key = `pr-details/${owner}/${repo}/${prNumber}/${timestamp}.json`;
+
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+        Body: JSON.stringify(summary, null, 2),
+        ContentType: 'application/json',
+      })
+    );
+
+    console.log(`Stored PR details to S3: ${s3Key}`);
+
+    const responseBody = {
+      owner,
+      repo,
+      prNumber,
     };
+
+    console.log(`Stored PR #${prNumber} details (${Buffer.byteLength(JSON.stringify(summary), 'utf8')} bytes) to S3: ${s3Key}`);
+
+    const fullResponse = {
+      statusCode: 200,
+      body: responseBody,
+    };
+
+    const responseSize = Buffer.byteLength(JSON.stringify(fullResponse), 'utf8');
+    console.log(`RETURN TO STEP FUNCTIONS: ${JSON.stringify(fullResponse)}`);
+    console.log(`RESPONSE SIZE: ${responseSize} bytes (${(responseSize / 1024).toFixed(2)} KB)`);
+
+    return fullResponse;
   } catch (error: any) {
     console.error('Error fetching PR details:', error);
     return {

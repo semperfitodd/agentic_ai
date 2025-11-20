@@ -16,7 +16,7 @@ interface AuthorizerResponse {
   };
 }
 
-const secretsManager = new SecretsManagerClient({ region: process.env.AWS_REGION });
+const secretsManager = new SecretsManagerClient({});
 
 async function getSecret(secretName: string): Promise<string> {
   try {
