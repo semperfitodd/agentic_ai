@@ -72,6 +72,16 @@ module "api_gateway" {
         payload_format_version = "1.0"
       }
     }
+
+    "POST /sprint-intelligence" = {
+      authorization_type = "CUSTOM"
+      authorizer_key     = "lambda"
+      integration = {
+        method                 = "POST"
+        uri                    = module.lambda_workflow.lambda_function_arn
+        payload_format_version = "1.0"
+      }
+    }
   }
 
   tags = var.tags

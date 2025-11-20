@@ -1,0 +1,24 @@
+{
+  "name": "lambda-aggregate-sprint",
+  "version": "1.0.0",
+  "description": "Lambda to aggregate PR analyses into sprint report",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "lambda",
+    "aws",
+    "typescript",
+    "report"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.4.5"
+  }
+}
+

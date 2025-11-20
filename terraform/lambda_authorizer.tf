@@ -4,9 +4,9 @@ module "lambda_authorizer" {
 
   function_name = "${var.environment}_authorizer"
   description   = "${replace(var.environment, "_", " ")} api authorizer function"
-  handler       = "app.lambda_handler"
+  handler       = "index.handler"
   publish       = true
-  runtime       = "python3.13"
+  runtime       = "nodejs20.x"
   timeout       = 30
 
   environment_variables = {
@@ -16,7 +16,12 @@ module "lambda_authorizer" {
   source_path = [
     {
       path             = "${path.module}/lambda_authorizer"
-      pip_requirements = false
+      npm_requirements = true
+      commands = [
+        "npm install",
+        "npm run build",
+        ":zip"
+      ]
     }
   ]
 
@@ -27,7 +32,7 @@ module "lambda_authorizer" {
   policy_statements = {
     secrets = {
       effect    = "Allow",
-      actions   = ["secretsmanager:*"],
+      actions   = ["secretsmanager:GetSecretValue"],
       resources = [aws_secretsmanager_secret.api_key.arn]
     }
   }

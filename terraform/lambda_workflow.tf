@@ -22,10 +22,6 @@ module "lambda_workflow" {
         "npm run build",
         ":zip"
       ]
-      patterns = [
-        "!node_modules/.+",
-        "node_modules/.+\\.so$"
-      ]
     }
   ]
 

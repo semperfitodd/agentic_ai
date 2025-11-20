@@ -1,0 +1,23 @@
+{
+  "name": "lambda-prepare-data",
+  "version": "1.0.0",
+  "description": "Lambda to prepare and flatten data structures for Step Functions",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "lambda",
+    "aws",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.4.5"
+  }
+}
+
