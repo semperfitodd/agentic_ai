@@ -1,0 +1,26 @@
+{
+  "name": "lambda-authorizer",
+  "version": "1.0.0",
+  "description": "Lambda API Gateway authorizer",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "lambda",
+    "aws",
+    "typescript",
+    "authorizer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.4.5"
+  }
+}
+

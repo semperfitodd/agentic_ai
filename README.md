@@ -1,193 +1,701 @@
-# Agentic AI - Intelligent GitHub Repository Analyzer
+# Sprint PR Intelligence - Serverless GitHub Analysis Platform
 
-An AI-powered application designed to intelligently analyze GitHub repositories, pull requests, and code changes to provide comprehensive insights about what applications do and how they've evolved.
+An AI-powered serverless application that analyzes GitHub pull requests across multiple repositories to generate comprehensive sprint reports.
 
-## What This Application Will Do
+## Overview
 
-This application is being built as an intelligent code analysis agent that will:
+Sprint PR Intelligence is a fully serverless solution that connects to GitHub via API to analyze merged pull requests across multiple repositories during a sprint period. It generates detailed, AI-powered insights about what changed, why it changed, and the overall impact of the sprint's development work.
 
-1. Read and understand repository README files to learn what an application is supposed to do
-2. Analyze pull request descriptions and notes to understand changes being made
-3. Examine actual code changes when PR notes are sparse or unclear
-4. Provide AI-powered summaries and insights about repositories and their evolution
+## Features
 
-The system will act as an intelligent assistant that can understand the purpose and architecture of any GitHub repository, track how applications change over time through PR analysis, and provide context-aware summaries by combining README documentation with actual code changes.
+### Automated PR Analysis
+- **Flexible Input**: Accept GitHub repo URLs directly - just paste the URL from your browser!
+- **README Integration**: Reads repository README files to understand the context and purpose of each application
+- **Comprehensive PR Data**: Fetches PR metadata, descriptions, labels, comments, reviews, and actual code changes
+- **Intelligent Summarization**: Uses LLM analysis to generate meaningful summaries even when PR descriptions are sparse
+- **Parallel Processing**: Leverages AWS Step Functions Map states for concurrent processing of multiple repos and PRs
+- **Sprint Aggregation**: Combines all PR analyses into a single, executive-ready sprint report
 
-## Why We're Building This
+### What Gets Analyzed
+For each pull request in the specified date range:
+- PR metadata (title, description, labels, author, merge date)
+- All comments and code review feedback
+- Actual code changes (diffs) from the GitHub API
+- File modifications with additions/deletions counts
+- Review approvals and change requests
 
-### The Problem
-Developers often need to understand unfamiliar codebases quickly. PR descriptions are frequently incomplete or lack context. Understanding what changed and why requires manually reading through code diffs. Onboarding to new projects takes significant time and effort.
+### Sprint Report Contents
+The final report includes:
+- Executive summary with key metrics
+- Work breakdown by category (features, bug fixes, documentation, etc.)
+- Activity by repository
+- Individual PR analyses with context
+- Top contributors
+- Sprint highlights and recommendations
 
-### The Solution
-By combining AI capabilities with GitHub API integration, we can automatically extract and summarize repository information, intelligently analyze code changes beyond simple diffs, provide natural language explanations of technical changes, and scale knowledge sharing across development teams.
+## Architecture
 
-## Current Architecture
-
-### Infrastructure Components
+### Serverless Components
 
 **API Gateway (HTTP API)**
-- Custom domain configured at api.brewsentry.com
-- Lambda authorizer for API key authentication
-- CORS configuration for cross-origin requests
-- Throttling limits set at 100 requests per second with burst of 100
-- CloudWatch logging enabled with 7-day retention
-- ACM certificate for TLS/SSL
-- Route 53 DNS configuration
+- Custom domain configured with Lambda authorizer for API key authentication
+- `/sprint-intelligence` endpoint for triggering sprint analysis
+- CORS enabled for web client integration
+- Throttling and rate limiting configured
 
 **Lambda Functions**
-All Lambda functions are written in TypeScript and deployed with Node.js 20.x runtime:
 
-- **Authorizer**: Validates incoming API requests against API keys stored in AWS Secrets Manager
-- **Temp**: Basic hello world function that returns a JSON response with timestamp and environment information
-- **Workflow Proxy**: Accepts requests and invokes the Step Functions state machine synchronously, returning the workflow results
+1. **Parse Repos** (`lambda_parse_repos`)
+   - Parses various GitHub URL formats into owner/repo
+   - Supports HTTPS, Git, and short formats
+   - Runtime: Node.js 20.x, Timeout: 30s, Memory: 256MB
 
-**Step Functions State Machine**
-- Type: STANDARD workflow
-- Current workflow chain: Temp Lambda function followed by Success state
-- CloudWatch logging enabled at ALL level
-- 7-day log retention
-- IAM role with policies for Lambda invocation
+2. **Fetch Repo Data** (`lambda_fetch_repo_data`)
+   - Fetches README and list of merged PRs for a repository
+   - Filters PRs by date range
+   - Runtime: Node.js 20.x, Timeout: 60s, Memory: 512MB
 
-**Authentication and Security**
-- API keys stored in AWS Secrets Manager
-- Lambda authorizer checks x-api-key header against stored secrets
-- IAM roles configured with least-privilege access
-- CloudWatch logs for audit trail
+3. **Prepare Data** (`lambda_prepare_data`)
+   - Flattens data structures from multiple repos
+   - Creates lookup maps for efficient processing
+   - Runtime: Node.js 20.x, Timeout: 30s, Memory: 256MB
 
-**Static Website Hosting**
-- S3 bucket for static content
-- CloudFront distribution for CDN
-- Custom domain configuration
-- Origin access control for S3 security
+4. **Fetch PR Details** (`lambda_fetch_pr_details`)
+   - Retrieves detailed PR information including comments, reviews, and file diffs
+   - Handles GitHub API pagination
+   - Runtime: Node.js 20.x, Timeout: 60s, Memory: 512MB
+
+5. **Analyze PR** (`lambda_analyze_pr`)
+   - Analyzes individual PRs using LLM (currently mocked for demo)
+   - Generates per-PR summaries with context
+   - Categorizes changes and assesses impact
+   - Runtime: Node.js 20.x, Timeout: 120s, Memory: 1024MB
+
+6. **Aggregate Sprint** (`lambda_aggregate_sprint`)
+   - Combines all PR analyses into final sprint report
+   - Calculates statistics and generates insights
+   - Produces markdown-formatted report
+   - Runtime: Node.js 20.x, Timeout: 60s, Memory: 512MB
+
+7. **Workflow Proxy** (`lambda_workflow`)
+   - Accepts API requests and invokes Step Functions workflow
+   - Returns synchronous execution results
+   - Runtime: Node.js 20.x, Timeout: 30s, Memory: 256MB
+
+8. **Authorizer** (`lambda_authorizer`)
+   - Validates API keys from Secrets Manager
+   - Returns authorization decision for API Gateway
+   - Runtime: Node.js 20.x, Timeout: 30s, Memory: 256MB
+
+**Step Functions Workflow**
+
+The `sprint_pr_intelligence` state machine orchestrates the entire process:
+
+```
+0. ParseRepos (Task)
+   └─> Parse GitHub URLs into owner/repo format
+   
+1. FetchRepoData (Map State)
+   └─> Parallel: Fetch README + PRs for each repo
+   
+2. PrepareData (Task)
+   └─> Flatten and organize data structures
+   
+3. CheckIfPRsExist (Choice)
+   ├─> NoPRsFound → Return empty report
+   └─> FetchPRDetails (Map State)
+   
+4. FetchPRDetails (Map State)
+   └─> Parallel: Fetch detailed info for each PR
+   
+5. AnalyzePRs (Map State)
+   └─> Parallel: Analyze each PR with LLM
+   
+6. AggregateSprint (Task)
+   └─> Generate final sprint report
+   
+7. Success
+   └─> Return complete report
+```
+
+**GitHub Integration**
+- Uses Octokit REST API client (@octokit/rest)
+- No repository cloning required
+- Supports GitHub personal access tokens or GitHub App authentication
+- Rate limiting awareness (recommended: use GitHub App for higher limits)
 
 ### Technology Stack
 
 - **Infrastructure as Code**: Terraform with official AWS modules
-- **Cloud Provider**: AWS
+- **Cloud Provider**: AWS (fully serverless)
 - **API Layer**: API Gateway HTTP API v2
-- **Compute**: AWS Lambda
-- **Orchestration**: AWS Step Functions
+- **Compute**: AWS Lambda (TypeScript/Node.js 20.x)
+- **Orchestration**: AWS Step Functions (Standard workflow)
 - **Secrets Management**: AWS Secrets Manager
-- **Programming Language**: TypeScript
-- **Runtime**: Node.js 20.x
+- **GitHub Integration**: Octokit REST API
+- **LLM Integration**: Placeholder for OpenAI/Anthropic (currently mocked)
 - **Logging**: CloudWatch Logs
-- **DNS**: Route 53
-- **CDN**: CloudFront
-- **Storage**: S3
 
-### Terraform Modules Used
+## GitHub Token Permissions Quick Reference
 
-- terraform-aws-modules/apigateway-v2/aws version 5.3
-- terraform-aws-modules/lambda/aws version 8.1
-- terraform-aws-modules/step-functions/aws version 5.0.2
-- terraform-aws-modules/s3-bucket/aws version 5.8.2
-- terraform-aws-modules/cloudfront/aws version 5.0.1
+| Repository Type | Required Scope | What It Allows |
+|----------------|----------------|----------------|
+| **Public repos only** | `public_repo` | Read public repository data, PRs, comments |
+| **Private repos** | `repo` (full) | Read private repository data, PRs, comments |
+| **Fine-grained (recommended)** | Contents: Read, Pull requests: Read | More granular access control |
+
+**The token is only used for READ operations and is never stored.**
+
+---
+
+## Testing the API
+
+### Step 1: Get Your API Endpoint
+
+After deploying with Terraform, get the API URL:
+
+```bash
+cd terraform
+terraform output api_url
+```
+
+This will output something like: `https://api.yourdomain.com`
+
+### Step 2: Get Your API Key
+
+Retrieve the API key from AWS Secrets Manager:
+
+```bash
+# List all secrets
+aws secretsmanager list-secrets --query "SecretList[?contains(Name, 'api')].Name" --output table
+
+# Get the API key value
+aws secretsmanager get-secret-value \
+  --secret-id <your-secret-name> \
+  --query SecretString \
+  --output text
+```
+
+### Step 3: Create a GitHub Personal Access Token
+
+#### For Public Repositories Only:
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Click "Generate new token (classic)"
+3. Give it a descriptive name (e.g., "Sprint PR Intelligence")
+4. Select **only** the `public_repo` scope:
+   - `public_repo` - Access public repositories
+5. Click "Generate token"
+6. Copy the token (starts with `ghp_`)
+
+#### For Private Repositories:
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Click "Generate new token (classic)"
+3. Give it a descriptive name (e.g., "Sprint PR Intelligence")
+4. Select the full `repo` scope:
+   - `repo` - Full control of private repositories
+     - This includes: repo:status, repo_deployment, public_repo, repo:invite, security_events
+5. Click "Generate token"
+6. Copy the token (starts with `ghp_`)
+
+#### What the Token is Used For:
+The application makes **read-only** API calls to:
+- Read repository README files
+- List merged pull requests in date range
+- Read PR metadata (title, description, labels, author)
+- Read PR comments and reviews
+- Read code diffs (file changes)
+
+**The token is NEVER stored** - it's only used during the execution and passed in your API request.
+
+#### Recommended: Use Fine-Grained Tokens (Better Security)
+For more control, use Fine-grained personal access tokens:
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens
+2. Click "Generate new token"
+3. Select repository access:
+   - **Public Repositories (read-only)** or
+   - **All repositories** or **Only select repositories**
+4. Under "Repository permissions", set:
+   - **Contents**: Read-only (for README)
+   - **Pull requests**: Read-only (for PR data)
+   - **Metadata**: Read-only (automatically included)
+5. Generate token
+
+### Step 4: Test with cURL
+
+**Basic Test** (using repo URLs - easiest!):
+
+```bash
+curl -X POST https://api.yourdomain.com/sprint-intelligence \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: <your-api-key>" \
+  -d '{
+    "sprintName": "Test Sprint",
+    "since": "2024-01-01T00:00:00Z",
+    "until": "2024-01-31T23:59:59Z",
+    "githubToken": "<your-github-token>",
+    "repos": [
+      "https://github.com/octocat/Hello-World"
+    ]
+  }'
+```
+
+**Multi-Repo Test** (mix of formats):
+
+```bash
+curl -X POST https://api.yourdomain.com/sprint-intelligence \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: <your-api-key>" \
+  -d '{
+    "sprintName": "Sprint 2024-Q4",
+    "since": "2024-10-01T00:00:00Z",
+    "until": "2024-10-15T23:59:59Z",
+    "githubToken": "<your-github-token>",
+    "repos": [
+      "https://github.com/facebook/react",
+      "microsoft/vscode",
+      "https://github.com/torvalds/linux.git",
+      {"owner": "golang", "repo": "go"}
+    ]
+  }'
+```
+
+**Alternative Formats** (all work!):
+
+```bash
+# Full HTTPS URL
+"repos": ["https://github.com/owner/repo"]
+
+# Git URL
+"repos": ["git@github.com:owner/repo.git"]
+
+# Short format
+"repos": ["owner/repo"]
+
+# Object format
+"repos": [{"owner": "owner", "repo": "repo"}]
+
+# Mix and match
+"repos": [
+  "https://github.com/owner/repo1",
+  "owner/repo2",
+  {"owner": "owner", "repo": "repo3"}
+]
+```
+
+**Pretty Print Response** (with jq):
+
+```bash
+curl -X POST https://api.yourdomain.com/sprint-intelligence \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: <your-api-key>" \
+  -d '{
+    "sprintName": "Test Sprint",
+    "since": "2024-01-01T00:00:00Z",
+    "until": "2024-01-31T23:59:59Z",
+    "githubToken": "<your-github-token>",
+    "repos": [{"owner": "octocat", "repo": "Hello-World"}]
+  }' | jq '.'
+```
+
+**Save Report to File**:
+
+```bash
+curl -X POST https://api.yourdomain.com/sprint-intelligence \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: <your-api-key>" \
+  -d '{
+    "sprintName": "Sprint 2024-Q4",
+    "since": "2024-10-01T00:00:00Z",
+    "until": "2024-10-15T23:59:59Z",
+    "githubToken": "<your-github-token>",
+    "repos": [{"owner": "octocat", "repo": "Hello-World"}]
+  }' | jq -r '.body.report' > sprint_report.md
+```
+
+### Step 5: Using the Test Script
+
+A convenience script is provided:
+
+```bash
+cd terraform
+
+# Make it executable (if not already)
+chmod +x test_sprint_intelligence.sh
+
+# Run with your values
+./test_sprint_intelligence.sh \
+  $(terraform output -raw api_url) \
+  <your-api-key> \
+  <your-github-token>
+```
+
+### Request Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sprintName` | string | No | Name of the sprint for the report header |
+| `since` | string | Yes | ISO 8601 timestamp for start of date range |
+| `until` | string | Yes | ISO 8601 timestamp for end of date range |
+| `githubToken` | string | Yes | GitHub personal access token with `repo` scope |
+| `repos` | array | Yes | Array of repositories - accepts URLs, short format, or objects (see examples above) |
+
+### Response Format
+
+**Success Response** (HTTP 200):
+```json
+{
+  "statusCode": 200,
+  "body": {
+    "sprintName": "Sprint 2024-Q4",
+    "since": "2024-10-01T00:00:00Z",
+    "until": "2024-10-15T23:59:59Z",
+    "repos": [{"owner": "octocat", "repo": "Hello-World"}],
+    "totalPRs": 15,
+    "report": "# Sprint Report: Sprint 2024-Q4\n\n## Executive Summary...",
+    "generatedAt": "2024-10-16T10:30:00.000Z"
+  }
+}
+```
+
+**Error Response** (HTTP 500):
+```json
+{
+  "statusCode": 500,
+  "body": {
+    "error": "Error message here",
+    "message": "Error executing workflow"
+  }
+}
+```
+
+The `report` field contains a markdown-formatted comprehensive analysis that you can save to a file or render in your application.
+
+### Troubleshooting Tests
+
+**"Unauthorized" or 403 error**:
+- Check that x-api-key header is correct
+- Verify API key exists in Secrets Manager
+- Ensure API key matches what the authorizer expects
+
+**"Rate limit exceeded"**:
+- GitHub API has limits (5,000 requests/hour for authenticated users)
+- Reduce number of repos or PRs in date range
+- Consider using a GitHub App for higher limits
+
+**Empty report or no PRs found**:
+- Verify date range includes merged PRs
+- Check that repos are public or token has access
+- Confirm GitHub token has `repo` scope
+
+**Timeout errors**:
+- Reduce number of repositories per request
+- Shorten date range to reduce PRs analyzed
+- Check CloudWatch logs for specific failures
 
 ## Deployment
 
-The infrastructure is fully automated using Terraform. The backend state is stored in S3 with encryption enabled. All resources are tagged with Environment, Owner, Project, and Provisioner metadata.
-
 ### Prerequisites
-- AWS CLI configured with appropriate profile
-- Terraform installed
-- Node.js 20.x or higher
-- Valid domain configured in Route 53
 
-### Deploy Commands
+- AWS CLI configured with appropriate credentials
+- Terraform >= 1.0
+- Node.js >= 20.x
+- Valid domain configured in Route 53 (for custom domain)
+- GitHub account with access to repositories to analyze
+
+### Initial Setup
+
+1. **Configure Terraform Variables**
+
+Create or edit `terraform/terraform.tfvars`:
+```hcl
+domain      = "example.com"
+environment = "dev"
+region      = "us-east-1"
+tags = {
+  Project = "sprint-intelligence"
+  Owner   = "your-team"
+}
 ```
+
+2. **Initialize Terraform**
+
+```bash
 cd terraform
 terraform init
+```
+
+3. **Deploy Infrastructure**
+
+```bash
 terraform plan
 terraform apply
 ```
 
-### Outputs
-The Terraform configuration provides outputs for:
-- API URL
-- Frontend URL  
-- Step Function ARN
-- Step Function name
-- Lambda temp function name
+4. **Note the Outputs**
 
-## API Endpoints
+After deployment, Terraform will output:
+- API Gateway URL
+- Step Functions ARN
+- Lambda function names
 
-**POST /temp**
-- Authorization: Custom Lambda authorizer with x-api-key header
-- Returns: JSON response with hello world message, timestamp, and environment
-- Payload format: 1.0
+### Adding LLM Integration (Optional)
 
-**POST /workflow**  
-- Authorization: Custom Lambda authorizer with x-api-key header
-- Invokes: Step Functions workflow via Lambda proxy
-- Returns: Workflow execution results
-- Payload format: 1.0
+The current implementation uses mocked LLM responses. To integrate real LLM services:
+
+1. **Update Lambda Functions**
+
+Edit `lambda_analyze_pr/index.ts` and `lambda_aggregate_sprint/index.ts`:
+
+```typescript
+// Replace mockLLMAnalysis with actual API call
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+async function analyzePRWithLLM(input: PRAnalysisInput): Promise<string> {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      { role: "system", content: "You are a code analysis expert..." },
+      { role: "user", content: JSON.stringify(input) }
+    ]
+  });
+  return response.choices[0].message.content;
+}
+```
+
+2. **Add API Keys to Lambda Environment**
+
+Update the Lambda Terraform modules to include:
+```hcl
+environment_variables = {
+  OPENAI_API_KEY = var.openai_api_key
+}
+```
+
+3. **Redeploy**
+
+```bash
+terraform apply
+```
 
 ## Project Structure
 
 ```
 .
 ├── README.md
-├── .gitignore
 ├── terraform/
-│   ├── apigw.tf
-│   ├── backend.tf
-│   ├── cloudfront.tf
-│   ├── data.tf
-│   ├── lambda_authorizer/
-│   │   └── app.py
-│   ├── lambda_authorizer.tf
-│   ├── lambda_temp/
+│   ├── apigw.tf                          # API Gateway configuration
+│   ├── backend.tf                        # Terraform backend config
+│   ├── step_functions.tf                 # Step Functions workflow
+│   ├── lambda_fetch_repo_data.tf         # Lambda: Fetch repo data
+│   ├── lambda_fetch_repo_data/
 │   │   ├── index.ts
 │   │   ├── package.json
-│   │   ├── tsconfig.json
-│   │   └── .gitignore
-│   ├── lambda_temp.tf
+│   │   └── tsconfig.json
+│   ├── lambda_fetch_pr_details.tf        # Lambda: Fetch PR details
+│   ├── lambda_fetch_pr_details/
+│   │   ├── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── lambda_prepare_data.tf            # Lambda: Prepare data
+│   ├── lambda_prepare_data/
+│   │   ├── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── lambda_analyze_pr.tf              # Lambda: Analyze PR
+│   ├── lambda_analyze_pr/
+│   │   ├── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── lambda_aggregate_sprint.tf        # Lambda: Aggregate report
+│   ├── lambda_aggregate_sprint/
+│   │   ├── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── lambda_workflow.tf                # Lambda: Workflow proxy
 │   ├── lambda_workflow/
 │   │   ├── index.ts
 │   │   ├── package.json
-│   │   ├── tsconfig.json
-│   │   └── .gitignore
-│   ├── lambda_workflow.tf
-│   ├── local.tf
-│   ├── main.tf
-│   ├── outputs.tf
-│   ├── s3_website.tf
-│   ├── step_functions.tf
-│   ├── terraform.tfvars
-│   ├── variables.tf
-│   ├── versions.tf
-│   └── vpc.tf
+│   │   └── tsconfig.json
+│   ├── lambda_authorizer.tf              # Lambda: API authorizer
+│   ├── lambda_authorizer/
+│   │   └── app.py
+│   ├── sample_input.json                 # Example request payload
+│   ├── test_sprint_intelligence.sh       # Test script
+│   ├── local.tf                          # Local variables
+│   ├── main.tf                           # Main Terraform config
+│   ├── outputs.tf                        # Output values
+│   ├── variables.tf                      # Input variables
+│   └── versions.tf                       # Provider versions
 └── static_site/
-    └── index.html
+    └── index.html                        # Static website (if needed)
 ```
 
 ## Configuration Variables
 
-The infrastructure accepts the following variables:
-
-- **domain**: Base domain for the website and API
-- **environment**: Environment name
-- **region**: AWS region for all resources
-- **vpc_cidr**: VPC CIDR block (optional)
-- **vpc_redundancy**: Enable redundancy for VPC NAT gateways (default: false)
-- **tags**: Additional tags to apply to resources (default: empty map)
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `domain` | Base domain for API | Yes | - |
+| `environment` | Environment name (dev, staging, prod) | Yes | - |
+| `region` | AWS region | Yes | - |
+| `tags` | Additional resource tags | No | {} |
 
 ## Security Considerations
 
-All API requests require authentication via API key passed in the x-api-key header. The Lambda authorizer validates these keys against values stored in AWS Secrets Manager. All communication occurs over HTTPS using ACM-managed certificates. CloudWatch logging is enabled for all components to maintain an audit trail. IAM roles follow the principle of least privilege.
+### Authentication & Authorization
+- All API requests require API key validation via Lambda authorizer
+- GitHub tokens are passed in request payload (never stored)
+- API keys stored securely in AWS Secrets Manager
 
-## Cost Estimation
+### Network Security
+- All communication over HTTPS using ACM-managed certificates
+- CloudFront CDN for static content delivery
+- No public S3 bucket access (Origin Access Control)
 
-Based on current architecture:
-- API Gateway: Charged per million requests
-- Lambda: Charges based on requests and compute time
-- Step Functions: Charged per state transition  
-- CloudWatch Logs: Charged per GB ingested and stored
-- CloudFront: Charged per GB data transfer
-- S3: Charged per GB storage and requests
+### IAM & Permissions
+- Least-privilege IAM roles for all Lambda functions
+- Step Functions has specific Lambda invoke permissions only
+- CloudWatch Logs for complete audit trail
 
-The infrastructure is designed to be cost-effective and scales based on usage.
+### Data Protection
+- No persistent storage of GitHub data or tokens
+- Logs retain data for only 3-7 days
+- GitHub tokens used in-memory only during execution
 
-## GitHub Integration Approach
+## Cost Optimization
 
-The application will use the GitHub REST API rather than cloning repositories locally. This approach provides access to README content, pull request metadata including titles and descriptions, individual file changes with diff information, and PR comments and reviews. The API does not require local storage and provides real-time access to current repository state. Cloning locally would not provide access to PR metadata since pull request information is not stored in git history.
+### Pricing Factors
+- **API Gateway**: $1.00 per million requests
+- **Lambda**: Based on requests and GB-seconds
+  - Fetch functions: 512MB, 60s timeout
+  - Analyze function: 1024MB, 120s timeout
+- **Step Functions**: $0.025 per 1,000 state transitions
+- **CloudWatch Logs**: $0.50 per GB ingested
+
+### Estimated Costs (Monthly)
+For 100 sprint reports analyzing 20 repos with 50 PRs each:
+- API Gateway: ~$0.10
+- Lambda: ~$5-10 (depends on execution time)
+- Step Functions: ~$0.25
+- CloudWatch Logs: ~$1-2
+- **Total: ~$7-15/month**
+
+### Cost Savings Tips
+1. Adjust Lambda memory sizes based on actual usage
+2. Reduce CloudWatch log retention if not needed
+3. Use reserved concurrency for predictable workloads
+4. Consider provisioned concurrency only if needed
+
+## Monitoring & Observability
+
+### CloudWatch Logs
+All Lambda functions and Step Functions log to CloudWatch:
+- Request/response payloads
+- Execution timing
+- Error messages and stack traces
+- GitHub API rate limit status
+
+### Metrics to Monitor
+- Step Functions execution count and duration
+- Lambda concurrent executions
+- API Gateway 4xx/5xx errors
+- Lambda errors and throttles
+- GitHub API rate limit remaining
+
+### Alarms (Recommended)
+```hcl
+# Example CloudWatch alarm for Lambda errors
+resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
+  alarm_name          = "sprint-intelligence-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "5"
+  alarm_description   = "Alert on Lambda errors"
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**"No pull requests found"**
+- Verify date range includes merged PRs
+- Check GitHub token permissions (needs `repo` scope)
+- Ensure repos are accessible to the token owner
+
+**"Rate limit exceeded"**
+- GitHub API has rate limits (5,000/hour for authenticated requests)
+- Use GitHub App authentication for higher limits
+- Reduce number of repos or PRs per request
+
+**"Lambda timeout"**
+- Increase timeout in Lambda Terraform configuration
+- Check if GitHub API is responding slowly
+- Consider processing fewer PRs per execution
+
+**"Invalid API key"**
+- Verify x-api-key header is included
+- Check API key in AWS Secrets Manager
+- Ensure authorizer Lambda is deployed correctly
+
+### Debug Mode
+
+Enable detailed logging:
+```bash
+# In Lambda function code
+console.log('Debug:', JSON.stringify(event, null, 2));
+```
+
+View logs:
+```bash
+aws logs tail /aws/lambda/dev_analyze_pr --follow
+```
+
+## Future Enhancements
+
+### Planned Features
+- [ ] Real LLM integration (OpenAI GPT-4, Anthropic Claude)
+- [ ] React frontend for report visualization
+- [ ] S3 storage for historical reports
+- [ ] Slack/Teams integration for report delivery
+- [ ] Comparison reports between sprints
+- [ ] Custom report templates
+- [ ] GitHub App for better rate limits
+- [ ] DynamoDB for caching GitHub data
+
+### Integration Ideas
+- JIRA sprint integration
+- Linear milestone integration
+- GitLab support
+- Bitbucket support
+- Multi-team aggregation reports
+
+## Contributing
+
+This is a demonstration project. For production use:
+1. Implement real LLM integration
+2. Add comprehensive error handling
+3. Implement retry logic for GitHub API
+4. Add input validation and sanitization
+5. Set up CI/CD pipeline
+6. Add integration tests
+7. Implement caching for frequently accessed data
+
+## License
+
+MIT License - See LICENSE file for details
+
+## Support
+
+For issues or questions:
+- Check CloudWatch logs for error details
+- Review GitHub API documentation
+- Verify AWS service limits
+- Contact your AWS support team for infrastructure issues

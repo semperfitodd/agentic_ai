@@ -1,21 +1,18 @@
-module "lambda_temp" {
+module "lambda_analyze_pr" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "~> 8.1"
 
-  function_name = "${var.environment}_temp"
-  description   = "${replace(var.environment, "_", " ")} temp function"
+  function_name = "${var.environment}_analyze_pr"
+  description   = "${replace(var.environment, "_", " ")} analyze PR with LLM function"
   handler       = "index.handler"
   publish       = true
   runtime       = "nodejs20.x"
-  timeout       = 30
-
-  environment_variables = {
-    ENVIRONMENT = var.environment
-  }
+  timeout       = 120
+  memory_size   = 1024
 
   source_path = [
     {
-      path             = "${path.module}/lambda_temp"
+      path             = "${path.module}/lambda_analyze_pr"
       npm_requirements = true
       commands = [
         "npm install",
@@ -28,14 +25,8 @@ module "lambda_temp" {
   attach_policies = true
   policies        = ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"]
 
-  allowed_triggers = {
-    AllowExecutionFromAPIGateway = {
-      service    = "apigateway"
-      source_arn = "${module.api_gateway.api_execution_arn}/*/*"
-    }
-  }
-
   cloudwatch_logs_retention_in_days = 3
 
   tags = var.tags
 }
+

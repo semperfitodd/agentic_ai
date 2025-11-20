@@ -1,21 +1,18 @@
-module "lambda_temp" {
+module "lambda_prepare_data" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "~> 8.1"
 
-  function_name = "${var.environment}_temp"
-  description   = "${replace(var.environment, "_", " ")} temp function"
+  function_name = "${var.environment}_prepare_data"
+  description   = "${replace(var.environment, "_", " ")} prepare data structure function"
   handler       = "index.handler"
   publish       = true
   runtime       = "nodejs20.x"
   timeout       = 30
-
-  environment_variables = {
-    ENVIRONMENT = var.environment
-  }
+  memory_size   = 256
 
   source_path = [
     {
-      path             = "${path.module}/lambda_temp"
+      path             = "${path.module}/lambda_prepare_data"
       npm_requirements = true
       commands = [
         "npm install",
@@ -28,14 +25,8 @@ module "lambda_temp" {
   attach_policies = true
   policies        = ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"]
 
-  allowed_triggers = {
-    AllowExecutionFromAPIGateway = {
-      service    = "apigateway"
-      source_arn = "${module.api_gateway.api_execution_arn}/*/*"
-    }
-  }
-
   cloudwatch_logs_retention_in_days = 3
 
   tags = var.tags
 }
+

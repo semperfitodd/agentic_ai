@@ -1,21 +1,18 @@
-module "lambda_temp" {
+module "lambda_parse_repos" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "~> 8.1"
 
-  function_name = "${var.environment}_temp"
-  description   = "${replace(var.environment, "_", " ")} temp function"
+  function_name = "${var.environment}_parse_repos"
+  description   = "${replace(var.environment, "_", " ")} parse GitHub repo URLs function"
   handler       = "index.handler"
   publish       = true
   runtime       = "nodejs20.x"
   timeout       = 30
-
-  environment_variables = {
-    ENVIRONMENT = var.environment
-  }
+  memory_size   = 256
 
   source_path = [
     {
-      path             = "${path.module}/lambda_temp"
+      path             = "${path.module}/lambda_parse_repos"
       npm_requirements = true
       commands = [
         "npm install",
@@ -28,14 +25,8 @@ module "lambda_temp" {
   attach_policies = true
   policies        = ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"]
 
-  allowed_triggers = {
-    AllowExecutionFromAPIGateway = {
-      service    = "apigateway"
-      source_arn = "${module.api_gateway.api_execution_arn}/*/*"
-    }
-  }
-
   cloudwatch_logs_retention_in_days = 3
 
   tags = var.tags
 }
+
