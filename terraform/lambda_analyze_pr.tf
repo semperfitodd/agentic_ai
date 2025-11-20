@@ -51,6 +51,18 @@ module "lambda_analyze_pr" {
       ]
       resources = ["${module.s3_results_bucket.s3_bucket_arn}/pr-analyses/*"]
     }
+    s3_read = {
+      effect = "Allow"
+      actions = [
+        "s3:GetObject",
+        "s3:ListBucket"
+      ]
+      resources = [
+        "${module.s3_results_bucket.s3_bucket_arn}/pr-details/*",
+        "${module.s3_results_bucket.s3_bucket_arn}/readmes/*",
+        module.s3_results_bucket.s3_bucket_arn
+      ]
+    }
   }
 
   cloudwatch_logs_retention_in_days = 3

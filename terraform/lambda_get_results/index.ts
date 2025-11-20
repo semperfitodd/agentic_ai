@@ -1,8 +1,8 @@
 import { S3Client, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { SFNClient, DescribeExecutionCommand } from '@aws-sdk/client-sfn';
 
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
-const sfnClient = new SFNClient({ region: process.env.AWS_REGION });
+const s3Client = new S3Client({});
+const sfnClient = new SFNClient({});
 
 export const handler = async (event: any) => {
   console.log('Get results request:', JSON.stringify(event, null, 2));
@@ -66,23 +66,30 @@ export const handler = async (event: any) => {
 
     // Option 2: List recent reports
     if (queryParams.list) {
+      const maxKeys = parseInt(process.env.MAX_REPORTS_LIST || '50', 10);
       const listResponse = await s3Client.send(
         new ListObjectsV2Command({
           Bucket: bucketName,
           Prefix: 'reports/',
-          MaxKeys: 50,
+          MaxKeys: maxKeys,
         })
       );
 
       const reports = (listResponse.Contents || [])
         .filter(obj => obj.Key?.endsWith('.json'))
         .sort((a, b) => (b.LastModified?.getTime() || 0) - (a.LastModified?.getTime() || 0))
-        .map(obj => ({
-          key: obj.Key,
-          size: obj.Size,
-          lastModified: obj.LastModified?.toISOString(),
-          url: `${process.env.API_URL}/results?key=${encodeURIComponent(obj.Key || '')}`,
-        }));
+        .map(obj => {
+          const apiUrl = process.env.API_URL;
+          if (!apiUrl) {
+            throw new Error('API_URL environment variable is not set');
+          }
+          return {
+            key: obj.Key,
+            size: obj.Size,
+            lastModified: obj.LastModified?.toISOString(),
+            url: `${apiUrl}/results?key=${encodeURIComponent(obj.Key || '')}`,
+          };
+        });
 
       return {
         statusCode: 200,

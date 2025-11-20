@@ -25,28 +25,71 @@ const WORKFLOW_STEPS = [
   { name: 'Generating Report Metadata and Keys', type: 'APPLICATION', duration: 2 },
 ];
 
-const TOTAL_DURATION = 50000;
+const TOTAL_DURATION = parseInt(process.env.REACT_APP_WORKFLOW_DURATION || '50000', 10);
 
-// Convert markdown to HTML for report display
 function parseMarkdown(markdown) {
   if (!markdown) return '';
   
-  let html = markdown
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-    .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-    .replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>')
-    .replace(/`([^`]+)`/gim, '<code>$1</code>')
-    .replace(/^\* (.*$)/gim, '<li>$1</li>')
-    .replace(/^- (.*$)/gim, '<li>$1</li>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>');
+  let html = markdown;
+  
+  // Handle tables first (before other conversions)
+  html = html.replace(/\n\|(.+)\|\n\|[-:\s|]+\|\n((?:\|.+\|\n?)+)/g, (match, header, rows) => {
+    const headers = header.split('|').map(h => h.trim()).filter(h => h);
+    const rowData = rows.trim().split('\n').map(row => 
+      row.split('|').map(cell => cell.trim()).filter(cell => cell)
+    );
+    
+    let table = '<table class="markdown-table"><thead><tr>';
+    headers.forEach(h => {
+      table += `<th>${h}</th>`;
+    });
+    table += '</tr></thead><tbody>';
+    
+    rowData.forEach(row => {
+      table += '<tr>';
+      row.forEach(cell => {
+        table += `<td>${cell}</td>`;
+      });
+      table += '</tr>';
+    });
+    
+    table += '</tbody></table>';
+    return table;
+  });
+  
+  // Headers
+  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+  
+  // Bold and italic
+  html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+  html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
+  
+  // Links
+  html = html.replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  
+  // Code blocks
+  html = html.replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>');
+  html = html.replace(/`([^`]+)`/gim, '<code>$1</code>');
+  
+  // Lists
+  html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
+  html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+  
+  // Paragraphs
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
   
   html = '<p>' + html + '</p>';
   html = html.replace(/(<li>.*?<\/li>)/gis, (match) => '<ul>' + match + '</ul>');
+  
+  // Clean up empty paragraphs and extra breaks around tables/headers
+  html = html.replace(/<p><\/p>/g, '');
+  html = html.replace(/<p>(<table|<h[1-3]>)/g, '$1');
+  html = html.replace(/(<\/table>|<\/h[1-3]>)<\/p>/g, '$1');
+  html = html.replace(/<br><table/g, '<table');
+  html = html.replace(/<\/table><br>/g, '</table>');
   
   return html;
 }
@@ -129,7 +172,9 @@ function App() {
           const output = data.output;
           
           let markdownKey = null;
-          if (output.storedResults?.body?.s3Location?.markdownKey) {
+          if (output.s3Location?.markdownKey) {
+            markdownKey = output.s3Location.markdownKey;
+          } else if (output.storedResults?.body?.s3Location?.markdownKey) {
             markdownKey = output.storedResults.body.s3Location.markdownKey;
           } else if (output.body?.s3Location?.markdownKey) {
             markdownKey = output.body.s3Location.markdownKey;
@@ -256,6 +301,50 @@ function App() {
               Advanced AI-powered sprint analysis platform leveraging autonomous agents
               for intelligent code review and development insights
             </p>
+
+            <div className="explanation-section">
+              <h2>What This Agent Does</h2>
+              <div className="explanation-content">
+                <p>
+                  This agentic AI system autonomously analyzes your GitHub repositories to generate 
+                  comprehensive sprint reports. Unlike traditional automation, these AI agents make 
+                  intelligent decisions, adapt to your codebase, and collaborate to accomplish complex tasks.
+                </p>
+                
+                <div className="process-overview">
+                  <div className="process-step">
+                    <div className="process-icon">🔍</div>
+                    <h3>Autonomous Discovery</h3>
+                    <p>AI agents discover and fetch all merged pull requests, code changes, comments, and reviews within your date range.</p>
+                  </div>
+                  
+                  <div className="process-step">
+                    <div className="process-icon">🤖</div>
+                    <h3>Intelligent Analysis</h3>
+                    <p>Each PR is analyzed by Claude 3.5 Sonnet, acting as an expert software engineer to understand context, impact, and quality.</p>
+                  </div>
+                  
+                  <div className="process-step">
+                    <div className="process-icon">📊</div>
+                    <h3>Executive Synthesis</h3>
+                    <p>A master AI agent aggregates findings into a comprehensive sprint report with insights, metrics, and recommendations.</p>
+                  </div>
+                </div>
+
+                <div className="result-preview">
+                  <h3>What You'll Receive</h3>
+                  <ul>
+                    <li><strong>Sprint Summary:</strong> Executive overview with key metrics and achievements</li>
+                    <li><strong>Work Breakdown:</strong> Analysis by category (features, bugs, refactors, docs)</li>
+                    <li><strong>Repository Activity:</strong> Contributions and changes across all repos</li>
+                    <li><strong>Detailed PR Insights:</strong> Technical analysis of each pull request</li>
+                    <li><strong>Team Collaboration:</strong> Top contributors and discussion patterns</li>
+                    <li><strong>Recommendations:</strong> AI-generated suggestions for future sprints</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             <div className="cta-buttons">
               <button 
                 className="btn btn-primary" 

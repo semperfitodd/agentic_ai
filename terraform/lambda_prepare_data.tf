@@ -25,6 +25,21 @@ module "lambda_prepare_data" {
   attach_policies = true
   policies        = ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"]
 
+  attach_policy_statements = true
+  policy_statements = {
+    s3_write = {
+      effect = "Allow"
+      actions = [
+        "s3:PutObject"
+      ]
+      resources = ["${module.s3_results_bucket.s3_bucket_arn}/readmes/*"]
+    }
+  }
+
+  environment_variables = {
+    RESULTS_BUCKET = module.s3_results_bucket.s3_bucket_id
+  }
+
   cloudwatch_logs_retention_in_days = 3
 
   tags = var.tags

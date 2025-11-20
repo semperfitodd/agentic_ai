@@ -1,6 +1,6 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
+const s3Client = new S3Client({});
 
 export const handler = async (event: any) => {
   console.log('Get markdown request:', JSON.stringify(event, null, 2));

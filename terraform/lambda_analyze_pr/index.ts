@@ -2,15 +2,71 @@ import {
   BedrockRuntimeClient,
   InvokeModelCommand,
 } from '@aws-sdk/client-bedrock-runtime';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
-const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION });
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
+const bedrockClient = new BedrockRuntimeClient({});
+const s3Client = new S3Client({});
 
 interface PRAnalysisInput {
   owner: string;
   repo: string;
-  readme: string;
+  prNumber: number;
+  readmeS3Key?: string;
+  s3Bucket?: string;
+  readme?: string;
+  pr?: {
+    number: number;
+    title: string;
+    body: string;
+    state: string;
+    merged_at: string | null;
+    user: { login: string } | null;
+    labels: string[];
+    html_url: string;
+    additions: number;
+    deletions: number;
+    changed_files: number;
+  };
+  comments?: {
+    issueComments: Array<{
+      user: string;
+      body: string;
+      created_at: string;
+    }>;
+    reviewComments: Array<{
+      user: string;
+      body: string;
+      path?: string;
+      created_at: string;
+    }>;
+  };
+  reviews?: Array<{
+    user: string;
+    state: string;
+    body: string;
+    submitted_at: string;
+  }>;
+  files?: Array<{
+    filename: string;
+    status: string;
+    additions: number;
+    deletions: number;
+    changes: number;
+    patch?: string;
+  }>;
+  statistics?: {
+    totalComments: number;
+    totalReviews: number;
+    totalFiles: number;
+    topFilesByChanges: Array<{ filename: string; changes: number }>;
+    participantCount: number;
+    discussionIntensity: 'low' | 'medium' | 'high';
+  };
+}
+
+interface PRDetailsFromS3 {
+  owner: string;
+  repo: string;
   pr: {
     number: number;
     title: string;
@@ -51,7 +107,7 @@ interface PRAnalysisInput {
     changes: number;
     patch?: string;
   }>;
-  statistics?: {
+  statistics: {
     totalComments: number;
     totalReviews: number;
     totalFiles: number;
@@ -65,9 +121,12 @@ interface PRAnalysisInput {
  * Analyze PR using AWS Bedrock Claude
  */
 async function analyzePRWithClaude(input: PRAnalysisInput): Promise<string> {
-  const { owner, repo, readme, pr, comments, reviews, files } = input;
+  const { owner, repo, readme } = input;
+  const pr = input.pr!;
+  const comments = input.comments || { issueComments: [], reviewComments: [] };
+  const reviews = input.reviews || [];
+  const files = input.files || [];
 
-  // Prepare comprehensive context for Claude
   const filesSummary = files
     .map(f => `  - ${f.filename} (${f.status}): +${f.additions}/-${f.deletions} (${f.changes} changes)`)
     .join('\n');
@@ -84,7 +143,6 @@ async function analyzePRWithClaude(input: PRAnalysisInput): Promise<string> {
     .map(r => `  - ${r.user} (${r.state}) at ${r.submitted_at}: ${r.body}`)
     .join('\n');
 
-  // Build additional context if statistics are available
   const statisticsContext = input.statistics ? `
 
 Summary Statistics:
@@ -97,11 +155,11 @@ Summary Statistics:
 Most Impacted Files:
 ${input.statistics.topFilesByChanges.slice(0, 5).map(f => `  - ${f.filename} (${f.changes} changes)`).join('\n')}` : '';
 
-  // Build the prompt for Claude
+  const readmeText = readme || '';
   const prompt = `You are an expert software engineering analyst. Analyze the following GitHub Pull Request and provide a comprehensive, insightful summary.
 
 Repository: ${owner}/${repo}
-Repository Description: ${readme.substring(0, 500)}${readme.length > 500 ? '...' : ''}
+Repository Description: ${readmeText.substring(0, 500)}${readmeText.length > 500 ? '...' : ''}
 
 Pull Request Details:
 - Number: #${pr.number}
@@ -146,14 +204,18 @@ Format your response in clear markdown with appropriate sections and bullet poin
       throw new Error('BEDROCK_MODEL_ID environment variable is not set');
     }
 
+    const maxTokens = parseInt(process.env.BEDROCK_MAX_TOKENS || '4096', 10);
+    const temperature = parseFloat(process.env.BEDROCK_TEMPERATURE || '0.7');
+    const anthropicVersion = process.env.BEDROCK_ANTHROPIC_VERSION || 'bedrock-2023-05-31';
+
     const command = new InvokeModelCommand({
       modelId,
       contentType: 'application/json',
       accept: 'application/json',
       body: JSON.stringify({
-        anthropic_version: 'bedrock-2023-05-31',
-        max_tokens: 4096,
-        temperature: 0.7,
+        anthropic_version: anthropicVersion,
+        max_tokens: maxTokens,
+        temperature: temperature,
         messages: [
           {
             role: 'user',
@@ -177,83 +239,135 @@ export const handler = async (event: PRAnalysisInput) => {
   console.log('Analyzing PR:', JSON.stringify({ 
     owner: event.owner, 
     repo: event.repo, 
-    prNumber: event.pr?.number 
+    prNumber: event.prNumber 
   }, null, 2));
 
-  const bucketName = process.env.RESULTS_BUCKET;
+  const bucketName = event.s3Bucket || process.env.RESULTS_BUCKET;
   if (!bucketName) {
     throw new Error('RESULTS_BUCKET environment variable is not set');
   }
 
   try {
-    if (!event.pr) {
-      throw new Error('PR data is missing');
-    }
-    if (!event.owner || !event.repo) {
-      throw new Error('Owner and repo are required');
+    if (!event.owner || !event.repo || !event.prNumber) {
+      throw new Error('Owner, repo, and prNumber are required');
     }
 
-    const analysis = await analyzePRWithClaude(event);
+    // Load README from S3 if provided
+    let readme = '';
+    if (event.readmeS3Key) {
+      console.log(`Loading README map from S3: ${event.readmeS3Key}`);
+      const readmeResponse = await s3Client.send(
+        new GetObjectCommand({
+          Bucket: bucketName,
+          Key: event.readmeS3Key,
+        })
+      );
+      const readmeBody = await readmeResponse.Body?.transformToString();
+      const readmeMap: { [key: string]: string } = JSON.parse(readmeBody || '{}');
+      const repoKey = `${event.owner}/${event.repo}`;
+      readme = readmeMap[repoKey] || '';
+      console.log(`Loaded README for ${repoKey}: ${readme.length} bytes`);
+    } else if (event.readme) {
+      readme = event.readme;
+    }
 
-    const analysisSize = Buffer.byteLength(analysis, 'utf8');
-    console.log(`Analysis complete for PR #${event.pr.number}, size: ${analysisSize} bytes`);
+    const s3Prefix = `pr-details/${event.owner}/${event.repo}/${event.prNumber}/`;
+    console.log(`Looking for PR details in S3 prefix: ${s3Prefix}`);
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const s3Key = `pr-analyses/${event.owner}/${event.repo}/${event.pr.number}/${timestamp}.json`;
-    
-    const fullAnalysis = {
+    const listCommand = new ListObjectsV2Command({
+      Bucket: bucketName,
+      Prefix: s3Prefix,
+      MaxKeys: 1,
+    });
+    const listResponse = await s3Client.send(listCommand);
+
+    if (!listResponse.Contents || listResponse.Contents.length === 0) {
+      throw new Error(`No PR details found in S3 for ${s3Prefix}`);
+    }
+
+    const prDetailsS3Key = listResponse.Contents[0].Key!;
+    console.log(`Loading PR details from S3: ${prDetailsS3Key}`);
+
+    const getObjectCommand = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: prDetailsS3Key,
+    });
+    const s3Response = await s3Client.send(getObjectCommand);
+    const s3Body = await s3Response.Body?.transformToString();
+    const prDetailsFromS3: PRDetailsFromS3 = JSON.parse(s3Body || '{}');
+
+    const prDetails: PRAnalysisInput = {
       owner: event.owner,
       repo: event.repo,
-      prNumber: event.pr.number,
-      prTitle: event.pr.title || 'Untitled',
+      prNumber: event.prNumber,
+      readme,
+      pr: prDetailsFromS3.pr,
+      comments: prDetailsFromS3.comments,
+      reviews: prDetailsFromS3.reviews,
+      files: prDetailsFromS3.files,
+      statistics: prDetailsFromS3.statistics,
+    };
+
+    if (!prDetails.pr) {
+      throw new Error('PR data is missing from S3');
+    }
+
+    const analysis = await analyzePRWithClaude(prDetails);
+
+    const analysisSize = Buffer.byteLength(analysis, 'utf8');
+    console.log(`Analysis complete for PR #${prDetails.pr.number}, size: ${analysisSize} bytes`);
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const analysisS3Key = `pr-analyses/${prDetails.owner}/${prDetails.repo}/${prDetails.pr.number}/${timestamp}.json`;
+    
+    const fullAnalysis = {
+      owner: prDetails.owner,
+      repo: prDetails.repo,
+      prNumber: prDetails.pr.number,
+      prTitle: prDetails.pr.title || 'Untitled',
       analysis,
       metadata: {
-        additions: event.pr.additions || 0,
-        deletions: event.pr.deletions || 0,
-        changed_files: event.pr.changed_files || 0,
-        merged_at: event.pr.merged_at || null,
-        author: event.pr.user?.login || 'Unknown',
-        labels: event.pr.labels || [],
+        additions: prDetails.pr.additions || 0,
+        deletions: prDetails.pr.deletions || 0,
+        changed_files: prDetails.pr.changed_files || 0,
+        merged_at: prDetails.pr.merged_at || null,
+        author: prDetails.pr.user?.login || 'Unknown',
+        labels: prDetails.pr.labels || [],
       },
       analyzedAt: new Date().toISOString(),
-      statistics: event.statistics,
+      statistics: prDetails.statistics,
     };
 
     await s3Client.send(
       new PutObjectCommand({
         Bucket: bucketName,
-        Key: s3Key,
+        Key: analysisS3Key,
         Body: JSON.stringify(fullAnalysis, null, 2),
         ContentType: 'application/json',
         Metadata: {
-          owner: event.owner,
-          repo: event.repo,
-          prNumber: event.pr.number.toString(),
+          owner: prDetails.owner,
+          repo: prDetails.repo,
+          prNumber: prDetails.pr.number.toString(),
         },
       })
     );
 
-    console.log(`Stored analysis to S3: ${s3Key}`);
+    console.log(`Stored analysis (${Buffer.byteLength(analysis, 'utf8')} bytes) to S3: ${analysisS3Key}`);
 
-    return {
+    const fullResponse = {
       statusCode: 200,
       body: {
-        owner: event.owner,
-        repo: event.repo,
-        prNumber: event.pr.number,
-        prTitle: event.pr.title || 'Untitled',
-        s3Key,
-        s3Bucket: bucketName,
-        metadata: {
-          additions: event.pr.additions || 0,
-          deletions: event.pr.deletions || 0,
-          changed_files: event.pr.changed_files || 0,
-          merged_at: event.pr.merged_at || null,
-          author: event.pr.user?.login || 'Unknown',
-          labels: event.pr.labels || [],
-        },
+        owner: prDetails.owner,
+        repo: prDetails.repo,
+        prNumber: prDetails.pr.number,
       },
     };
+
+    const responseSize = Buffer.byteLength(JSON.stringify(fullResponse), 'utf8');
+    console.log(`RETURN TO STEP FUNCTIONS: ${JSON.stringify(fullResponse)}`);
+    console.log(`RESPONSE SIZE: ${responseSize} bytes (${(responseSize / 1024).toFixed(2)} KB)`);
+
+    return fullResponse;
   } catch (error: any) {
     console.error('Error analyzing PR:', error);
     console.error('Event data:', JSON.stringify(event, null, 2));
@@ -263,15 +377,7 @@ export const handler = async (event: PRAnalysisInput) => {
         error: error.message || 'Failed to analyze PR',
         owner: event.owner || 'unknown',
         repo: event.repo || 'unknown',
-        prNumber: event.pr?.number || 0,
-        metadata: {
-          additions: 0,
-          deletions: 0,
-          changed_files: 0,
-          merged_at: null,
-          author: 'Unknown',
-          labels: [],
-        },
+        prNumber: event.prNumber || 0,
       },
     };
   }

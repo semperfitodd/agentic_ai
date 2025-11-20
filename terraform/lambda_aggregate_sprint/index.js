@@ -3,26 +3,38 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const client_bedrock_runtime_1 = require("@aws-sdk/client-bedrock-runtime");
 const client_s3_1 = require("@aws-sdk/client-s3");
-const bedrockClient = new client_bedrock_runtime_1.BedrockRuntimeClient({ region: process.env.AWS_REGION });
-const s3Client = new client_s3_1.S3Client({ region: process.env.AWS_REGION });
+const bedrockClient = new client_bedrock_runtime_1.BedrockRuntimeClient({});
+const s3Client = new client_s3_1.S3Client({});
 /**
- * Load PR analysis from S3
+ * Load PR analysis from S3 using owner/repo/prNumber
  */
-async function loadAnalysisFromS3(bucket, key) {
+async function loadAnalysisFromS3(bucket, owner, repo, prNumber) {
     try {
+        const s3Prefix = `pr-analyses/${owner}/${repo}/${prNumber}/`;
+        const listCommand = new client_s3_1.ListObjectsV2Command({
+            Bucket: bucket,
+            Prefix: s3Prefix,
+            MaxKeys: 1,
+        });
+        const listResponse = await s3Client.send(listCommand);
+        if (!listResponse.Contents || listResponse.Contents.length === 0) {
+            console.warn(`No analysis found for PR ${owner}/${repo}#${prNumber}`);
+            return null;
+        }
+        const s3Key = listResponse.Contents[0].Key;
         const response = await s3Client.send(new client_s3_1.GetObjectCommand({
             Bucket: bucket,
-            Key: key,
+            Key: s3Key,
         }));
         const body = await response.Body?.transformToString();
         if (!body) {
-            console.error(`Empty response from S3: ${key}`);
+            console.error(`Empty response from S3: ${s3Key}`);
             return null;
         }
         return JSON.parse(body);
     }
     catch (error) {
-        console.error(`Error loading analysis from S3 (${key}):`, error);
+        console.error(`Error loading analysis for PR ${owner}/${repo}#${prNumber}:`, error);
         return null;
     }
 }
@@ -135,14 +147,17 @@ Format the report in clear, professional markdown with appropriate headers, bull
         if (!modelId) {
             throw new Error('BEDROCK_MODEL_ID environment variable is not set');
         }
+        const maxTokens = parseInt(process.env.BEDROCK_MAX_TOKENS || '8192', 10);
+        const temperature = parseFloat(process.env.BEDROCK_TEMPERATURE || '0.7');
+        const anthropicVersion = process.env.BEDROCK_ANTHROPIC_VERSION || 'bedrock-2023-05-31';
         const command = new client_bedrock_runtime_1.InvokeModelCommand({
             modelId,
             contentType: 'application/json',
             accept: 'application/json',
             body: JSON.stringify({
-                anthropic_version: 'bedrock-2023-05-31',
-                max_tokens: 8192,
-                temperature: 0.7,
+                anthropic_version: anthropicVersion,
+                max_tokens: maxTokens,
+                temperature: temperature,
                 messages: [
                     {
                         role: 'user',
@@ -178,31 +193,19 @@ const handler = async (event) => {
         }
         console.log(`Loading ${event.analyses.length} PR analyses from S3...`);
         const loadPromises = event.analyses.map(async (ref) => {
-            if (ref.s3Key && ref.s3Bucket) {
-                const analysis = await loadAnalysisFromS3(ref.s3Bucket, ref.s3Key);
-                if (analysis) {
-                    console.log(`Loaded analysis for PR #${ref.prNumber} from S3`);
-                    return analysis;
-                }
-                else {
-                    console.warn(`Failed to load analysis for PR #${ref.prNumber}, using metadata only`);
-                    return {
-                        ...ref,
-                        analysis: 'Analysis could not be loaded from S3',
-                    };
-                }
+            const analysis = await loadAnalysisFromS3(bucketName, ref.owner, ref.repo, ref.prNumber);
+            if (analysis) {
+                console.log(`Loaded analysis for PR ${ref.owner}/${ref.repo}#${ref.prNumber} from S3`);
+                return analysis;
             }
             else {
-                return ref;
+                console.warn(`Failed to load analysis for PR ${ref.owner}/${ref.repo}#${ref.prNumber}`);
+                return null;
             }
         });
         const loadedAnalyses = await Promise.all(loadPromises);
-        const validAnalyses = loadedAnalyses.filter(analysis => {
-            if (!analysis || !analysis.metadata) {
-                console.warn('Skipping analysis with missing metadata:', analysis);
-                return false;
-            }
-            return true;
+        const validAnalyses = loadedAnalyses.filter((analysis) => {
+            return analysis !== null && analysis.metadata !== undefined;
         });
         console.log(`Processing ${validAnalyses.length} valid analyses out of ${event.analyses.length} total`);
         if (validAnalyses.length === 0) {
@@ -220,7 +223,7 @@ const handler = async (event) => {
                 },
             };
         }
-        const report = await aggregateSprintWithClaude({
+        const markdownReport = await aggregateSprintWithClaude({
             sprintName: event.sprintName,
             since: event.since,
             until: event.until,
@@ -231,24 +234,14 @@ const handler = async (event) => {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const sprintName = event.sprintName || 'unnamed-sprint';
         const sanitizedName = sprintName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
-        const reportS3Key = `sprint-reports/${sanitizedName}/${timestamp}.json`;
-        const fullReport = {
-            sprintName: event.sprintName,
-            since: event.since,
-            until: event.until,
-            repos: event.repos || [],
-            totalPRs: validAnalyses.length,
-            report,
-            generatedAt: new Date().toISOString(),
-            skippedAnalyses: event.analyses.length - validAnalyses.length,
-        };
-        const reportSize = Buffer.byteLength(JSON.stringify(fullReport), 'utf8');
-        console.log(`Report size: ${reportSize} bytes (${(reportSize / 1024).toFixed(2)} KB)`);
+        const markdownS3Key = `reports/${sanitizedName}/${timestamp}.md`;
+        const reportSize = Buffer.byteLength(markdownReport, 'utf8');
+        console.log(`Markdown report size: ${reportSize} bytes (${(reportSize / 1024).toFixed(2)} KB)`);
         await s3Client.send(new client_s3_1.PutObjectCommand({
             Bucket: bucketName,
-            Key: reportS3Key,
-            Body: JSON.stringify(fullReport, null, 2),
-            ContentType: 'application/json',
+            Key: markdownS3Key,
+            Body: markdownReport,
+            ContentType: 'text/markdown',
             Metadata: {
                 sprintName: sanitizedName,
                 since: event.since,
@@ -256,7 +249,7 @@ const handler = async (event) => {
                 totalPRs: validAnalyses.length.toString(),
             },
         }));
-        console.log(`Stored sprint report to S3: ${reportS3Key}`);
+        console.log(`Stored markdown report to S3: ${markdownS3Key}`);
         return {
             statusCode: 200,
             body: {
@@ -265,11 +258,10 @@ const handler = async (event) => {
                 until: event.until,
                 repos: event.repos || [],
                 totalPRs: validAnalyses.length,
-                s3Key: reportS3Key,
+                markdownS3Key: markdownS3Key,
                 s3Bucket: bucketName,
                 generatedAt: new Date().toISOString(),
                 skippedAnalyses: event.analyses.length - validAnalyses.length,
-                reportSize: reportSize,
             },
         };
     }

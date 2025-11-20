@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
 const client_sfn_1 = require("@aws-sdk/client-sfn");
-const s3Client = new client_s3_1.S3Client({ region: process.env.AWS_REGION });
-const sfnClient = new client_sfn_1.SFNClient({ region: process.env.AWS_REGION });
+const s3Client = new client_s3_1.S3Client({});
+const sfnClient = new client_sfn_1.SFNClient({});
 const handler = async (event) => {
     console.log('Get results request:', JSON.stringify(event, null, 2));
     const bucketName = process.env.RESULTS_BUCKET;
@@ -60,20 +60,27 @@ const handler = async (event) => {
         }
         // Option 2: List recent reports
         if (queryParams.list) {
+            const maxKeys = parseInt(process.env.MAX_REPORTS_LIST || '50', 10);
             const listResponse = await s3Client.send(new client_s3_1.ListObjectsV2Command({
                 Bucket: bucketName,
                 Prefix: 'reports/',
-                MaxKeys: 50,
+                MaxKeys: maxKeys,
             }));
             const reports = (listResponse.Contents || [])
                 .filter(obj => obj.Key?.endsWith('.json'))
                 .sort((a, b) => (b.LastModified?.getTime() || 0) - (a.LastModified?.getTime() || 0))
-                .map(obj => ({
-                key: obj.Key,
-                size: obj.Size,
-                lastModified: obj.LastModified?.toISOString(),
-                url: `${process.env.API_URL}/results?key=${encodeURIComponent(obj.Key || '')}`,
-            }));
+                .map(obj => {
+                const apiUrl = process.env.API_URL;
+                if (!apiUrl) {
+                    throw new Error('API_URL environment variable is not set');
+                }
+                return {
+                    key: obj.Key,
+                    size: obj.Size,
+                    lastModified: obj.LastModified?.toISOString(),
+                    url: `${apiUrl}/results?key=${encodeURIComponent(obj.Key || '')}`,
+                };
+            });
             return {
                 statusCode: 200,
                 headers: {

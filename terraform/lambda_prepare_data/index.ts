@@ -1,3 +1,7 @@
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+
+const s3Client = new S3Client({});
+
 interface RepoDataResult {
   statusCode: number;
   body: {
@@ -27,17 +31,36 @@ export const handler = async (event: PrepareInput) => {
   console.log('Preparing data structure for analysis');
 
   const { since, until, githubToken, sprintName, repos, repoDataResults } = event;
+  
+  const bucketName = process.env.RESULTS_BUCKET;
+  if (!bucketName) {
+    throw new Error('RESULTS_BUCKET environment variable is not set');
+  }
 
-  // Create a map of repo -> readme for easy lookup
+  // Store READMEs in S3
   const repoReadmeMap: { [key: string]: string } = {};
-  repoDataResults.forEach(result => {
-    if (result.statusCode === 200) {
+  for (const result of repoDataResults) {
+    if (result.statusCode === 200 && result.body.readme) {
       const key = `${result.body.owner}/${result.body.repo}`;
-      repoReadmeMap[key] = result.body.readme || '';
+      repoReadmeMap[key] = result.body.readme;
     }
-  });
+  }
 
-  // Flatten all PRs with their repo info and readme
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const readmeS3Key = `readmes/${timestamp}.json`;
+  
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: bucketName,
+      Key: readmeS3Key,
+      Body: JSON.stringify(repoReadmeMap, null, 2),
+      ContentType: 'application/json',
+    })
+  );
+
+  console.log(`Stored README map to S3: ${readmeS3Key}`);
+
+  // Flatten all PRs with ONLY identifiers (no README, no githubToken in state)
   const prDetailsInputs: any[] = [];
   repoDataResults.forEach(result => {
     if (result.statusCode === 200 && result.body.prs) {
@@ -46,8 +69,6 @@ export const handler = async (event: PrepareInput) => {
           owner: result.body.owner,
           repo: result.body.repo,
           prNumber: pr.number,
-          readme: repoReadmeMap[`${result.body.owner}/${result.body.repo}`] || '',
-          githubToken,
         });
       });
     }
@@ -55,18 +76,22 @@ export const handler = async (event: PrepareInput) => {
 
   console.log(`Prepared ${prDetailsInputs.length} PRs for processing`);
 
+  const responseBody = {
+    since,
+    until,
+    sprintName,
+    repos,
+    readmeS3Key,
+    s3Bucket: bucketName,
+    prDetailsInputs,
+    totalPRs: prDetailsInputs.length,
+  };
+
+  console.log('Response size:', Buffer.byteLength(JSON.stringify(responseBody), 'utf8'), 'bytes');
+
   return {
     statusCode: 200,
-    body: {
-      since,
-      until,
-      sprintName,
-      repos,
-      githubToken,
-      repoReadmeMap,
-      prDetailsInputs,
-      totalPRs: prDetailsInputs.length,
-    },
+    body: responseBody,
   };
 };
 

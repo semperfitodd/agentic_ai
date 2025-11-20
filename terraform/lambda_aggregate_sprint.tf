@@ -46,9 +46,13 @@ module "lambda_aggregate_sprint" {
     s3_read = {
       effect = "Allow"
       actions = [
-        "s3:GetObject"
+        "s3:GetObject",
+        "s3:ListBucket"
       ]
-      resources = ["${module.s3_results_bucket.s3_bucket_arn}/pr-analyses/*"]
+      resources = [
+        "${module.s3_results_bucket.s3_bucket_arn}/pr-analyses/*",
+        module.s3_results_bucket.s3_bucket_arn
+      ]
     }
     s3_write = {
       effect = "Allow"
@@ -56,7 +60,7 @@ module "lambda_aggregate_sprint" {
         "s3:PutObject",
         "s3:PutObjectAcl"
       ]
-      resources = ["${module.s3_results_bucket.s3_bucket_arn}/sprint-reports/*"]
+      resources = ["${module.s3_results_bucket.s3_bucket_arn}/reports/*"]
     }
   }
 
