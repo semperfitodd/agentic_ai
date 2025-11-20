@@ -1,23 +1,22 @@
-module "lambda_get_results" {
+module "lambda_get_markdown" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "~> 8.1"
 
-  function_name = "${var.environment}_get_results"
-  description   = "${replace(var.environment, "_", " ")} retrieve sprint results"
+  function_name = "${var.environment}_get_markdown"
+  description   = "${replace(var.environment, "_", " ")} get markdown report function"
   handler       = "index.handler"
   publish       = true
   runtime       = "nodejs20.x"
   timeout       = 30
-  memory_size   = 256
+  memory_size   = 512
 
   environment_variables = {
     RESULTS_BUCKET = module.s3_results_bucket.s3_bucket_id
-    API_URL        = "https://${local.api_domain_name}"
   }
 
   source_path = [
     {
-      path             = "${path.module}/lambda_get_results"
+      path             = "${path.module}/lambda_get_markdown"
       npm_requirements = true
       commands = [
         "npm install",
@@ -35,22 +34,9 @@ module "lambda_get_results" {
     s3_read = {
       effect = "Allow"
       actions = [
-        "s3:GetObject",
-        "s3:ListBucket"
+        "s3:GetObject"
       ]
-      resources = [
-        module.s3_results_bucket.s3_bucket_arn,
-        "${module.s3_results_bucket.s3_bucket_arn}/*"
-      ]
-    }
-    sfn_describe = {
-      effect = "Allow"
-      actions = [
-        "states:DescribeExecution"
-      ]
-      resources = [
-        "*"
-      ]
+      resources = ["${module.s3_results_bucket.s3_bucket_arn}/*"]
     }
   }
 

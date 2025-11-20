@@ -35,7 +35,8 @@ module "lambda_store_results" {
       effect = "Allow"
       actions = [
         "s3:PutObject",
-        "s3:PutObjectAcl"
+        "s3:PutObjectAcl",
+        "s3:GetObject"
       ]
       resources = ["${module.s3_results_bucket.s3_bucket_arn}/*"]
     }

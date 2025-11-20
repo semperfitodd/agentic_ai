@@ -2,8 +2,10 @@ import {
   BedrockRuntimeClient,
   InvokeModelCommand,
 } from '@aws-sdk/client-bedrock-runtime';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION });
+const s3Client = new S3Client({ region: process.env.AWS_REGION });
 
 interface PRAnalysisInput {
   owner: string;
@@ -31,7 +33,7 @@ interface PRAnalysisInput {
     reviewComments: Array<{
       user: string;
       body: string;
-      path: string;
+      path?: string;
       created_at: string;
     }>;
   };
@@ -49,6 +51,14 @@ interface PRAnalysisInput {
     changes: number;
     patch?: string;
   }>;
+  statistics?: {
+    totalComments: number;
+    totalReviews: number;
+    totalFiles: number;
+    topFilesByChanges: Array<{ filename: string; changes: number }>;
+    participantCount: number;
+    discussionIntensity: 'low' | 'medium' | 'high';
+  };
 }
 
 /**
@@ -74,6 +84,19 @@ async function analyzePRWithClaude(input: PRAnalysisInput): Promise<string> {
     .map(r => `  - ${r.user} (${r.state}) at ${r.submitted_at}: ${r.body}`)
     .join('\n');
 
+  // Build additional context if statistics are available
+  const statisticsContext = input.statistics ? `
+
+Summary Statistics:
+- Total Files in PR: ${input.statistics.totalFiles} (showing top ${files.length})
+- Total Comments: ${input.statistics.totalComments} (showing ${comments.issueComments.length + comments.reviewComments.length})
+- Total Reviews: ${input.statistics.totalReviews} (showing ${reviews.length})
+- Participants: ${input.statistics.participantCount} team members
+- Discussion Intensity: ${input.statistics.discussionIntensity}
+
+Most Impacted Files:
+${input.statistics.topFilesByChanges.slice(0, 5).map(f => `  - ${f.filename} (${f.changes} changes)`).join('\n')}` : '';
+
   // Build the prompt for Claude
   const prompt = `You are an expert software engineering analyst. Analyze the following GitHub Pull Request and provide a comprehensive, insightful summary.
 
@@ -96,9 +119,9 @@ Statistics:
 - Files Changed: ${pr.changed_files}
 - Additions: ${pr.additions}
 - Deletions: ${pr.deletions}
-- Total Changes: ${pr.additions + pr.deletions}
+- Total Changes: ${pr.additions + pr.deletions}${statisticsContext}
 
-Files Modified:
+Files Modified (sample):
 ${filesSummary}
 
 ${comments.issueComments.length > 0 ? `Issue Comments (${comments.issueComments.length}):\n${issueCommentsSummary}` : ''}
@@ -115,7 +138,7 @@ Please analyze this PR and provide:
 5. Assessment of the review process and team collaboration
 6. Any notable patterns, risks, or highlights
 
-Format your response in clear markdown with appropriate sections and bullet points.`;
+Format your response in clear markdown with appropriate sections and bullet points. DO NOT USE EMOJIS.`;
 
   try {
     const modelId = process.env.BEDROCK_MODEL_ID;
@@ -157,8 +180,12 @@ export const handler = async (event: PRAnalysisInput) => {
     prNumber: event.pr?.number 
   }, null, 2));
 
+  const bucketName = process.env.RESULTS_BUCKET;
+  if (!bucketName) {
+    throw new Error('RESULTS_BUCKET environment variable is not set');
+  }
+
   try {
-    // Validate input
     if (!event.pr) {
       throw new Error('PR data is missing');
     }
@@ -168,7 +195,45 @@ export const handler = async (event: PRAnalysisInput) => {
 
     const analysis = await analyzePRWithClaude(event);
 
-    console.log(`Analysis complete for PR #${event.pr.number}`);
+    const analysisSize = Buffer.byteLength(analysis, 'utf8');
+    console.log(`Analysis complete for PR #${event.pr.number}, size: ${analysisSize} bytes`);
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const s3Key = `pr-analyses/${event.owner}/${event.repo}/${event.pr.number}/${timestamp}.json`;
+    
+    const fullAnalysis = {
+      owner: event.owner,
+      repo: event.repo,
+      prNumber: event.pr.number,
+      prTitle: event.pr.title || 'Untitled',
+      analysis,
+      metadata: {
+        additions: event.pr.additions || 0,
+        deletions: event.pr.deletions || 0,
+        changed_files: event.pr.changed_files || 0,
+        merged_at: event.pr.merged_at || null,
+        author: event.pr.user?.login || 'Unknown',
+        labels: event.pr.labels || [],
+      },
+      analyzedAt: new Date().toISOString(),
+      statistics: event.statistics,
+    };
+
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+        Body: JSON.stringify(fullAnalysis, null, 2),
+        ContentType: 'application/json',
+        Metadata: {
+          owner: event.owner,
+          repo: event.repo,
+          prNumber: event.pr.number.toString(),
+        },
+      })
+    );
+
+    console.log(`Stored analysis to S3: ${s3Key}`);
 
     return {
       statusCode: 200,
@@ -177,7 +242,8 @@ export const handler = async (event: PRAnalysisInput) => {
         repo: event.repo,
         prNumber: event.pr.number,
         prTitle: event.pr.title || 'Untitled',
-        analysis,
+        s3Key,
+        s3Bucket: bucketName,
         metadata: {
           additions: event.pr.additions || 0,
           deletions: event.pr.deletions || 0,

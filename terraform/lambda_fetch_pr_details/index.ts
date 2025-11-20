@@ -16,6 +16,149 @@ interface PRFile {
   patch?: string;
 }
 
+interface CommentThread {
+  user: string;
+  body: string;
+  created_at: string;
+  path?: string;
+}
+
+interface PRSummary {
+  owner: string;
+  repo: string;
+  pr: {
+    number: number;
+    title: string;
+    body: string;
+    state: string;
+    merged_at: string | null;
+    created_at: string;
+    updated_at: string;
+    user: { login: string } | null;
+    labels: string[];
+    html_url: string;
+    additions: number;
+    deletions: number;
+    changed_files: number;
+  };
+  comments: {
+    issueComments: CommentThread[];
+    reviewComments: CommentThread[];
+  };
+  reviews: Array<{
+    user: string;
+    state: string;
+    body: string;
+    submitted_at: string;
+  }>;
+  files: PRFile[];
+  statistics: {
+    totalComments: number;
+    totalReviews: number;
+    totalFiles: number;
+    topFilesByChanges: Array<{ filename: string; changes: number }>;
+    participantCount: number;
+    discussionIntensity: 'low' | 'medium' | 'high';
+  };
+}
+
+/**
+ * Intelligently summarize comments - keep most recent and most relevant
+ */
+function summarizeComments(comments: any[], maxComments: number = 15): CommentThread[] {
+  if (comments.length <= maxComments) {
+    return comments.map(c => ({
+      user: c.user?.login || 'unknown',
+      body: c.body || '',
+      created_at: c.created_at,
+      path: c.path,
+    }));
+  }
+
+  // Sort by date (most recent first)
+  const sorted = [...comments].sort((a, b) => {
+    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return dateB - dateA;
+  });
+
+  // Take mix of recent comments and longer/substantial ones
+  const recentComments = sorted.slice(0, Math.floor(maxComments * 0.7));
+  const substantialComments = sorted
+    .filter(c => c.body && c.body.length > 100)
+    .slice(0, Math.floor(maxComments * 0.3));
+
+  // Combine and deduplicate
+  const combined = [...recentComments, ...substantialComments];
+  const unique = Array.from(new Map(combined.map(c => [c.id, c])).values());
+
+  return unique.slice(0, maxComments).map(c => ({
+    user: c.user?.login || 'unknown',
+    body: c.body || '',
+    created_at: c.created_at,
+    path: c.path,
+  }));
+}
+
+/**
+ * Prioritize files by changes and relevance
+ */
+function prioritizeFiles(files: any[], maxFiles: number = 25): PRFile[] {
+  if (files.length <= maxFiles) {
+    return files.map(f => ({
+      filename: f.filename,
+      status: f.status,
+      additions: f.additions,
+      deletions: f.deletions,
+      changes: f.changes,
+      patch: f.patch ? f.patch.substring(0, 300) : undefined,
+    }));
+  }
+
+  // Sort by total changes (most impactful files first)
+  const sorted = [...files].sort((a, b) => b.changes - a.changes);
+
+  // Take top changed files
+  const topFiles = sorted.slice(0, Math.floor(maxFiles * 0.6));
+  
+  // Add some test files if present
+  const testFiles = sorted
+    .filter(f => f.filename.includes('test') || f.filename.includes('spec'))
+    .slice(0, Math.floor(maxFiles * 0.2));
+
+  // Add some config/doc files
+  const configFiles = sorted
+    .filter(f => f.filename.includes('config') || f.filename.includes('.md') || 
+                 f.filename.includes('.yml') || f.filename.includes('.yaml'))
+    .slice(0, Math.floor(maxFiles * 0.2));
+
+  // Combine and deduplicate
+  const combined = [...topFiles, ...testFiles, ...configFiles];
+  const unique = Array.from(new Map(combined.map(f => [f.filename, f])).values());
+
+  return unique.slice(0, maxFiles).map(f => ({
+    filename: f.filename,
+    status: f.status,
+    additions: f.additions,
+    deletions: f.deletions,
+    changes: f.changes,
+    patch: f.patch ? f.patch.substring(0, 300) : undefined,
+  }));
+}
+
+/**
+ * Calculate discussion intensity based on activity
+ */
+function calculateDiscussionIntensity(
+  commentCount: number, 
+  reviewCount: number
+): 'low' | 'medium' | 'high' {
+  const total = commentCount + reviewCount;
+  if (total > 20) return 'high';
+  if (total > 5) return 'medium';
+  return 'low';
+}
+
 export const handler = async (event: PRDetailsInput) => {
   console.log('Fetching PR details:', JSON.stringify(event, null, 2));
 
@@ -65,80 +208,91 @@ export const handler = async (event: PRDetailsInput) => {
       per_page: 100,
     });
 
-    // Extract relevant data
-    const prDetails = {
-      number: pr.number,
-      title: pr.title,
-      body: pr.body || '',
-      state: pr.state,
-      merged_at: pr.merged_at,
-      created_at: pr.created_at,
-      updated_at: pr.updated_at,
-      user: pr.user ? {
-        login: pr.user.login,
-      } : null,
-      labels: pr.labels.map((label: any) => label.name),
-      html_url: pr.html_url,
-      additions: pr.additions,
-      deletions: pr.deletions,
-      changed_files: pr.changed_files,
+    // Intelligently summarize all the data
+    const summarizedIssueComments = summarizeComments(issueComments, 15);
+    const summarizedReviewComments = summarizeComments(reviewComments, 15);
+    const prioritizedFiles = prioritizeFiles(files, 25);
+
+    // Get unique participants
+    const participants = new Set<string>();
+    issueComments.forEach(c => c.user && participants.add(c.user.login));
+    reviewComments.forEach(c => c.user && participants.add(c.user.login));
+    reviews.forEach(r => r.user && participants.add(r.user.login));
+
+    // Get top files by changes for statistics
+    const topFiles = [...files]
+      .sort((a, b) => b.changes - a.changes)
+      .slice(0, 10)
+      .map(f => ({ filename: f.filename, changes: f.changes }));
+
+    // Calculate discussion intensity
+    const discussionIntensity = calculateDiscussionIntensity(
+      issueComments.length,
+      reviews.length
+    );
+
+    // Keep only most relevant reviews (approved, changes requested, and most recent)
+    const relevantReviews = reviews
+      .filter(r => r.state === 'APPROVED' || r.state === 'CHANGES_REQUESTED' || r.state === 'COMMENTED')
+      .sort((a, b) => {
+        const dateA = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
+        const dateB = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
+        return dateB - dateA;
+      })
+      .slice(0, 15)
+      .map((review: any) => ({
+        user: review.user ? review.user.login : 'unknown',
+        state: review.state,
+        body: review.body || '',
+        submitted_at: review.submitted_at,
+      }));
+
+    const summary: PRSummary = {
+      owner,
+      repo,
+      pr: {
+        number: pr.number,
+        title: pr.title,
+        body: pr.body || '',
+        state: pr.state,
+        merged_at: pr.merged_at,
+        created_at: pr.created_at,
+        updated_at: pr.updated_at,
+        user: pr.user ? { login: pr.user.login } : null,
+        labels: pr.labels.map((label: any) => label.name),
+        html_url: pr.html_url,
+        additions: pr.additions,
+        deletions: pr.deletions,
+        changed_files: pr.changed_files,
+      },
+      comments: {
+        issueComments: summarizedIssueComments,
+        reviewComments: summarizedReviewComments,
+      },
+      reviews: relevantReviews,
+      files: prioritizedFiles,
+      statistics: {
+        totalComments: issueComments.length + reviewComments.length,
+        totalReviews: reviews.length,
+        totalFiles: files.length,
+        topFilesByChanges: topFiles,
+        participantCount: participants.size,
+        discussionIntensity,
+      },
     };
 
-    const comments = {
-      issueComments: issueComments.map((comment: any) => ({
-        id: comment.id,
-        user: comment.user ? comment.user.login : 'unknown',
-        body: comment.body,
-        created_at: comment.created_at,
-      })),
-      reviewComments: reviewComments.map((comment: any) => ({
-        id: comment.id,
-        user: comment.user ? comment.user.login : 'unknown',
-        body: comment.body,
-        path: comment.path,
-        line: comment.line,
-        created_at: comment.created_at,
-      })),
-    };
-
-    const reviewsSummary = reviews.map((review: any) => ({
-      id: review.id,
-      user: review.user ? review.user.login : 'unknown',
-      state: review.state,
-      body: review.body || '',
-      submitted_at: review.submitted_at,
-    }));
-
-    // Limit files and truncate patches to avoid Step Functions 256KB limit
-    const fileChanges: PRFile[] = files.slice(0, 50).map((file: any) => {
-      // Truncate patch to avoid Step Functions 256KB limit
-      let patch = file.patch;
-      if (patch && patch.length > 500) {
-        patch = patch.substring(0, 500) + '\n... (truncated)';
-      }
-      
-      return {
-        filename: file.filename,
-        status: file.status,
-        additions: file.additions,
-        deletions: file.deletions,
-        changes: file.changes,
-        patch: patch,
-      };
-    });
-
-    console.log(`Fetched details for PR #${prNumber} in ${owner}/${repo} (${fileChanges.length} files)`);
+    console.log(
+      `Summarized PR #${prNumber} in ${owner}/${repo}: ` +
+      `${summary.statistics.totalFiles} files (showing ${summary.files.length}), ` +
+      `${summary.statistics.totalComments} comments (showing ${summary.comments.issueComments.length + summary.comments.reviewComments.length}), ` +
+      `${summary.statistics.totalReviews} reviews (showing ${summary.reviews.length}), ` +
+      `${summary.statistics.participantCount} participants, ` +
+      `intensity: ${summary.statistics.discussionIntensity}`
+    );
 
     return {
       statusCode: 200,
-      body: {
-        owner,
-        repo,
-        pr: prDetails,
-        comments,
-        reviews: reviewsSummary,
-        files: fileChanges,
-      },
+      body: summary,
     };
   } catch (error: any) {
     console.error('Error fetching PR details:', error);
