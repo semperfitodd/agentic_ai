@@ -109,16 +109,25 @@ export const handler = async (event: PRDetailsInput) => {
       submitted_at: review.submitted_at,
     }));
 
-    const fileChanges: PRFile[] = files.map((file: any) => ({
-      filename: file.filename,
-      status: file.status,
-      additions: file.additions,
-      deletions: file.deletions,
-      changes: file.changes,
-      patch: file.patch, // Contains the actual diff
-    }));
+    // Limit files and truncate patches to avoid Step Functions 256KB limit
+    const fileChanges: PRFile[] = files.slice(0, 50).map((file: any) => {
+      // Truncate patch to avoid Step Functions 256KB limit
+      let patch = file.patch;
+      if (patch && patch.length > 500) {
+        patch = patch.substring(0, 500) + '\n... (truncated)';
+      }
+      
+      return {
+        filename: file.filename,
+        status: file.status,
+        additions: file.additions,
+        deletions: file.deletions,
+        changes: file.changes,
+        patch: patch,
+      };
+    });
 
-    console.log(`Fetched details for PR #${prNumber} in ${owner}/${repo}`);
+    console.log(`Fetched details for PR #${prNumber} in ${owner}/${repo} (${fileChanges.length} files)`);
 
     return {
       statusCode: 200,
