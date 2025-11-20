@@ -12,6 +12,7 @@ module "lambda_aggregate_sprint" {
 
   environment_variables = {
     BEDROCK_MODEL_ID = local.bedrock_model_id
+    RESULTS_BUCKET   = module.s3_results_bucket.s3_bucket_id
   }
 
   source_path = [
@@ -41,6 +42,21 @@ module "lambda_aggregate_sprint" {
         "arn:aws:bedrock:${var.region}:*:inference-profile/${local.bedrock_model_id}",
         "arn:aws:bedrock:*::foundation-model/*anthropic.claude*"
       ]
+    }
+    s3_read = {
+      effect = "Allow"
+      actions = [
+        "s3:GetObject"
+      ]
+      resources = ["${module.s3_results_bucket.s3_bucket_arn}/pr-analyses/*"]
+    }
+    s3_write = {
+      effect = "Allow"
+      actions = [
+        "s3:PutObject",
+        "s3:PutObjectAcl"
+      ]
+      resources = ["${module.s3_results_bucket.s3_bucket_arn}/sprint-reports/*"]
     }
   }
 

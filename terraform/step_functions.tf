@@ -3,7 +3,7 @@ module "step_function" {
   version = "5.0.2"
 
   name = "${var.environment}_sprint_pr_intelligence"
-  type = "EXPRESS"
+  type = "STANDARD"
 
   attach_policies_for_integrations = true
 
@@ -199,8 +199,13 @@ module "step_function" {
             AddReadme = {
               Type = "Pass"
               Parameters = {
-                "statusCode.$" = "$.prDetails.Payload.statusCode"
-                "body.$"       = "$.prDetails.Payload.body"
+                "owner.$"      = "$.prDetails.Payload.body.owner"
+                "repo.$"       = "$.prDetails.Payload.body.repo"
+                "pr.$"         = "$.prDetails.Payload.body.pr"
+                "comments.$"   = "$.prDetails.Payload.body.comments"
+                "reviews.$"    = "$.prDetails.Payload.body.reviews"
+                "files.$"      = "$.prDetails.Payload.body.files"
+                "statistics.$" = "$.prDetails.Payload.body.statistics"
                 "readme.$"     = "$.readme"
               }
               End = true
@@ -217,13 +222,14 @@ module "step_function" {
         ItemsPath      = "$.prDetailsResults"
         MaxConcurrency = 10
         Parameters = {
-          "owner.$"    = "$$.Map.Item.Value.body.owner"
-          "repo.$"     = "$$.Map.Item.Value.body.repo"
-          "readme.$"   = "$$.Map.Item.Value.readme"
-          "pr.$"       = "$$.Map.Item.Value.body.pr"
-          "comments.$" = "$$.Map.Item.Value.body.comments"
-          "reviews.$"  = "$$.Map.Item.Value.body.reviews"
-          "files.$"    = "$$.Map.Item.Value.body.files"
+          "owner.$"      = "$$.Map.Item.Value.owner"
+          "repo.$"       = "$$.Map.Item.Value.repo"
+          "readme.$"     = "$$.Map.Item.Value.readme"
+          "pr.$"         = "$$.Map.Item.Value.pr"
+          "comments.$"   = "$$.Map.Item.Value.comments"
+          "reviews.$"    = "$$.Map.Item.Value.reviews"
+          "files.$"      = "$$.Map.Item.Value.files"
+          "statistics.$" = "$$.Map.Item.Value.statistics"
         }
         Iterator = {
           StartAt = "AnalyzeSinglePR"
@@ -234,13 +240,14 @@ module "step_function" {
               Parameters = {
                 FunctionName = module.lambda_analyze_pr.lambda_function_arn
                 Payload = {
-                  "owner.$"    = "$.owner"
-                  "repo.$"     = "$.repo"
-                  "readme.$"   = "$.readme"
-                  "pr.$"       = "$.pr"
-                  "comments.$" = "$.comments"
-                  "reviews.$"  = "$.reviews"
-                  "files.$"    = "$.files"
+                  "owner.$"      = "$.owner"
+                  "repo.$"       = "$.repo"
+                  "readme.$"     = "$.readme"
+                  "pr.$"         = "$.pr"
+                  "comments.$"   = "$.comments"
+                  "reviews.$"    = "$.reviews"
+                  "files.$"      = "$.files"
+                  "statistics.$" = "$.statistics"
                 }
               }
               ResultSelector = {
@@ -285,11 +292,11 @@ module "step_function" {
               Parameters = {
                 "statusCode" = 200
                 "body" = {
-                  "owner.$"   = "$.owner"
-                  "repo.$"    = "$.repo"
-                  "prNumber"  = 0
-                  "prTitle"   = "Analysis Failed"
-                  "analysis"  = "This PR analysis failed and was skipped"
+                  "owner.$"  = "$.owner"
+                  "repo.$"   = "$.repo"
+                  "prNumber" = 0
+                  "prTitle"  = "Analysis Failed"
+                  "analysis" = "This PR analysis failed and was skipped"
                   "metadata" = {
                     "additions"     = 0
                     "deletions"     = 0

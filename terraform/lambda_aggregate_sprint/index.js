@@ -2,7 +2,30 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const client_bedrock_runtime_1 = require("@aws-sdk/client-bedrock-runtime");
+const client_s3_1 = require("@aws-sdk/client-s3");
 const bedrockClient = new client_bedrock_runtime_1.BedrockRuntimeClient({ region: process.env.AWS_REGION });
+const s3Client = new client_s3_1.S3Client({ region: process.env.AWS_REGION });
+/**
+ * Load PR analysis from S3
+ */
+async function loadAnalysisFromS3(bucket, key) {
+    try {
+        const response = await s3Client.send(new client_s3_1.GetObjectCommand({
+            Bucket: bucket,
+            Key: key,
+        }));
+        const body = await response.Body?.transformToString();
+        if (!body) {
+            console.error(`Empty response from S3: ${key}`);
+            return null;
+        }
+        return JSON.parse(body);
+    }
+    catch (error) {
+        console.error(`Error loading analysis from S3 (${key}):`, error);
+        return null;
+    }
+}
 /**
  * Aggregate PR analyses into comprehensive sprint report using Claude
  */
@@ -106,7 +129,7 @@ Please generate a comprehensive sprint report that includes:
    - Technical debt to address
    - Process improvements
 
-Format the report in clear, professional markdown with appropriate headers, bullet points, and emphasis. Make it suitable for both technical and non-technical stakeholders.`;
+Format the report in clear, professional markdown with appropriate headers, bullet points, and emphasis. Make it suitable for both technical and non-technical stakeholders. DO NOT USE EMOJIS.`;
     try {
         const modelId = process.env.BEDROCK_MODEL_ID;
         if (!modelId) {
@@ -145,13 +168,36 @@ const handler = async (event) => {
         repoCount: event.repos?.length || 0,
         analysisCount: event.analyses?.length || 0,
     }, null, 2));
+    const bucketName = process.env.RESULTS_BUCKET;
+    if (!bucketName) {
+        throw new Error('RESULTS_BUCKET environment variable is not set');
+    }
     try {
-        // Validate input
         if (!event.analyses || !Array.isArray(event.analyses)) {
             throw new Error('Analyses array is missing or invalid');
         }
-        // Filter out failed analyses and validate metadata
-        const validAnalyses = event.analyses.filter(analysis => {
+        console.log(`Loading ${event.analyses.length} PR analyses from S3...`);
+        const loadPromises = event.analyses.map(async (ref) => {
+            if (ref.s3Key && ref.s3Bucket) {
+                const analysis = await loadAnalysisFromS3(ref.s3Bucket, ref.s3Key);
+                if (analysis) {
+                    console.log(`Loaded analysis for PR #${ref.prNumber} from S3`);
+                    return analysis;
+                }
+                else {
+                    console.warn(`Failed to load analysis for PR #${ref.prNumber}, using metadata only`);
+                    return {
+                        ...ref,
+                        analysis: 'Analysis could not be loaded from S3',
+                    };
+                }
+            }
+            else {
+                return ref;
+            }
+        });
+        const loadedAnalyses = await Promise.all(loadPromises);
+        const validAnalyses = loadedAnalyses.filter(analysis => {
             if (!analysis || !analysis.metadata) {
                 console.warn('Skipping analysis with missing metadata:', analysis);
                 return false;
@@ -174,13 +220,43 @@ const handler = async (event) => {
                 },
             };
         }
-        // Use validated analyses
-        const aggregateInput = {
-            ...event,
+        const report = await aggregateSprintWithClaude({
+            sprintName: event.sprintName,
+            since: event.since,
+            until: event.until,
+            repos: event.repos,
             analyses: validAnalyses,
-        };
-        const report = await aggregateSprintWithClaude(aggregateInput);
+        });
         console.log('Sprint report aggregation complete');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const sprintName = event.sprintName || 'unnamed-sprint';
+        const sanitizedName = sprintName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+        const reportS3Key = `sprint-reports/${sanitizedName}/${timestamp}.json`;
+        const fullReport = {
+            sprintName: event.sprintName,
+            since: event.since,
+            until: event.until,
+            repos: event.repos || [],
+            totalPRs: validAnalyses.length,
+            report,
+            generatedAt: new Date().toISOString(),
+            skippedAnalyses: event.analyses.length - validAnalyses.length,
+        };
+        const reportSize = Buffer.byteLength(JSON.stringify(fullReport), 'utf8');
+        console.log(`Report size: ${reportSize} bytes (${(reportSize / 1024).toFixed(2)} KB)`);
+        await s3Client.send(new client_s3_1.PutObjectCommand({
+            Bucket: bucketName,
+            Key: reportS3Key,
+            Body: JSON.stringify(fullReport, null, 2),
+            ContentType: 'application/json',
+            Metadata: {
+                sprintName: sanitizedName,
+                since: event.since,
+                until: event.until,
+                totalPRs: validAnalyses.length.toString(),
+            },
+        }));
+        console.log(`Stored sprint report to S3: ${reportS3Key}`);
         return {
             statusCode: 200,
             body: {
@@ -189,9 +265,11 @@ const handler = async (event) => {
                 until: event.until,
                 repos: event.repos || [],
                 totalPRs: validAnalyses.length,
-                report,
+                s3Key: reportS3Key,
+                s3Bucket: bucketName,
                 generatedAt: new Date().toISOString(),
                 skippedAnalyses: event.analyses.length - validAnalyses.length,
+                reportSize: reportSize,
             },
         };
     }

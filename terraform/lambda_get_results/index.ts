@@ -41,8 +41,14 @@ export const handler = async (event: any) => {
       };
 
       if (execution.status === 'SUCCEEDED' && execution.output) {
-        const output = JSON.parse(execution.output);
-        response.result = output.body;
+        try {
+          const output = JSON.parse(execution.output);
+          console.log('Parsed output:', JSON.stringify(output, null, 2));
+          response.output = output;
+        } catch (parseError: any) {
+          console.error('Failed to parse output:', parseError);
+          response.rawOutput = execution.output;
+        }
       } else if (execution.status === 'FAILED') {
         response.error = execution.error;
         response.cause = execution.cause;
@@ -112,7 +118,6 @@ export const handler = async (event: any) => {
       };
     }
 
-    // No valid parameters
     return {
       statusCode: 400,
       headers: {
@@ -130,6 +135,8 @@ export const handler = async (event: any) => {
     };
   } catch (error: any) {
     console.error('Error retrieving results:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Event:', JSON.stringify(event, null, 2));
     return {
       statusCode: 500,
       headers: {
@@ -138,6 +145,7 @@ export const handler = async (event: any) => {
       },
       body: JSON.stringify({
         error: error.message || 'Failed to retrieve results',
+        details: error.stack,
       }),
     };
   }

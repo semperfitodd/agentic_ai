@@ -92,6 +92,15 @@ module "api_gateway" {
         payload_format_version = "1.0"
       }
     }
+    "GET /markdown" = {
+      authorization_type = "CUSTOM"
+      authorizer_key     = "lambda"
+      integration = {
+        method                 = "GET"
+        uri                    = module.lambda_get_markdown.lambda_function_arn
+        payload_format_version = "1.0"
+      }
+    }
   }
 
   tags = var.tags

@@ -10,12 +10,63 @@ const handler = async (event) => {
         throw new Error('RESULTS_BUCKET environment variable is not set');
     }
     try {
-        // Generate a unique key for this report
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const sprintName = event.body.sprintName || 'unnamed-sprint';
         const sanitizedName = sprintName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+        if (event.body.s3Key && event.body.s3Bucket) {
+            console.log(`Report already stored in S3: ${event.body.s3Key}`);
+            const reportData = await s3Client.send(new client_s3_1.GetObjectCommand({
+                Bucket: event.body.s3Bucket,
+                Key: event.body.s3Key,
+            }));
+            const reportBody = await reportData.Body?.transformToString();
+            const fullReport = reportBody ? JSON.parse(reportBody) : null;
+            if (fullReport && fullReport.report) {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const markdownKey = `reports/${sanitizedName}/${timestamp}.md`;
+                await s3Client.send(new client_s3_1.PutObjectCommand({
+                    Bucket: bucketName,
+                    Key: markdownKey,
+                    Body: fullReport.report,
+                    ContentType: 'text/markdown',
+                    Metadata: {
+                        sprintName: sprintName,
+                        since: event.body.since,
+                        until: event.body.until,
+                        totalPRs: event.body.totalPRs.toString(),
+                    },
+                }));
+                console.log(`Stored markdown report to S3: ${markdownKey}`);
+                return {
+                    statusCode: 200,
+                    body: {
+                        sprintName: event.body.sprintName,
+                        since: event.body.since,
+                        until: event.body.until,
+                        totalPRs: event.body.totalPRs,
+                        s3Location: {
+                            bucket: bucketName,
+                            jsonKey: event.body.s3Key,
+                            markdownKey: markdownKey,
+                        },
+                    },
+                };
+            }
+            return {
+                statusCode: 200,
+                body: {
+                    sprintName: event.body.sprintName,
+                    since: event.body.since,
+                    until: event.body.until,
+                    totalPRs: event.body.totalPRs,
+                    s3Location: {
+                        bucket: bucketName,
+                        jsonKey: event.body.s3Key,
+                    },
+                },
+            };
+        }
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const key = `reports/${sanitizedName}/${timestamp}.json`;
-        // Store the full report
         await s3Client.send(new client_s3_1.PutObjectCommand({
             Bucket: bucketName,
             Key: key,
@@ -28,12 +79,11 @@ const handler = async (event) => {
                 totalPRs: event.body.totalPRs.toString(),
             },
         }));
-        // Also store the markdown report separately
         const markdownKey = `reports/${sanitizedName}/${timestamp}.md`;
         await s3Client.send(new client_s3_1.PutObjectCommand({
             Bucket: bucketName,
             Key: markdownKey,
-            Body: event.body.report,
+            Body: event.body.report || '',
             ContentType: 'text/markdown',
             Metadata: {
                 sprintName: sprintName,
@@ -46,7 +96,10 @@ const handler = async (event) => {
         return {
             statusCode: 200,
             body: {
-                ...event.body,
+                sprintName: event.body.sprintName,
+                since: event.body.since,
+                until: event.body.until,
+                totalPRs: event.body.totalPRs,
                 s3Location: {
                     bucket: bucketName,
                     jsonKey: key,
@@ -57,7 +110,6 @@ const handler = async (event) => {
     }
     catch (error) {
         console.error('Error storing results to S3:', error);
-        // Don't fail the workflow if S3 storage fails
         return {
             statusCode: 200,
             body: {
