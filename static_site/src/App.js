@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import bscLogo from './bsc-logo.svg';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const WORKFLOW_STEPS = [
   { name: 'Initializing Step Functions Workflow', type: 'APPLICATION', duration: 2 },
@@ -228,6 +230,63 @@ function App() {
     };
 
     pollReport();
+  };
+
+  const downloadPDF = async () => {
+    const reportElement = document.querySelector('.markdown-report');
+    if (!reportElement) return;
+
+    try {
+      // Create a clone of the report for PDF generation
+      const clone = reportElement.cloneNode(true);
+      clone.style.width = '1200px';
+      clone.style.position = 'absolute';
+      clone.style.left = '-9999px';
+      document.body.appendChild(clone);
+
+      // Generate canvas from the cloned element
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#1a1f36',
+      });
+
+      // Remove the clone
+      document.body.removeChild(clone);
+
+      // Calculate PDF dimensions
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let position = 0;
+
+      // Add image to PDF
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Add new pages if content is longer than one page
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `sprint-intelligence-report-${timestamp}.pdf`;
+
+      // Save PDF
+      pdf.save(filename);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
   };
 
   const runSprintAnalysis = async () => {
@@ -494,7 +553,7 @@ function App() {
 
       <footer className="footer">
         <div className="container">
-          <p>BSC Analytics | Todd Bernson, CTO & CAIO</p>
+          <p>BSC Analytics | Todd Bernson, Chief AI Officer</p>
           <p className="footer-note">Powered by AWS Bedrock and Claude 3.5 Sonnet</p>
         </div>
       </footer>
@@ -508,7 +567,12 @@ function App() {
             <div className="markdown-report">
               <div className="report-header">
                 <h2>Sprint Intelligence Report</h2>
-                <p className="report-timestamp">Generated: {new Date().toLocaleString()}</p>
+                <div className="report-header-actions">
+                  <p className="report-timestamp">Generated: {new Date().toLocaleString()}</p>
+                  <button className="btn btn-download" onClick={downloadPDF}>
+                    📥 Download PDF
+                  </button>
+                </div>
               </div>
               <div className="report-content" dangerouslySetInnerHTML={{ __html: parseMarkdown(markdownReport) }} />
             </div>

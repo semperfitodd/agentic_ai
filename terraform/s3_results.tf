@@ -16,7 +16,7 @@ module "s3_results_bucket" {
       enabled = true
 
       expiration = {
-        days = 90
+        days = 3
       }
     }
   ]
