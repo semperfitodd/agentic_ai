@@ -1,4 +1,3 @@
-import React from 'react';
 import bscLogo from '../bsc-logo.svg';
 
 const Header = () => {

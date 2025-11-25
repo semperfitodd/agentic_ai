@@ -1,4 +1,3 @@
-import React from 'react';
 import {WORKFLOW_STEPS} from '../constants/workflowSteps';
 
 const ProgressTracker = ({progress, currentStep, completedSteps, loading}) => {

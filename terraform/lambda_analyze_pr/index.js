@@ -5,9 +5,6 @@ const client_bedrock_runtime_1 = require("@aws-sdk/client-bedrock-runtime");
 const client_s3_1 = require("@aws-sdk/client-s3");
 const bedrockClient = new client_bedrock_runtime_1.BedrockRuntimeClient({});
 const s3Client = new client_s3_1.S3Client({});
-/**
- * Analyze PR using AWS Bedrock Claude
- */
 async function analyzePRWithClaude(input) {
     const { owner, repo, readme } = input;
     const pr = input.pr;
@@ -41,7 +38,7 @@ ${input.statistics.topFilesByChanges.slice(0, 5).map(f => `  - ${f.filename} (${
     const prompt = `You are an expert software engineering analyst. Analyze the following GitHub Pull Request and provide a comprehensive, insightful summary.
 
 Repository: ${owner}/${repo}
-Repository Description: ${readmeText.substring(0, 500)}${readmeText.length > 500 ? '...' : ''}
+Repository Description: ${readmeText.substring(0, parseInt(process.env.README_PREVIEW_LENGTH || '500', 10))}${readmeText.length > parseInt(process.env.README_PREVIEW_LENGTH || '500', 10) ? '...' : ''}
 
 Pull Request Details:
 - Number: #${pr.number}
@@ -78,7 +75,7 @@ Please analyze this PR and provide:
 5. Assessment of the review process and team collaboration
 6. Any notable patterns, risks, or highlights
 
-Format your response in clear markdown with appropriate sections and bullet points. DO NOT USE EMOJIS.`;
+Format your response in clear markdown with appropriate sections and bullet points.`;
     try {
         const modelId = process.env.BEDROCK_MODEL_ID;
         if (!modelId) {

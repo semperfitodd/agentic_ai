@@ -10,7 +10,6 @@ const handler = async (event) => {
     if (!bucketName) {
         throw new Error('RESULTS_BUCKET environment variable is not set');
     }
-    // Store READMEs in S3
     const repoReadmeMap = {};
     for (const result of repoDataResults) {
         if (result.statusCode === 200 && result.body.readme) {
@@ -27,7 +26,6 @@ const handler = async (event) => {
         ContentType: 'application/json',
     }));
     console.log(`Stored README map to S3: ${readmeS3Key}`);
-    // Flatten all PRs with ONLY identifiers (no README, no githubToken in state)
     const prDetailsInputs = [];
     repoDataResults.forEach(result => {
         if (result.statusCode === 200 && result.body.prs) {

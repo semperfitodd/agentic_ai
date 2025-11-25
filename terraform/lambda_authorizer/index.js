@@ -30,11 +30,9 @@ const handler = async (event) => {
         }
         const apiKeySecret = await getSecret(secretName);
         const headers = event.headers || {};
-        // API Gateway v2 sends headers in lowercase
         const clientKey = headers['x-api-key'] || headers['X-Api-Key'];
         if (clientKey && clientKey.trim() === apiKeySecret.trim()) {
             console.log('Authorization succeeded');
-            // Extract user from headers if available
             const userEmail = headers['x-user-email'] || headers['X-User-Email'] || '';
             return {
                 isAuthorized: true,

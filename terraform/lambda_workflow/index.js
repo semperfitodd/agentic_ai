@@ -10,9 +10,7 @@ const handler = async (event) => {
         if (!stateMachineArn) {
             throw new Error('STATE_MACHINE_ARN environment variable is not set');
         }
-        // Parse the body if it's a string
         const input = typeof event.body === 'string' ? event.body : JSON.stringify(event.body || {});
-        // Generate unique execution name
         const executionName = `execution-${Date.now()}-${Math.random().toString(36).substring(7)}`;
         const command = new client_sfn_1.StartExecutionCommand({
             stateMachineArn,
@@ -20,7 +18,6 @@ const handler = async (event) => {
             name: executionName,
         });
         const response = await sfnClient.send(command);
-        // Return immediately with execution details
         return {
             statusCode: 202,
             headers: {

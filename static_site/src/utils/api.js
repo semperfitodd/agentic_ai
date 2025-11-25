@@ -93,7 +93,7 @@ export const startSprintAnalysis = async () => {
             'x-api-key': process.env.REACT_APP_API_KEY,
         },
         body: JSON.stringify({
-            sprintName: 'Test Sprint',
+            sprintName: process.env.REACT_APP_SPRINT_NAME || 'Sprint Analysis',
             since,
             until,
             githubToken: process.env.REACT_APP_GITHUB_TOKEN,

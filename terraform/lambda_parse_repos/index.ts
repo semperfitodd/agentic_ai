@@ -9,18 +9,7 @@ interface ParsedRepo {
   repo: string;
 }
 
-/**
- * Parse various GitHub repository URL formats into owner/repo
- * Supports:
- * - https://github.com/owner/repo
- * - https://github.com/owner/repo.git
- * - git@github.com:owner/repo.git
- * - github.com/owner/repo
- * - owner/repo
- * - {owner: "owner", repo: "repo"}
- */
 function parseGitHubRepo(input: RepoInput | string): ParsedRepo {
-  // If it's already an object with owner and repo, return it
   if (typeof input === 'object' && input.owner && input.repo) {
     return {
       owner: input.owner,
@@ -28,7 +17,6 @@ function parseGitHubRepo(input: RepoInput | string): ParsedRepo {
     };
   }
 
-  // Get the URL string
   let urlString: string;
   if (typeof input === 'string') {
     urlString = input;
@@ -38,31 +26,25 @@ function parseGitHubRepo(input: RepoInput | string): ParsedRepo {
     throw new Error('Invalid repository input: must provide url or owner/repo');
   }
 
-  // Remove trailing .git if present
   urlString = urlString.replace(/\.git$/, '');
 
-  // Try different patterns
   let match: RegExpMatchArray | null;
 
-  // Pattern 1: https://github.com/owner/repo
   match = urlString.match(/https?:\/\/github\.com\/([^\/]+)\/([^\/\?#]+)/);
   if (match) {
     return { owner: match[1], repo: match[2] };
   }
 
-  // Pattern 2: git@github.com:owner/repo
   match = urlString.match(/git@github\.com:([^\/]+)\/(.+)/);
   if (match) {
     return { owner: match[1], repo: match[2] };
   }
 
-  // Pattern 3: github.com/owner/repo
   match = urlString.match(/github\.com\/([^\/]+)\/([^\/\?#]+)/);
   if (match) {
     return { owner: match[1], repo: match[2] };
   }
 
-  // Pattern 4: owner/repo
   match = urlString.match(/^([^\/]+)\/([^\/]+)$/);
   if (match) {
     return { owner: match[1], repo: match[2] };

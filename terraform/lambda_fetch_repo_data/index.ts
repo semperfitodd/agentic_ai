@@ -28,7 +28,6 @@ export const handler = async (event: RepoInput) => {
       auth: githubToken,
     });
 
-    // Fetch README
     let readme = '';
     let readmeError = null;
     try {
@@ -36,21 +35,18 @@ export const handler = async (event: RepoInput) => {
         owner,
         repo,
       });
-      
-      // Decode base64 content
+
       readme = Buffer.from(readmeResponse.data.content, 'base64').toString('utf-8');
     } catch (error: any) {
       console.warn(`Could not fetch README for ${owner}/${repo}:`, error.message);
       readmeError = error.message;
     }
 
-    // Fetch merged PRs in date range
     const sinceDate = new Date(since);
     const untilDate = new Date(until);
 
     const perPage = parseInt(process.env.GITHUB_PER_PAGE || '100', 10);
 
-    // Get all merged PRs (closed + merged)
     const { data: pullRequests } = await octokit.pulls.list({
       owner,
       repo,
@@ -60,7 +56,6 @@ export const handler = async (event: RepoInput) => {
       per_page: perPage,
     });
 
-    // Filter for merged PRs in date range
     const mergedPRs = pullRequests
       .filter((pr: any) => {
         if (!pr.merged_at) return false;

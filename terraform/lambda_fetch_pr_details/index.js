@@ -14,18 +14,15 @@ function summarizeComments(comments, maxComments) {
             path: c.path,
         }));
     }
-    // Sort by date (most recent first)
     const sorted = [...comments].sort((a, b) => {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
         return dateB - dateA;
     });
-    // Take mix of recent comments and longer/substantial ones
     const recentComments = sorted.slice(0, Math.floor(limit * 0.7));
     const substantialComments = sorted
         .filter(c => c.body && c.body.length > 100)
         .slice(0, Math.floor(limit * 0.3));
-    // Combine and deduplicate
     const combined = [...recentComments, ...substantialComments];
     const unique = Array.from(new Map(combined.map(c => [c.id, c])).values());
     return unique.slice(0, limit).map(c => ({
@@ -44,23 +41,18 @@ function prioritizeFiles(files, maxFiles) {
             additions: f.additions,
             deletions: f.deletions,
             changes: f.changes,
-            patch: f.patch ? f.patch.substring(0, 300) : undefined,
+            patch: f.patch ? f.patch.substring(0, parseInt(process.env.PATCH_PREVIEW_LENGTH || '300', 10)) : undefined,
         }));
     }
-    // Sort by total changes (most impactful files first)
     const sorted = [...files].sort((a, b) => b.changes - a.changes);
-    // Take top changed files
     const topFiles = sorted.slice(0, Math.floor(limit * 0.6));
-    // Add some test files if present
     const testFiles = sorted
         .filter(f => f.filename.includes('test') || f.filename.includes('spec'))
         .slice(0, Math.floor(limit * 0.2));
-    // Add some config/doc files
     const configFiles = sorted
         .filter(f => f.filename.includes('config') || f.filename.includes('.md') ||
         f.filename.includes('.yml') || f.filename.includes('.yaml'))
         .slice(0, Math.floor(limit * 0.2));
-    // Combine and deduplicate
     const combined = [...topFiles, ...testFiles, ...configFiles];
     const unique = Array.from(new Map(combined.map(f => [f.filename, f])).values());
     return unique.slice(0, limit).map(f => ({
@@ -69,7 +61,7 @@ function prioritizeFiles(files, maxFiles) {
         additions: f.additions,
         deletions: f.deletions,
         changes: f.changes,
-        patch: f.patch ? f.patch.substring(0, 300) : undefined,
+        patch: f.patch ? f.patch.substring(0, parseInt(process.env.PATCH_PREVIEW_LENGTH || '300', 10)) : undefined,
     }));
 }
 function calculateDiscussionIntensity(commentCount, reviewCount) {

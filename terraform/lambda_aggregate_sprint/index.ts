@@ -40,9 +40,6 @@ interface AggregateInput {
   analyses: PRAnalysisReference[];
 }
 
-/**
- * Load PR analysis from S3 using owner/repo/prNumber
- */
 async function loadAnalysisFromS3(bucket: string, owner: string, repo: string, prNumber: number): Promise<PRAnalysis | null> {
   try {
     const s3Prefix = `pr-analyses/${owner}/${repo}/${prNumber}/`;
@@ -90,19 +87,14 @@ interface AggregateClaudeInput {
   analyses: PRAnalysis[];
 }
 
-/**
- * Aggregate PR analyses into comprehensive sprint report using Claude
- */
 async function aggregateSprintWithClaude(input: AggregateClaudeInput): Promise<string> {
   const { sprintName, since, until, repos, analyses } = input;
 
-  // Calculate statistics for context with safe defaults
   const totalPRs = analyses.length;
   const totalAdditions = analyses.reduce((sum, a) => sum + (a.metadata?.additions || 0), 0);
   const totalDeletions = analyses.reduce((sum, a) => sum + (a.metadata?.deletions || 0), 0);
   const totalFiles = analyses.reduce((sum, a) => sum + (a.metadata?.changed_files || 0), 0);
 
-  // Group by repository
   const byRepo: { [key: string]: PRAnalysis[] } = {};
   analyses.forEach(analysis => {
     const repoKey = `${analysis.owner}/${analysis.repo}`;
@@ -112,14 +104,12 @@ async function aggregateSprintWithClaude(input: AggregateClaudeInput): Promise<s
     byRepo[repoKey].push(analysis);
   });
 
-  // Get top contributors
   const contributors: { [key: string]: number } = {};
   analyses.forEach(analysis => {
     const author = analysis.metadata?.author || 'Unknown';
     contributors[author] = (contributors[author] || 0) + 1;
   });
 
-  // Build comprehensive context for Claude
   const repoBreakdown = Object.entries(byRepo)
     .map(([repo, prs]) => {
       const repoAdditions = prs.reduce((s, p) => s + (p.metadata?.additions || 0), 0);
@@ -133,7 +123,6 @@ async function aggregateSprintWithClaude(input: AggregateClaudeInput): Promise<s
     .map(([author, count]) => `${author} (${count} PRs)`)
     .join(', ');
 
-  // Compile all PR analyses
   const allAnalyses = analyses
     .map(a => {
       return `
@@ -148,7 +137,6 @@ ${a.analysis}
     })
     .join('\n');
 
-  // Build the prompt for Claude
   const prompt = `You are an expert engineering manager and technical writer. Generate a comprehensive, executive-level sprint report from the following Pull Request analyses.
 
 Sprint Information:
@@ -200,7 +188,7 @@ Please generate a comprehensive sprint report that includes:
    - Technical debt to address
    - Process improvements
 
-Format the report in clear, professional markdown with appropriate headers, bullet points, and emphasis. Make it suitable for both technical and non-technical stakeholders. DO NOT USE EMOJIS.`;
+Format the report in clear, professional markdown with appropriate headers, bullet points, and emphasis. Make it suitable for both technical and non-technical stakeholders.`;
 
   try {
     const modelId = process.env.BEDROCK_MODEL_ID;
@@ -306,7 +294,7 @@ export const handler = async (event: AggregateInput) => {
     console.log('Sprint report aggregation complete');
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const sprintName = event.sprintName || 'unnamed-sprint';
+    const sprintName = event.sprintName || process.env.DEFAULT_SPRINT_NAME || 'sprint';
     const sanitizedName = sprintName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
     const markdownS3Key = `reports/${sanitizedName}/${timestamp}.md`;
 
