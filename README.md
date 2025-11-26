@@ -2,6 +2,8 @@
 
 An intelligent, autonomous system that analyzes GitHub pull requests across multiple repositories and generates comprehensive sprint reports using AI-powered agents.
 
+![architecture.png](img/architecture.png)
+
 ## Table of Contents
 
 - [Glossary](#glossary)
