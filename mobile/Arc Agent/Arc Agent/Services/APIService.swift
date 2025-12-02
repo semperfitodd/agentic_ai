@@ -52,15 +52,18 @@ class APIService {
             throw APIError.invalidURL
         }
         
-        let repos = APIConfig.defaultRepos
-        let since = APIConfig.defaultSince
-        let until = APIConfig.defaultUntil
+        // Use settings values with fallback to Secrets
+        let repos = SettingsView.effectiveRepos()
+        let since = SettingsView.effectiveSince()
+        let until = SettingsView.effectiveUntil()
+        let sprintName = SettingsView.effectiveSprintName()
+        let githubToken = SettingsView.effectiveGithubToken()
         
         let request = SprintAnalysisRequest(
-            sprintName: APIConfig.sprintName,
+            sprintName: sprintName,
             since: since,
             until: until,
-            githubToken: APIConfig.githubToken,
+            githubToken: githubToken,
             repos: repos
         )
         

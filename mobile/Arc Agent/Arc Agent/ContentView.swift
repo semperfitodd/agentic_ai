@@ -10,12 +10,24 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var viewModel = SprintAnalysisViewModel()
     @State private var selectedPage = 0
+    @State private var showSettings = false
     
     var body: some View {
         Group {
             #if os(macOS)
-            pagedInterface
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button(action: { showSettings = true }) {
+                        Image(systemName: "gearshape.fill")
+                            .foregroundColor(Color(red: 0.32, green: 0.52, blue: 0.87))
+                    }
+                    .buttonStyle(.plain)
+                    .padding()
+                }
+                pagedInterface
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
             #else
             NavigationStack {
                 pagedInterface
@@ -24,6 +36,12 @@ struct ContentView: View {
                             if let title = tabTitle(for: selectedPage) {
                                 Text(title)
                                     .font(.headline)
+                            }
+                        }
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(action: { showSettings = true }) {
+                                Image(systemName: "gearshape.fill")
+                                    .foregroundColor(Color(red: 0.32, green: 0.52, blue: 0.87))
                             }
                         }
                     }
@@ -36,6 +54,9 @@ struct ContentView: View {
                 markdown: viewModel.markdownReport ?? "",
                 isPresented: $viewModel.showReportModal
             )
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
     }
     
