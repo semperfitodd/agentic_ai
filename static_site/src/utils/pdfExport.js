@@ -7,9 +7,7 @@ export const downloadPDF = async () => {
 
     try {
         const clone = reportElement.cloneNode(true);
-        clone.style.width = '1200px';
-        clone.style.position = 'absolute';
-        clone.style.left = '-9999px';
+        Object.assign(clone.style, { width: '1200px', position: 'absolute', left: '-9999px' });
         document.body.appendChild(clone);
 
         const canvas = await html2canvas(clone, {
@@ -24,12 +22,12 @@ export const downloadPDF = async () => {
         const imgWidth = 210;
         const pageHeight = 297;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-
+        const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
+
+        let heightLeft = imgHeight;
         let position = 0;
 
-        const imgData = canvas.toDataURL('image/png');
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
 
@@ -41,12 +39,9 @@ export const downloadPDF = async () => {
         }
 
         const timestamp = new Date().toISOString().split('T')[0];
-        const filename = `sprint-intelligence-report-${timestamp}.pdf`;
-
-        pdf.save(filename);
+        pdf.save(`sprint-intelligence-report-${timestamp}.pdf`);
     } catch (error) {
         console.error('Error generating PDF:', error);
         alert('Failed to generate PDF. Please try again.');
     }
 };
-

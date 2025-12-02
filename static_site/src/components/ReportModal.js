@@ -1,18 +1,16 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import {MarkdownComponents} from '../constants/markdownComponents';
-import {downloadPDF} from '../utils/pdfExport';
+import { MarkdownComponents } from '../constants/markdownComponents';
+import { downloadPDF } from '../utils/pdfExport';
 
-const ReportModal = ({show, markdownReport, onClose}) => {
+const ReportModal = ({ show, markdownReport, onClose }) => {
     if (!show || !markdownReport) return null;
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <button className="modal-close" onClick={onClose}>
-                    ×
-                </button>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <button className="modal-close" onClick={onClose}>×</button>
                 <div className="markdown-report">
                     <div className="report-header">
                         <h2>Sprint Intelligence Report</h2>
@@ -39,4 +37,3 @@ const ReportModal = ({show, markdownReport, onClose}) => {
 };
 
 export default ReportModal;
-
