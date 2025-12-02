@@ -28,6 +28,10 @@ An intelligent, autonomous system that analyzes GitHub pull requests across mult
 - [Architecture](#architecture)
   - [Serverless Stack](#serverless-stack)
   - [Key Design Principles](#key-design-principles)
+- [Mobile Apps](#mobile-apps)
+  - [iOS/iPadOS App](#iosipados-app)
+  - [Features](#features)
+  - [Building & Distribution](#building--distribution)
 - [Setup Instructions](#setup-instructions)
   - [Prerequisites](#prerequisites)
   - [Terraform Configuration](#terraform-configuration-terraformtfvars)
@@ -36,6 +40,7 @@ An intelligent, autonomous system that analyzes GitHub pull requests across mult
   - [Deployment](#deployment)
 - [Usage](#usage)
   - [Via Web Interface](#via-web-interface-recommended)
+  - [Via Mobile App](#via-mobile-app)
   - [Via API](#via-api)
   - [Repository Format Options](#repository-format-options)
 - [Project Structure](#project-structure)
@@ -342,6 +347,98 @@ The application orchestrates multiple AI agents through AWS Step Functions, crea
 - **Asynchronous operation**: No API Gateway timeout constraints
 - **Secure by design**: No secrets in code, tokens never stored
 
+## Mobile Apps
+
+### iOS/iPadOS App
+
+A native SwiftUI application that provides on-the-go access to sprint intelligence reports with a beautiful, modern interface optimized for iPhone and iPad.
+
+**Platform Support:**
+- ✅ **iPhone** (iOS 17.0+)
+- ✅ **iPad** (iPadOS 17.0+)
+- 🚧 **macOS** (Catalyst support - separate build)
+- 🚧 **Apple Watch** (Companion app planned)
+- 🚧 **Apple Vision Pro** (visionOS support planned)
+
+**Location:** `mobile/Arc Agent/`
+
+### Features
+
+**Sprint Analysis:**
+- View comprehensive sprint reports with professional formatting
+- Real-time progress tracking during analysis
+- Beautiful markdown rendering with syntax highlighting
+- Offline access to previously viewed reports
+
+**Modern UI/UX:**
+- Native SwiftUI design following iOS/iPadOS Human Interface Guidelines
+- Dark mode support
+- Responsive layouts optimized for all screen sizes
+- Smooth animations and transitions
+- Pull-to-refresh functionality
+
+**Report Viewing:**
+- Professional markdown rendering
+- Collapsible sections for easy navigation
+- Share reports via system share sheet
+- Export reports as PDF
+- Search within reports
+
+**Configuration:**
+- Secure API key storage in Keychain
+- Configurable API endpoint
+- Default repository and date range settings
+- GitHub token management
+
+### Building & Distribution
+
+**Development:**
+```bash
+cd mobile/Arc\ Agent
+open Arc\ Agent.xcodeproj
+
+# Build for iPhone/iPad simulator
+xcodebuild -project "Arc Agent.xcodeproj" \
+  -scheme "Arc Agent" \
+  -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,name=iPhone 15'
+
+# Build for device
+xcodebuild -project "Arc Agent.xcodeproj" \
+  -scheme "Arc Agent" \
+  -sdk iphoneos \
+  -configuration Release
+```
+
+**TestFlight Distribution (iOS/iPadOS):**
+1. Archive the app in Xcode (Product → Archive)
+2. Upload to App Store Connect
+3. The **same build** works for both iPhone and iPad
+4. Add internal/external testers in App Store Connect
+5. Testers receive TestFlight invitation via email
+
+**Device Family Configuration:**
+- `TARGETED_DEVICE_FAMILY = "1,2"` (Universal: iPhone + iPad)
+- Single build supports all iOS device sizes
+- Adaptive layouts automatically adjust to screen size
+
+**macOS Distribution:**
+- Requires separate build process
+- Not included in iOS TestFlight builds
+- Options: Mac App Store, Direct Distribution, or Developer ID
+
+**Configuration File:**
+Create `mobile/Arc Agent/Arc Agent/Secrets.swift`:
+```swift
+struct Secrets {
+    static let apiURL = "https://api.yourdomain.com"
+    static let apiKey = "your-api-key"
+    static let githubToken = "your-github-token"
+}
+```
+
+**Note:** `Secrets.swift` is gitignored. Use `Secrets.swift.example` as a template.
+
 ## Setup Instructions
 
 ### Prerequisites
@@ -559,6 +656,23 @@ curl -X POST https://api.yourdomain.com/sprint-intelligence \
 4. View the professional report in a modal when complete
 5. Close the modal—workflow steps remain visible for reference
 
+### Via Mobile App
+
+**iOS/iPadOS:**
+1. Install the app from TestFlight
+2. Configure API endpoint and credentials in Settings
+3. Tap "Analyze Sprint" to start analysis
+4. View real-time progress with visual indicators
+5. Read the formatted report with native iOS controls
+6. Share or export reports using the system share sheet
+
+**Features:**
+- Native SwiftUI interface optimized for touch
+- Offline access to previously viewed reports
+- Dark mode support
+- Pull-to-refresh to check for new reports
+- Secure credential storage in iOS Keychain
+
 ### Via API
 
 Make a POST request to `/sprint-intelligence` with:
@@ -596,28 +710,46 @@ The system accepts multiple formats:
 ```
 .
 ├── README.md
-├── terraform/
-│   ├── *.tf                           # Terraform infrastructure
+├── img/
+│   └── architecture.png               # Architecture diagram
+│
+├── terraform/                         # Infrastructure as Code
+│   ├── *.tf                           # Terraform infrastructure definitions
 │   ├── lambda_*/                      # Lambda function source code
 │   │   ├── index.ts                   # Function implementation
 │   │   ├── package.json               # Dependencies
 │   │   └── tsconfig.json              # TypeScript config
 │   └── terraform.tfvars               # Your configuration (not committed)
 │
-└── static_site/                       # React frontend
-    ├── public/
-    │   ├── index.html                 # HTML template
-    │   ├── manifest.json              # PWA manifest
-    │   └── favicon.png                # Favicon
-    ├── src/
-    │   ├── App.js                     # Main React component
-    │   ├── App.css                    # Application styles
-    │   ├── index.js                   # React entry point
-    │   ├── index.css                  # Global styles
-    │   └── bsc-logo.svg               # Logo
-    ├── .env                           # Your configuration (not committed)
-    ├── .env.example                   # Template for .env
-    └── package.json                   # React dependencies
+├── static_site/                       # React web frontend
+│   ├── public/
+│   │   ├── index.html                 # HTML template
+│   │   ├── manifest.json              # PWA manifest
+│   │   └── favicon.png                # Favicon
+│   ├── src/
+│   │   ├── App.js                     # Main React component
+│   │   ├── App.css                    # Application styles
+│   │   ├── components/                # React components
+│   │   ├── constants/                 # Configuration constants
+│   │   └── utils/                     # Utility functions
+│   ├── .env                           # Your configuration (not committed)
+│   ├── .env.example                   # Template for .env
+│   └── package.json                   # React dependencies
+│
+└── mobile/                            # Native mobile applications
+    └── Arc Agent/                     # iOS/iPadOS app
+        ├── Arc Agent.xcodeproj        # Xcode project
+        ├── Arc Agent/
+        │   ├── Arc_AgentApp.swift     # App entry point
+        │   ├── ContentView.swift      # Main view
+        │   ├── Models/                # Data models
+        │   ├── Services/              # API services
+        │   ├── ViewModels/            # View models
+        │   ├── Views/                 # SwiftUI views
+        │   ├── Assets.xcassets/       # Images and icons
+        │   └── Secrets.swift          # API configuration (not committed)
+        ├── Arc AgentTests/            # Unit tests
+        └── Arc AgentUITests/          # UI tests
 ```
 
 ## Monitoring & Observability

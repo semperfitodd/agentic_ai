@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Support and help for Arc Agent - Sprint Intelligence mobile app">
+    <title>Arc Agent Support</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #1d1d1f;
+            background-color: #f5f5f7;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 18px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #1d1d1f;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-top: 48px;
+            margin-bottom: 16px;
+            color: #1d1d1f;
+            letter-spacing: -0.01em;
+        }
+
+        h3 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+            color: #1d1d1f;
+        }
+
+        p {
+            font-size: 17px;
+            line-height: 1.7;
+            margin-bottom: 16px;
+            color: #424245;
+        }
+
+        .lead {
+            font-size: 21px;
+            line-height: 1.6;
+            color: #6e6e73;
+            margin-bottom: 32px;
+        }
+
+        ul, ol {
+            margin-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        li {
+            font-size: 17px;
+            line-height: 1.7;
+            margin-bottom: 8px;
+            color: #424245;
+        }
+
+        .contact-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 32px;
+            border-radius: 12px;
+            margin: 32px 0;
+            color: white;
+        }
+
+        .contact-box h2 {
+            color: white;
+            margin-top: 0;
+        }
+
+        .contact-box p {
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .contact-box a {
+            color: white;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin: 32px 0;
+        }
+
+        .feature-card {
+            background: #f5f5f7;
+            padding: 24px;
+            border-radius: 12px;
+        }
+
+        .feature-card h3 {
+            margin-top: 0;
+            font-size: 21px;
+        }
+
+        .feature-card p {
+            font-size: 15px;
+            margin-bottom: 0;
+        }
+
+        code {
+            background: #f5f5f7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 15px;
+            color: #667eea;
+        }
+
+        .button {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 16px;
+            transition: background 0.3s ease;
+        }
+
+        .button:hover {
+            background: #5568d3;
+        }
+
+        .divider {
+            height: 1px;
+            background: #d2d2d7;
+            margin: 48px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 24px;
+            }
+
+            h1 {
+                font-size: 36px;
+            }
+
+            h2 {
+                font-size: 28px;
+            }
+
+            h3 {
+                font-size: 21px;
+            }
+
+            p, li {
+                font-size: 16px;
+            }
+
+            .lead {
+                font-size: 19px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Arc Agent Support</h1>
+        <p class="lead">Get help with the Sprint Intelligence mobile app for iOS and iPadOS</p>
+
+        <div class="divider"></div>
+
+        <h2>About Arc Agent</h2>
+        <p>Arc Agent is a native iOS and iPadOS application that provides on-the-go access to AI-powered sprint intelligence reports. The app analyzes GitHub pull requests across multiple repositories and generates comprehensive sprint reports using advanced AI technology.</p>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>📊 Sprint Analysis</h3>
+                <p>View comprehensive sprint reports with professional formatting and real-time progress tracking.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📱 Native Experience</h3>
+                <p>Beautiful SwiftUI interface optimized for iPhone and iPad with dark mode support.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔒 Secure</h3>
+                <p>API credentials stored securely in iOS Keychain with encrypted communication.</p>
+            </div>
+        </div>
+
+        <h2>Getting Started</h2>
+        
+        <h3>1. Installation</h3>
+        <p>Download Arc Agent from TestFlight using the invitation link provided by your organization.</p>
+
+        <h3>2. Configuration</h3>
+        <p>On first launch, you'll need to configure:</p>
+        <ul>
+            <li><strong>API Endpoint</strong>: Your organization's Sprint Intelligence API URL</li>
+            <li><strong>API Key</strong>: Authentication key provided by your administrator</li>
+            <li><strong>GitHub Token</strong>: Personal access token with repository read permissions</li>
+        </ul>
+
+        <h3>3. Running Analysis</h3>
+        <ol>
+            <li>Tap "Analyze Sprint" on the main screen</li>
+            <li>Configure the date range and repositories (or use defaults)</li>
+            <li>Watch real-time progress as the analysis runs</li>
+            <li>View the formatted report when complete</li>
+        </ol>
+
+        <h2>Features</h2>
+
+        <h3>Sprint Reports</h3>
+        <p>View comprehensive sprint reports including:</p>
+        <ul>
+            <li>Executive summary and key outcomes</li>
+            <li>Key metrics dashboard</li>
+            <li>Work breakdown by category</li>
+            <li>Technical highlights and decisions</li>
+            <li>Repository insights</li>
+            <li>Team collaboration analysis</li>
+            <li>Sprint retrospective</li>
+            <li>Recommendations for next sprint</li>
+        </ul>
+
+        <h3>Report Management</h3>
+        <ul>
+            <li><strong>Offline Access</strong>: Previously viewed reports are cached for offline viewing</li>
+            <li><strong>Share Reports</strong>: Use the system share sheet to export reports</li>
+            <li><strong>PDF Export</strong>: Generate PDF versions of reports for distribution</li>
+            <li><strong>Search</strong>: Find specific information within reports</li>
+        </ul>
+
+        <h3>Customization</h3>
+        <ul>
+            <li><strong>Dark Mode</strong>: Automatic support for iOS dark mode</li>
+            <li><strong>Default Settings</strong>: Configure default repositories and date ranges</li>
+            <li><strong>Refresh</strong>: Pull-to-refresh to check for new reports</li>
+        </ul>
+
+        <h2>Troubleshooting</h2>
+
+        <h3>Cannot Connect to API</h3>
+        <p><strong>Solution:</strong></p>
+        <ul>
+            <li>Verify your API endpoint URL is correct (should start with <code>https://</code>)</li>
+            <li>Check that your API key is valid and hasn't expired</li>
+            <li>Ensure you have an active internet connection</li>
+            <li>Contact your administrator to verify API access</li>
+        </ul>
+
+        <h3>GitHub Authentication Failed</h3>
+        <p><strong>Solution:</strong></p>
+        <ul>
+            <li>Verify your GitHub personal access token is valid</li>
+            <li>Ensure the token has <code>repo</code> or <code>public_repo</code> permissions</li>
+            <li>Check that the token hasn't expired</li>
+            <li>Generate a new token at <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a></li>
+        </ul>
+
+        <h3>Analysis Takes Too Long</h3>
+        <p><strong>Solution:</strong></p>
+        <ul>
+            <li>Large repositories or date ranges may take several minutes</li>
+            <li>The app will continue processing in the background</li>
+            <li>You can close the app and check back later</li>
+            <li>Consider reducing the date range or number of repositories</li>
+        </ul>
+
+        <h3>Report Not Displaying</h3>
+        <p><strong>Solution:</strong></p>
+        <ul>
+            <li>Ensure the analysis completed successfully</li>
+            <li>Check the progress screen for any error messages</li>
+            <li>Try refreshing the report list</li>
+            <li>Verify your API endpoint is accessible</li>
+        </ul>
+
+        <h3>App Crashes or Freezes</h3>
+        <p><strong>Solution:</strong></p>
+        <ul>
+            <li>Force quit the app and relaunch</li>
+            <li>Ensure you're running the latest version from TestFlight</li>
+            <li>Restart your device if problems persist</li>
+            <li>Clear cached data in Settings if available</li>
+        </ul>
+
+        <h2>Privacy & Security</h2>
+
+        <h3>Data Storage</h3>
+        <p>Arc Agent stores the following data locally on your device:</p>
+        <ul>
+            <li><strong>API Credentials</strong>: Stored securely in iOS Keychain</li>
+            <li><strong>Cached Reports</strong>: Stored in app sandbox for offline access</li>
+            <li><strong>User Preferences</strong>: Settings and configuration stored locally</li>
+        </ul>
+
+        <h3>Data Transmission</h3>
+        <p>All communication with the Sprint Intelligence API uses HTTPS encryption. Your GitHub token is transmitted securely and never stored on remote servers.</p>
+
+        <h3>Permissions</h3>
+        <p>Arc Agent requires:</p>
+        <ul>
+            <li><strong>Internet Access</strong>: To communicate with the Sprint Intelligence API</li>
+            <li><strong>Keychain Access</strong>: To securely store API credentials</li>
+        </ul>
+        <p>The app does NOT require or request:</p>
+        <ul>
+            <li>Location services</li>
+            <li>Camera or photo library access</li>
+            <li>Contacts or calendar access</li>
+            <li>Microphone access</li>
+        </ul>
+
+        <h2>System Requirements</h2>
+        <ul>
+            <li><strong>iOS/iPadOS</strong>: Version 17.0 or later</li>
+            <li><strong>Devices</strong>: iPhone, iPad (Universal app)</li>
+            <li><strong>Storage</strong>: 50 MB minimum</li>
+            <li><strong>Internet</strong>: Required for analysis, optional for viewing cached reports</li>
+        </ul>
+
+        <h2>Frequently Asked Questions</h2>
+
+        <h3>Is Arc Agent free?</h3>
+        <p>Arc Agent is provided by your organization. Contact your administrator for licensing and access information.</p>
+
+        <h3>Can I use Arc Agent offline?</h3>
+        <p>You can view previously cached reports offline. Running new analyses requires an internet connection.</p>
+
+        <h3>How do I get a GitHub token?</h3>
+        <p>Visit <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> and create a personal access token with <code>repo</code> or <code>public_repo</code> permissions.</p>
+
+        <h3>Can I analyze private repositories?</h3>
+        <p>Yes, if your GitHub token has <code>repo</code> scope (full repository access) and you have permission to access those repositories.</p>
+
+        <h3>How long are reports stored?</h3>
+        <p>Reports are cached locally on your device until you clear app data or uninstall the app. Server-side retention is managed by your organization.</p>
+
+        <h3>Does Arc Agent work on Apple Watch or Mac?</h3>
+        <p>Currently, Arc Agent is available for iPhone and iPad only. Apple Watch and macOS versions are planned for future releases.</p>
+
+        <div class="divider"></div>
+
+        <div class="contact-box">
+            <h2>Need More Help?</h2>
+            <p>If you're experiencing issues not covered in this support guide, please contact your organization's administrator or IT support team.</p>
+            <p>For technical issues with the Sprint Intelligence platform itself, visit the web application or contact your system administrator.</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <p style="text-align: center; color: #86868b; font-size: 14px;">
+            Arc Agent &copy; 2024-2025<br>
+            Sprint Intelligence Platform<br>
+            Version 1.0
+        </p>
+    </div>
+</body>
+</html>
+
+
