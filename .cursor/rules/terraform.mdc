@@ -1,0 +1,55 @@
+---
+description: Terraform conventions for the Sprint Intelligence infrastructure
+globs: terraform/**/*.tf
+alwaysApply: false
+---
+
+# Terraform Conventions
+
+## Locals
+
+Shared values belong in `local.tf`. Never repeat literal strings for runtime, retention, or common tags across `lambda_*.tf` files.
+
+```hcl
+# ✅ GOOD
+runtime                           = local.lambda_defaults.runtime
+cloudwatch_logs_retention_in_days = local.lambda_defaults.cloudwatch_logs_retention_in_days
+
+# ❌ BAD
+runtime = "nodejs20.x"
+```
+
+## Lambda Modules
+
+Every Lambda module must:
+- Merge `local.lambda_common_env` into `environment_variables`
+- Reference `local.lambda_defaults` for runtime/publish/retention/tags
+- Use `local.lambda_build_commands` for `source_path.commands`
+
+## Authorization
+
+Every API Gateway route must set `authorization_type = "CUSTOM"` and reference the authorizer. The route's value is sourced from `local.api_route_auth` and a `terraform check` block in `apigw.tf` enforces this at plan time.
+
+## Secrets
+
+Never hardcode secrets in `.tf` files. Use `aws_secretsmanager_secret` and reference via data sources or outputs. Sensitive outputs must use `sensitive = true`.
+
+## Step Functions
+
+All `Task` states must include a `Retry` block using `local.sfn_lambda_retry` and a `Catch` block using `local.sfn_lambda_catch`.
+
+### Terminal State Pattern
+
+When a workflow branch can exit gracefully without completing the main success path, use a `Choice` state that checks for the presence of the key that drives the next task. If the key is absent, route to a terminal `Pass` state. This avoids `JSONPath` errors on missing keys.
+
+```
+CheckXxxSuccess (Choice)
+  → key present  → NextTask
+  → key absent   → NoXxx (Pass, End: true)
+```
+
+Existing examples: `NoPRsFound`, `NoValidAnalyses`.
+
+## Formatting
+
+Always run `terraform fmt -recursive` before committing.

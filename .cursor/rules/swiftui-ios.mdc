@@ -1,0 +1,41 @@
+---
+description: SwiftUI and iOS conventions for the Arc Agent app
+globs: mobile/**/*.swift
+alwaysApply: false
+---
+
+# SwiftUI iOS Conventions
+
+## Secrets
+
+All secrets live in `Secrets.swift` (gitignored). Use `Secrets.swift.example` as the template. Never hardcode URLs, tokens, or keys inline.
+
+```swift
+// ✅ GOOD
+let url = URL(string: Secrets.apiURL)!
+
+// ❌ BAD
+let url = URL(string: "https://api.example.com")!
+```
+
+## Networking
+
+All network calls go through `APIService`. Use the `authorizedRequest(url:method:body:)` helper to add `x-api-key` consistently.
+
+```swift
+// ✅ GOOD
+var request = try authorizedRequest(url: url, method: "POST", body: body)
+
+// ❌ BAD
+request.setValue(Secrets.apiKey, forHTTPHeaderField: "x-api-key")  // ad-hoc in a view
+```
+
+## Logging
+
+Never `print` sensitive values (API keys, tokens, response bodies that may contain user data). Use structured logging or remove debug prints before merging.
+
+## Architecture
+
+- MVVM: Views observe `@ObservedObject` / `@StateObject` ViewModels
+- Services are injected via the environment or initializer for testability
+- `URLProtocol` subclasses for unit test network stubbing (see `Arc_AgentTests.swift`)

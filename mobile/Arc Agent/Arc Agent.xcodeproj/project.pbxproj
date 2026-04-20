@@ -1,0 +1,649 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0BC1B4CFA123BA5BC0C7D171 /* APIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41D57F0BBA8BC121185BA7AB /* APIConfig.swift */; };
+		1265301D424664D50BFCEC7F /* Arc_AgentUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527AF721FABE07F603E4D20A /* Arc_AgentUITests.swift */; };
+		16E98AD0A8448EDD463B14A2 /* CompletedStepsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 633EB26C4DEF54C2F4D37346 /* CompletedStepsView.swift */; };
+		19ACF03B5DBCD59D0002FB8D /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D783947FCB242AA2A375D688 /* MarkdownContentView.swift */; };
+		312F72698977855AED1C014F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B56F518A5DA960AB226DD9C /* SettingsView.swift */; };
+		579AFDF83345FA57293089E4 /* Arc_AgentApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 184094D265B58723457052AB /* Arc_AgentApp.swift */; };
+		8A903EE192523967A78126D3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08F4281087908BA06B8642E1 /* ContentView.swift */; };
+		967C0B545A68AF674505DA91 /* Arc_AgentUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F69ECEEDB9A1ADD1D82624E /* Arc_AgentUITestsLaunchTests.swift */; };
+		9E971A0E79FDD8113C61EBF0 /* FeaturesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 937092CA3227C523D40F91CB /* FeaturesView.swift */; };
+		9F57D9619498BEB311564AA8 /* ReportModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF043ADD1E7AD52AFFD5F78D /* ReportModalView.swift */; };
+		A3690D4D7086B70CABC6A7E2 /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610744393CFA91BAE4518EF5 /* Secrets.swift */; };
+		A37FD376284DEC28C641A6BA /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1F43D6DD1F80E21AEC50E9 /* ShareSheet.swift */; };
+		B13052C91E76AEBEC2812B6C /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B664FC68652C5CD1FA6EFD91 /* APIService.swift */; };
+		B61077C2F0E170C971D557D0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5FBC1452B4920C13929AD027 /* Assets.xcassets */; };
+		B6397FF3ECCECB44BD793E3D /* Arc_AgentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2C8705BFF606CCF35EA9D96 /* Arc_AgentTests.swift */; };
+		B80DCDB267FD2429F2EDF3E3 /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F34ACCE9F0E3290A86F6E1 /* ErrorView.swift */; };
+		BB5CF7A6143616ED115A35FA /* WorkflowStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF63B67D8DD4EB58FB1E335 /* WorkflowStep.swift */; };
+		CB9D7CF8044765C6BFEC33A0 /* SprintAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 718895B8804DCE34065EAD9D /* SprintAnalysis.swift */; };
+		D0142F5A58DA36BF6CF2BD58 /* SprintAnalysisViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7FAC74B0641688A3E2FCE59 /* SprintAnalysisViewModel.swift */; };
+		EDFD5360F7C1FF3503CBE88E /* FetchingReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E696DE68EC648F637F13AE /* FetchingReportView.swift */; };
+		F451AEA076BB94F9616EDE6F /* HeroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748266C55AF7BB9A77D9419D /* HeroView.swift */; };
+		F94523F6CDDB2B82175ECBE4 /* ProgressTrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3A86C50CF18B812888665B9 /* ProgressTrackerView.swift */; };
+		FF634EA93452BB4F523BF560 /* RunAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C40A3B00B1B8BDDD53186F9 /* RunAgentView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C97DDCABE6E90D1FEF4956DA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F0DC6BEEF9297F244B196BD5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1AAD3B134FBA3D6A12DA2C58;
+			remoteInfo = "Arc Agent";
+		};
+		FDCC9D47B7F60A09A85D1817 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F0DC6BEEF9297F244B196BD5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1AAD3B134FBA3D6A12DA2C58;
+			remoteInfo = "Arc Agent";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		08F4281087908BA06B8642E1 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		0FF63B67D8DD4EB58FB1E335 /* WorkflowStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkflowStep.swift; sourceTree = "<group>"; };
+		184094D265B58723457052AB /* Arc_AgentApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arc_AgentApp.swift; sourceTree = "<group>"; };
+		2732DBFA78355B81F7ED1188 /* Arc AgentUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = "Arc AgentUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2F69ECEEDB9A1ADD1D82624E /* Arc_AgentUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arc_AgentUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		3C40A3B00B1B8BDDD53186F9 /* RunAgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAgentView.swift; sourceTree = "<group>"; };
+		41D57F0BBA8BC121185BA7AB /* APIConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfig.swift; sourceTree = "<group>"; };
+		44E696DE68EC648F637F13AE /* FetchingReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchingReportView.swift; sourceTree = "<group>"; };
+		4B56F518A5DA960AB226DD9C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		527AF721FABE07F603E4D20A /* Arc_AgentUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arc_AgentUITests.swift; sourceTree = "<group>"; };
+		5FBC1452B4920C13929AD027 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		610744393CFA91BAE4518EF5 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
+		61F34ACCE9F0E3290A86F6E1 /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
+		633EB26C4DEF54C2F4D37346 /* CompletedStepsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletedStepsView.swift; sourceTree = "<group>"; };
+		718895B8804DCE34065EAD9D /* SprintAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SprintAnalysis.swift; sourceTree = "<group>"; };
+		748266C55AF7BB9A77D9419D /* HeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroView.swift; sourceTree = "<group>"; };
+		937092CA3227C523D40F91CB /* FeaturesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeaturesView.swift; sourceTree = "<group>"; };
+		AF1F43D6DD1F80E21AEC50E9 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
+		B3A86C50CF18B812888665B9 /* ProgressTrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressTrackerView.swift; sourceTree = "<group>"; };
+		B664FC68652C5CD1FA6EFD91 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
+		C7FAC74B0641688A3E2FCE59 /* SprintAnalysisViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SprintAnalysisViewModel.swift; sourceTree = "<group>"; };
+		CF043ADD1E7AD52AFFD5F78D /* ReportModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportModalView.swift; sourceTree = "<group>"; };
+		D176ED4CAF905DD5B9C569BF /* Arc AgentTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = "Arc AgentTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D783947FCB242AA2A375D688 /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
+		EF0AF8C0E795A628C626D4BE /* Arc Agent.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Arc Agent.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F2C8705BFF606CCF35EA9D96 /* Arc_AgentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arc_AgentTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		086C7007223C1D356C048EF7 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				41D57F0BBA8BC121185BA7AB /* APIConfig.swift */,
+				B664FC68652C5CD1FA6EFD91 /* APIService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		282982BCDA37211EB90DE82E /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				718895B8804DCE34065EAD9D /* SprintAnalysis.swift */,
+				0FF63B67D8DD4EB58FB1E335 /* WorkflowStep.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		48AB1A8F5C05BA7FB97048E3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EF0AF8C0E795A628C626D4BE /* Arc Agent.app */,
+				D176ED4CAF905DD5B9C569BF /* Arc AgentTests.xctest */,
+				2732DBFA78355B81F7ED1188 /* Arc AgentUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5FACB8D1FA7EA7EE5DCC6921 /* Arc AgentTests */ = {
+			isa = PBXGroup;
+			children = (
+				F2C8705BFF606CCF35EA9D96 /* Arc_AgentTests.swift */,
+			);
+			path = "Arc AgentTests";
+			sourceTree = "<group>";
+		};
+		62144335A9BFAD80F2C85C1F /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				C7FAC74B0641688A3E2FCE59 /* SprintAnalysisViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		B910B5B85402DA3099F7CCB8 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				633EB26C4DEF54C2F4D37346 /* CompletedStepsView.swift */,
+				61F34ACCE9F0E3290A86F6E1 /* ErrorView.swift */,
+				937092CA3227C523D40F91CB /* FeaturesView.swift */,
+				44E696DE68EC648F637F13AE /* FetchingReportView.swift */,
+				748266C55AF7BB9A77D9419D /* HeroView.swift */,
+				D783947FCB242AA2A375D688 /* MarkdownContentView.swift */,
+				B3A86C50CF18B812888665B9 /* ProgressTrackerView.swift */,
+				CF043ADD1E7AD52AFFD5F78D /* ReportModalView.swift */,
+				3C40A3B00B1B8BDDD53186F9 /* RunAgentView.swift */,
+				4B56F518A5DA960AB226DD9C /* SettingsView.swift */,
+				AF1F43D6DD1F80E21AEC50E9 /* ShareSheet.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		F131F25F90C3DA819E7087F5 /* Arc Agent */ = {
+			isa = PBXGroup;
+			children = (
+				282982BCDA37211EB90DE82E /* Models */,
+				086C7007223C1D356C048EF7 /* Services */,
+				62144335A9BFAD80F2C85C1F /* ViewModels */,
+				B910B5B85402DA3099F7CCB8 /* Views */,
+				184094D265B58723457052AB /* Arc_AgentApp.swift */,
+				5FBC1452B4920C13929AD027 /* Assets.xcassets */,
+				08F4281087908BA06B8642E1 /* ContentView.swift */,
+				610744393CFA91BAE4518EF5 /* Secrets.swift */,
+			);
+			path = "Arc Agent";
+			sourceTree = "<group>";
+		};
+		F7B8E88A4F36201A4425A292 = {
+			isa = PBXGroup;
+			children = (
+				F131F25F90C3DA819E7087F5 /* Arc Agent */,
+				5FACB8D1FA7EA7EE5DCC6921 /* Arc AgentTests */,
+				F7D487E30A22E94733784ED7 /* Arc AgentUITests */,
+				48AB1A8F5C05BA7FB97048E3 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F7D487E30A22E94733784ED7 /* Arc AgentUITests */ = {
+			isa = PBXGroup;
+			children = (
+				527AF721FABE07F603E4D20A /* Arc_AgentUITests.swift */,
+				2F69ECEEDB9A1ADD1D82624E /* Arc_AgentUITestsLaunchTests.swift */,
+			);
+			path = "Arc AgentUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1AAD3B134FBA3D6A12DA2C58 /* Arc Agent */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AC3C647A76FEC4F8867177D0 /* Build configuration list for PBXNativeTarget "Arc Agent" */;
+			buildPhases = (
+				289FA05EDBD231881B4D9517 /* Sources */,
+				405677C0956DF90F347072A9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Arc Agent";
+			packageProductDependencies = (
+			);
+			productName = "Arc Agent";
+			productReference = EF0AF8C0E795A628C626D4BE /* Arc Agent.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D9A15ABD858779475919AB13 /* Arc AgentUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4A789C60737DEC5F183DEBEB /* Build configuration list for PBXNativeTarget "Arc AgentUITests" */;
+			buildPhases = (
+				0129C6C0ED8BD4FDEA91E262 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				447701765813620100C55AF2 /* PBXTargetDependency */,
+			);
+			name = "Arc AgentUITests";
+			packageProductDependencies = (
+			);
+			productName = "Arc AgentUITests";
+			productReference = 2732DBFA78355B81F7ED1188 /* Arc AgentUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		E610107724C343FB33F10C7A /* Arc AgentTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 47696ADD6B732E562E5206A0 /* Build configuration list for PBXNativeTarget "Arc AgentTests" */;
+			buildPhases = (
+				A42F7EF13843427838A8CB2E /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				870664220494145E84D33937 /* PBXTargetDependency */,
+			);
+			name = "Arc AgentTests";
+			packageProductDependencies = (
+			);
+			productName = "Arc AgentTests";
+			productReference = D176ED4CAF905DD5B9C569BF /* Arc AgentTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F0DC6BEEF9297F244B196BD5 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					1AAD3B134FBA3D6A12DA2C58 = {
+						ProvisioningStyle = Automatic;
+					};
+					D9A15ABD858779475919AB13 = {
+						TestTargetID = 1AAD3B134FBA3D6A12DA2C58;
+					};
+				};
+			};
+			buildConfigurationList = F12CF85C10C0E1BFCF4014E9 /* Build configuration list for PBXProject "Arc Agent" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = F7B8E88A4F36201A4425A292;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 48AB1A8F5C05BA7FB97048E3 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1AAD3B134FBA3D6A12DA2C58 /* Arc Agent */,
+				E610107724C343FB33F10C7A /* Arc AgentTests */,
+				D9A15ABD858779475919AB13 /* Arc AgentUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		405677C0956DF90F347072A9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B61077C2F0E170C971D557D0 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0129C6C0ED8BD4FDEA91E262 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1265301D424664D50BFCEC7F /* Arc_AgentUITests.swift in Sources */,
+				967C0B545A68AF674505DA91 /* Arc_AgentUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		289FA05EDBD231881B4D9517 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0BC1B4CFA123BA5BC0C7D171 /* APIConfig.swift in Sources */,
+				B13052C91E76AEBEC2812B6C /* APIService.swift in Sources */,
+				579AFDF83345FA57293089E4 /* Arc_AgentApp.swift in Sources */,
+				16E98AD0A8448EDD463B14A2 /* CompletedStepsView.swift in Sources */,
+				8A903EE192523967A78126D3 /* ContentView.swift in Sources */,
+				B80DCDB267FD2429F2EDF3E3 /* ErrorView.swift in Sources */,
+				9E971A0E79FDD8113C61EBF0 /* FeaturesView.swift in Sources */,
+				EDFD5360F7C1FF3503CBE88E /* FetchingReportView.swift in Sources */,
+				F451AEA076BB94F9616EDE6F /* HeroView.swift in Sources */,
+				19ACF03B5DBCD59D0002FB8D /* MarkdownContentView.swift in Sources */,
+				F94523F6CDDB2B82175ECBE4 /* ProgressTrackerView.swift in Sources */,
+				9F57D9619498BEB311564AA8 /* ReportModalView.swift in Sources */,
+				FF634EA93452BB4F523BF560 /* RunAgentView.swift in Sources */,
+				A3690D4D7086B70CABC6A7E2 /* Secrets.swift in Sources */,
+				312F72698977855AED1C014F /* SettingsView.swift in Sources */,
+				A37FD376284DEC28C641A6BA /* ShareSheet.swift in Sources */,
+				CB9D7CF8044765C6BFEC33A0 /* SprintAnalysis.swift in Sources */,
+				D0142F5A58DA36BF6CF2BD58 /* SprintAnalysisViewModel.swift in Sources */,
+				BB5CF7A6143616ED115A35FA /* WorkflowStep.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A42F7EF13843427838A8CB2E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B6397FF3ECCECB44BD793E3D /* Arc_AgentTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		447701765813620100C55AF2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1AAD3B134FBA3D6A12DA2C58 /* Arc Agent */;
+			targetProxy = C97DDCABE6E90D1FEF4956DA /* PBXContainerItemProxy */;
+		};
+		870664220494145E84D33937 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1AAD3B134FBA3D6A12DA2C58 /* Arc Agent */;
+			targetProxy = FDCC9D47B7F60A09A85D1817 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		086D888BE402575A938BC4CE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Arc Agent/Arc Agent.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3N7C4993B3;
+				INFOPLIST_KEY_CFBundleDisplayName = "Arc Agent";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = NO;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.bernsonfamily.com.Arc-Agent";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		391DB1230C1354CFE69B1804 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.bernsonfamily.com.Arc-AgentUITests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Arc Agent";
+			};
+			name = Release;
+		};
+		49EC8422E1D8735E29BC2F07 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.bernsonfamily.com.Arc-AgentTests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Arc Agent.app/Arc Agent";
+			};
+			name = Release;
+		};
+		5D1F8308152CCFD6ADCE1FFA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+		963B4053F4566B6BB88EF099 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.bernsonfamily.com.Arc-AgentUITests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Arc Agent";
+			};
+			name = Debug;
+		};
+		A0871776D835467CEE1FC0C8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Arc Agent/Arc Agent.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3N7C4993B3;
+				INFOPLIST_KEY_CFBundleDisplayName = "Arc Agent";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = NO;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.bernsonfamily.com.Arc-Agent";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B625EF0D66B3CD8B863E2EF8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.bernsonfamily.com.Arc-AgentTests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Arc Agent.app/Arc Agent";
+			};
+			name = Debug;
+		};
+		D16703C3FC301576968F928C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		47696ADD6B732E562E5206A0 /* Build configuration list for PBXNativeTarget "Arc AgentTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B625EF0D66B3CD8B863E2EF8 /* Debug */,
+				49EC8422E1D8735E29BC2F07 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4A789C60737DEC5F183DEBEB /* Build configuration list for PBXNativeTarget "Arc AgentUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				963B4053F4566B6BB88EF099 /* Debug */,
+				391DB1230C1354CFE69B1804 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AC3C647A76FEC4F8867177D0 /* Build configuration list for PBXNativeTarget "Arc Agent" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A0871776D835467CEE1FC0C8 /* Debug */,
+				086D888BE402575A938BC4CE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F12CF85C10C0E1BFCF4014E9 /* Build configuration list for PBXProject "Arc Agent" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5D1F8308152CCFD6ADCE1FFA /* Debug */,
+				D16703C3FC301576968F928C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F0DC6BEEF9297F244B196BD5 /* Project object */;
+}

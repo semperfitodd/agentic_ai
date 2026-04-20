@@ -1,0 +1,50 @@
+---
+description: TypeScript conventions for Lambda functions
+globs: backend/**/*.ts
+alwaysApply: false
+---
+
+# Lambda TypeScript Conventions
+
+## Shared Library
+
+Always import utilities from `@sprint/shared`. Never add direct `@aws-sdk/*` or `@octokit/rest` imports to a lambda handler — these live in the shared lib.
+
+```typescript
+// ✅ GOOD
+import { requireEnv, logger, apiResponse, toPublicError, putJson } from '@sprint/shared';
+
+// ❌ BAD
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+```
+
+## Environment Variables
+
+Use `requireEnv` for any mandatory env var — it throws a clear error at cold-start time.
+
+```typescript
+// ✅ GOOD
+const bucket = requireEnv('RESULTS_BUCKET');
+
+// ❌ BAD
+const bucket = process.env.RESULTS_BUCKET!;
+```
+
+## Logging
+
+Use `logger` from `@sprint/shared`. Never use `console.log/error`. Sensitive keys are auto-redacted.
+
+```typescript
+logger.info('Processing repo', { owner, repo });
+logger.error('Fetch failed', toPublicError(err));
+```
+
+## Error Handling
+
+- Catch all async errors; return `apiResponse(500, toPublicError(err))` — never leak stack traces.
+- `toPublicError` sanitizes the message for external responses.
+
+## Response Shape
+
+- API Gateway handlers → `apiResponse(statusCode, body)` or `apiTextResponse(statusCode, body, contentType)`
+- Step Functions task states → `stepResponse(statusCode, body)`

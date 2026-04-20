@@ -1,0 +1,23 @@
+{
+  "name": "lambda-aggregate-sprint",
+  "version": "1.0.0",
+  "description": "Lambda to aggregate PR analyses into sprint report using Amazon Bedrock",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@sprint/shared": "file:../shared"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
+    "aws-sdk-client-mock": "^4.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.4",
+    "typescript": "~5.7.0"
+  },
+  "license": "MIT"
+}

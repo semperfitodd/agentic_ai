@@ -1,0 +1,39 @@
+---
+description: Security conventions across the entire Sprint Intelligence monorepo
+alwaysApply: true
+---
+
+# Security Conventions
+
+## Secrets Management
+
+Secrets are stored in exactly one canonical location per layer:
+
+| Layer | Location | Gitignored? |
+|---|---|---|
+| Terraform | `terraform/*.tfvars` | ✅ Yes |
+| Lambda runtime | AWS Secrets Manager | N/A |
+| iOS | `mobile/Arc Agent/Arc Agent/Secrets.swift` | ✅ Yes |
+| React dev | `static_site/.env.local` | ✅ Yes |
+
+**Never** hardcode secrets in source files, Terraform resources, or comments.
+
+## API Authentication
+
+Every API Gateway route uses `authorization_type = "CUSTOM"` (custom Lambda authorizer). The authorizer validates `x-api-key` against Secrets Manager. No unauthenticated routes are permitted.
+
+## Log Redaction
+
+The shared `logger` in `@sprint/shared` auto-redacts keys: `githubToken`, `x-api-key`, `authorization`, `password`, `secret`, `token`. Do not log request bodies that may contain these fields directly.
+
+## Error Messages
+
+Use `toPublicError(err)` before returning errors to clients. This prevents stack traces and internal implementation details from leaking.
+
+## CORS
+
+The CORS `allow_origins` is restricted to `https://<env>.<domain>`. Wildcard origins (`*`) are not permitted in production.
+
+## S3
+
+Results bucket: SSE-S3 encryption, versioning enabled, 90-day lifecycle on non-current versions. Public access blocked. CloudFront frontend bucket is served via OAC only — no public bucket policy.

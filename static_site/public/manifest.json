@@ -1,0 +1,18 @@
+{
+  "short_name": "Agentic AI",
+  "name": "Agentic AI Demo - BSC Analytics",
+  "description": "Advanced AI-powered sprint analysis platform leveraging autonomous agents for intelligent development insights",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1a1f36",
+  "background_color": "#0f1419",
+  "categories": ["business", "productivity", "developer tools"],
+  "orientation": "portrait-primary"
+}

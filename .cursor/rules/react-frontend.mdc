@@ -1,0 +1,49 @@
+---
+description: React frontend conventions for the static_site
+globs: static_site/src/**/*.{js,jsx,ts,tsx}
+alwaysApply: false
+---
+
+# React Frontend Conventions
+
+## Settings & Configuration
+
+All localStorage keys and default values live in `src/config/settings.js`. Never read from `localStorage` directly in a component.
+
+```javascript
+// ✅ GOOD
+import { getEffectiveSettings, STORAGE_KEYS } from '../config/settings';
+
+// ❌ BAD
+const token = localStorage.getItem('arc_github_token');
+```
+
+## API Calls
+
+All API interactions go through `src/utils/api.js`. Components never call `fetch` directly.
+
+## Component Patterns
+
+- Functional components only
+- Extract reusable markup into a dedicated component (e.g., `StepRow`)
+- Props should be fully typed or at minimum documented with JSDoc
+
+## CSS & Accessibility
+
+- Touch targets must be ≥ 44 × 44 px
+- Interactive elements need `aria-label` when text is absent (e.g., icon-only buttons)
+- Media queries required: `max-width: 768px`, `max-width: 360px`, `prefers-reduced-motion`
+
+## Error Handling
+
+API errors must surface a user-visible message. Never silently swallow a rejected promise.
+
+```javascript
+// ✅ GOOD
+try {
+  const result = await startSprintAnalysis(settings);
+  setExecutionArn(result.executionArn);
+} catch (err) {
+  setError(err.message || 'An unexpected error occurred');
+}
+```
