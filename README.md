@@ -1,110 +1,116 @@
 # Sprint Intelligence
 
-An enterprise-grade agentic AI system that analyzes GitHub sprint activity and generates executive-quality reports. Designed as application-first agentic AI — roughly 70% deterministic orchestration and 30% AI reasoning.
+A reference implementation of an agentic AI system that analyzes GitHub sprint activity and generates executive-quality reports. Designed as application-first agentic AI — roughly 70% deterministic orchestration and 30% AI reasoning.
 
-![architecture.png](img/architecture.png)
+![architecture.png](architecture/exports/architecture.png)
 
-![workflow.png](img/workflow.png)
+![workflow.png](architecture/exports/workflow.png)
 
-## Architecture
+## Project Status
 
-```mermaid
-graph TD
-    Client["Web / iOS Client"]
-    APIGW["API Gateway HTTP API\n(x-api-key + Lambda Authorizer)"]
-    WF["lambda_workflow\nStart Execution"]
-    SFN["Step Functions\nSPRINT_ANALYSIS"]
-    PR["lambda_parse_repos"]
-    FR["lambda_fetch_repo_data"]
-    FPR["lambda_fetch_pr_details"]
-    PD["lambda_prepare_data"]
-    AP["lambda_analyze_pr\nBedrock Claude 3.5"]
-    AS["lambda_aggregate_sprint\nBedrock Claude 3.5"]
-    SR["lambda_store_results"]
-    GR["lambda_get_results\nPoll status / list reports"]
-    GM["lambda_get_markdown\nFetch rendered report"]
-    S3["S3 Results Bucket\n(SSE-S3, versioned)"]
-    CF["CloudFront + S3\nStatic Frontend"]
+This section records what is implemented, what is illustrative only, and **verification results actually observed** (not inferred from the commands below). Re-run the [Testing](#testing) commands and update the verification log when you change the codebase.
 
-    Client --> CF
-    Client --> APIGW
-    APIGW --> WF
-    APIGW --> GR
-    APIGW --> GM
-    WF --> SFN
-    SFN --> PR --> FR --> PD --> FPR --> AP --> AS --> SR
-    SR --> S3
-    GR --> S3
-    GM --> S3
-```
+**Verification environment (2026-10-26):** macOS; Node v26.12.0; npm 11.20.0; Terraform v1.16.6; Xcode 27.1. CI targets Node 24.x per [`.github/workflows/backend.yml`](.github/workflows/backend.yml).
 
-### Lambda Functions
+### Implementation status
 
-| Function | Route | Purpose |
+| Component | Status | Notes |
 |---|---|---|
-| `lambda_authorizer` | — | Custom Lambda authorizer; validates `x-api-key` against Secrets Manager |
-| `lambda_workflow` | `POST /workflow` | Validates request, starts Step Functions execution, returns `executionArn` |
-| `lambda_parse_repos` | Step | Normalizes GitHub URLs (`owner/repo`, HTTPS, SSH) into structured list |
-| `lambda_fetch_repo_data` | Step | Fetches PR metadata per repo via GitHub API (parallel Map) |
-| `lambda_prepare_data` | Step | Aggregates raw PR data, writes consolidated JSON to S3 |
-| `lambda_fetch_pr_details` | Step | Fetches diffs, comments, reviews per PR (parallel Map) |
-| `lambda_analyze_pr` | Step | Invokes Bedrock Claude per PR to produce structured analysis JSON |
-| `lambda_aggregate_sprint` | Step | Invokes Bedrock Claude across all PR analyses to produce markdown sprint report |
-| `lambda_store_results` | Step | Validates and surfaces final S3 locations as execution output |
-| `lambda_get_results` | `GET /results` | Polls execution status by `executionArn`; lists reports (`?list=true`) |
-| `lambda_get_markdown` | `GET /markdown` | Retrieves a specific markdown report from S3 by `?key=` |
+| API Gateway + custom Lambda authorizer (`x-api-key`) | Implemented | `authorization_type = "CUSTOM"` on all routes; `terraform check` in [`terraform/apigw.tf`](terraform/apigw.tf) |
+| `lambda_authorizer` | Implemented | Unit tests present; see verification log |
+| `lambda_workflow` (`POST /workflow`, alias `POST /sprint-intelligence`) | Implemented | Unit tests present |
+| `lambda_get_results`, `lambda_get_markdown` | Implemented | Unit tests present |
+| `lambda_parse_repos`, `lambda_store_results`, `lambda_aggregate_sprint` | Implemented | Unit tests present |
+| `lambda_analyze_pr`, `lambda_fetch_pr_details`, `lambda_fetch_repo_data`, `lambda_prepare_data` | Implemented | Unit tests added; see verification log |
+| CloudWatch alarm (Step Functions `ExecutionsFailed`) | Implemented (config only) | [`terraform/cloudwatch_alarms.tf`](terraform/cloudwatch_alarms.tf) |
+| Step Functions workflow (`NoPRsFound`, `NoValidAnalyses` terminal paths) | Implemented | Defined in [`terraform/step_functions.tf`](terraform/step_functions.tf); not exercised in local tests |
+| `@sprint/shared` | Implemented | Unit tested in isolation |
+| React frontend (`static_site/`) | Implemented | Unit tests + production build verified locally |
+| iOS app (`mobile/Arc Agent/`) | Implemented | XCTest targets exist; not run locally on 2026-10-26 (simulator unavailable) |
+| GitHub Actions (frontend, backend, terraform) | Implemented (workflows only) | Not executed against this branch in the verification pass |
+| Terraform infrastructure | Implemented (config only) | `terraform validate` passed locally; no successful `plan`/`apply` in this pass |
 
-All routes are protected by the custom Lambda authorizer (`authorization_type = "CUSTOM"`).
+### Illustrative components
 
-## Repository Layout
+These items support understanding or onboarding; they are not live infrastructure diagrams or production data.
 
-```
-agentic_ai/
-├── architecture/          # Draw.io source files
-│   ├── architecture.drawio
-│   └── workflow.drawio
-├── img/                   # Generated PNG diagrams
-│   ├── architecture.png
-│   └── workflow.png
-├── mobile/
-│   └── Arc Agent/         # SwiftUI iOS/iPadOS app
-├── static_site/           # React frontend (CRA)
-│   └── src/
-│       ├── components/
-│       ├── config/settings.js
-│       ├── utils/api.js
-│       └── __tests__/
-├── backend/
-│   ├── shared/            # @sprint/shared — shared TypeScript utilities
-│   └── <name>/            # Individual Lambda handlers (name = function_name suffix)
-└── terraform/
-    └── *.tf               # Terraform resources (infra only; code lives in backend/)
-```
+| Item | Role |
+|---|---|
+| [`architecture/exports/*.png`](architecture/exports/) / [`.svg`](architecture/exports/) | Simplified diagrams generated from [`architecture/scripts/diagram-helpers.cjs`](architecture/scripts/diagram-helpers.cjs). Omits IAM, logging, and full Step Functions detail. |
+| [`static_site/src/components/OverviewPage.js`](static_site/src/components/OverviewPage.js), [`FeaturesPage.js`](static_site/src/components/FeaturesPage.js) | Marketing / explanatory copy |
+| [`terraform/terraform.tfvars.example`](terraform/terraform.tfvars.example), [`static_site/.env.example`](static_site/.env.example), [`Secrets.swift.example`](mobile/Arc%20Agent/Arc%20Agent/Secrets.swift.example) | Placeholder configuration only |
+| `POST /sprint-intelligence` | Alias route to the same handler as `POST /workflow` |
+
+### Verification log
+
+| Date | Area | Command | Result |
+|---|---|---|---|
+| 2026-10-26 | `@sprint/shared` | `cd backend/shared && npm test` | **Pass** — 4 suites, 18 tests |
+| 2026-10-26 | All Lambdas (except shared) | `npm test -- --passWithNoTests` per package | **Pass** — 11 suites, 34 tests total |
+| 2026-10-26 | `lambda_get_results` | `npm install` (adds `@aws-sdk/client-sfn` devDep) + `npm test` | **Pass** — 1 suite, 4 tests |
+| 2026-10-26 | React frontend | `cd static_site && npm test -- --watchAll=false --ci` | **Pass** — 5 suites, 40 tests |
+| 2026-10-26 | React frontend | `npm run build` | **Pass** — production build completed |
+| 2026-10-26 | Architecture export | `cd architecture/scripts && npm run export` | **Pass** — regenerated PNG/SVG for architecture and workflow |
+| 2026-10-26 | Terraform | `terraform fmt -check -recursive` | **Pass** |
+| 2026-10-26 | Terraform | `terraform init -backend=false` + `terraform validate` (with `TF_VAR_environment`, `TF_VAR_domain`, `TF_VAR_region`) | **Pass** — configuration valid (includes `cloudwatch_alarms.tf`, `use_lockfile = true`, 30-day log retention) |
+| 2026-10-26 | Terraform | `terraform plan` (S3 backend) | **Not run** — S3 state object returned 403 (no access to `bsc.sandbox.terraform.state` from local credentials) |
+| 2026-10-26 | iOS | `xcodebuild test` (README destination) | **Not run** — no matching iOS Simulator (`CoreSimulator` out of date; iPhone 17 simulator not available) |
+
+### Not verified in this pass
+
+- `terraform plan` or `terraform apply` against AWS with readable remote state
+- End-to-end workflow (GitHub API → Step Functions → Bedrock → S3 → report download)
+- GitHub Actions runs for current workflow pins (Node 24, `nodejs24.x`, upgraded action majors, `TF_VAR_*` wiring)
+- Load, penetration, or accessibility testing
+- Live Bedrock or GitHub calls (unit tests use mocks)
+
+### Known limitations
+
+- **Shared API key auth:** The API uses a single `x-api-key` validated by the custom authorizer. The key is embedded in the React bundle via `REACT_APP_API_KEY` ([`static_site/src/utils/api.js`](static_site/src/utils/api.js)) and in the iOS app via gitignored `Secrets.swift`. There is no Cognito or per-user identity.
+- **GitHub token handling:** Users store a GitHub token in browser `localStorage` ([`static_site/src/config/settings.js`](static_site/src/config/settings.js)). The token is sent in the workflow request body and propagated through Step Functions as `githubToken` ([`terraform/step_functions.tf`](terraform/step_functions.tf)), so it may appear in execution history.
+- **Bedrock model:** Default model ID is `us.anthropic.claude-3-5-sonnet-20241022-v2:0` ([`terraform/variables.tf`](terraform/variables.tf)). Availability and lifecycle in your AWS account/region must be confirmed before production use.
+- **Terraform state locking:** S3 backend uses native lockfile locking (`use_lockfile = true` in [`terraform/backend.tf`](terraform/backend.tf)). Confirm your Terraform version and IAM permissions support lockfiles before concurrent applies.
+- **Frontend toolchain:** `react-scripts` 5.0.1 is unmaintained. After `npm install` in `static_site/`, `npm audit` reported **57** vulnerabilities (9 low, 29 moderate, 18 high, 1 critical) on 2026-10-26.
+- **Logging retention:** Lambda CloudWatch log retention is **30** days ([`terraform/local.tf`](terraform/local.tf)).
+- **Monitoring:** A Step Functions failure alarm is defined in Terraform; no SNS/email subscription or dashboard is wired yet.
+
+### Remaining production requirements
+
+- Per-user authentication (e.g. Cognito + JWT authorizer) instead of a shared API key in client apps
+- Remove GitHub PAT from Step Functions input; use Secrets Manager, OIDC, or a GitHub App
+- Integration or E2E tests against a non-production AWS stack
+- Run and review `terraform plan` before apply (local plan still blocked without S3 state access)
+- Migrate off Create React App; remediate `npm audit` findings
+- Confirm Bedrock model ID and quotas in target region
+- Run and pass all GitHub Actions workflows on a PR before merge
+- Wire CloudWatch alarm actions (SNS/PagerDuty) and operational dashboards
+
+For repository structure, Lambda inventory, authorization audit, and agent conventions, see [AGENTS.md](AGENTS.md).
 
 ## Prerequisites
 
 | Tool | Version |
 |---|---|
-| Node.js | 20.x |
-| Terraform | ≥ 1.5 |
 | AWS CLI | ≥ 2 |
+| Node.js | 24.x |
+| Terraform | ≥ 1.10.5 |
 | Xcode | ≥ 15 |
-| drawio CLI | any |
 
 ## Secrets Setup
 
 **Never commit real secrets.** All sensitive values live in exactly one of:
 
-- `terraform/*.tfvars` — Terraform variables (gitignored)
 - `mobile/Arc Agent/Arc Agent/Secrets.swift` — iOS constants (gitignored)
 - `static_site/.env.local` — React environment overrides (gitignored)
+- `terraform/*.tfvars` — Terraform variables (gitignored)
 
-Copy the example file before building the iOS app:
+Copy the example files before local development:
 
 ```bash
+cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+cp static_site/.env.example static_site/.env.local
 cp "mobile/Arc Agent/Arc Agent/Secrets.swift.example" \
    "mobile/Arc Agent/Arc Agent/Secrets.swift"
-# Edit Secrets.swift with real values
 ```
 
 Retrieve the generated API key after `terraform apply`:
@@ -119,7 +125,7 @@ aws secretsmanager get-secret-value \
 
 ```bash
 cd terraform
-cp terraform.tfvars.example terraform.tfvars   # fill in domain, environment, region
+cp terraform.tfvars.example terraform.tfvars
 terraform init
 terraform plan -out=plan.out
 terraform apply plan.out
@@ -129,98 +135,51 @@ Outputs after apply:
 
 | Output | Description |
 |---|---|
+| `api_key_secret_name` | Secrets Manager secret containing `API_KEY` |
 | `api_url` | API Gateway base URL (`https://api.<domain>`) |
 | `frontend_url` | CloudFront frontend URL (`https://<env>.<domain>`) |
 | `results_bucket` | S3 bucket name for sprint reports |
-| `api_key_secret_name` | Secrets Manager secret containing `API_KEY` |
 
 ## Frontend
 
 ```bash
 cd static_site
-cp .env.example .env.local   # set REACT_APP_API_URL, REACT_APP_API_KEY
+cp .env.example .env.local
 npm install
-npm start        # development server
-npm run build    # production build (deploy to S3 via Terraform)
+npm start
+npm run build
+```
+
+## Architecture Diagrams
+
+Excalidraw sources live under `architecture/diagrams/`. Regenerate PNG and SVG exports:
+
+```bash
+cd architecture/scripts
+npm install
+npm run export
 ```
 
 ## Testing
 
-### Shared Lambda Library
+Commands below are for local reproduction only. **Observed pass/fail results with dates** belong in [Project Status → Verification log](#verification-log); update that table after you run them.
 
 ```bash
-cd backend/shared
-npm install
-npm test
-```
+cd backend/shared && npm install && npm test
 
-### Individual Lambda Functions
-
-```bash
-# Run tests for a single lambda
-cd backend/workflow_proxy
-npm test
-
-# Run all lambda tests
 for dir in backend/*/; do
   [[ "$dir" == "backend/shared/" ]] && continue
   echo "=== $dir ===" && (cd "$dir" && npm test --passWithNoTests)
 done
-```
 
-### React Frontend
+cd static_site && npm test
 
-```bash
-cd static_site
-npm test
-```
-
-### iOS
-
-```bash
 xcodebuild test \
   -project "mobile/Arc Agent/Arc Agent.xcodeproj" \
   -scheme "Arc Agent" \
   -destination "platform=iOS Simulator,name=iPhone 17"
-```
 
-### Terraform
-
-```bash
-cd terraform
-terraform fmt -check -recursive
-terraform validate
-```
-
-## Workflow
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant A as API Gateway
-    participant W as lambda_workflow
-    participant S as Step Functions
-    participant G as GitHub API
-    participant B as Bedrock
-
-    C->>A: POST /workflow {repos, since, until, githubToken}
-    A->>W: Authorized request
-    W->>S: StartExecution
-    W-->>C: 202 {executionArn}
-    loop Poll
-        C->>A: GET /results?executionArn=...
-        A-->>C: {status: RUNNING | SUCCEEDED}
-    end
-    S->>G: Fetch PRs, diffs, reviews
-    S->>B: Analyze PRs (Claude 3.5 Sonnet)
-    S->>B: Aggregate sprint report
-    alt Valid analyses exist
-        S->>S3: Store markdown report
-        C->>A: GET /markdown?key=...
-        A-->>C: Markdown report
-    else No valid analyses (NoValidAnalyses)
-        S-->>C: Inline report with warning
-    end
+cd terraform && terraform fmt -check -recursive && terraform validate
 ```
 
 ## Security
@@ -231,7 +190,6 @@ sequenceDiagram
 - CORS is restricted to `https://<env>.<domain>`
 - S3 results bucket: SSE-S3, versioning enabled, 90-day lifecycle on old versions
 - CloudFront serves the frontend via Origin Access Control (OAC)
-- `Secrets.swift` and all `.tfvars` files are gitignored
 
 ## CI/CD
 
@@ -239,9 +197,11 @@ Three path-filtered GitHub Actions workflows run automatically. `mobile/` change
 
 | Workflow | Triggers on | PR action | Push to `main` action |
 |---|---|---|---|
+| `backend.yml` | `backend/**` | build shared → test changed lambdas | build shared → test → `aws lambda update-function-code` |
 | `frontend.yml` | `static_site/**` | test + build | test + build + S3 sync + CloudFront invalidation |
-| `backend.yml` | `backend/**` | build shared → test changed lambdas | build shared → test → `aws lambda update-function-code` (per changed lambda) |
 | `terraform.yml` | `terraform/**` | plan (PR comment) | plan → apply |
+
+The Terraform workflow does not read a committed `terraform.tfvars` file. It sources `environment`, `domain`, and `region` from GitHub Actions variables via `TF_VAR_*` environment variables (`TF_ENVIRONMENT`, `TF_DOMAIN`, `AWS_REGION`).
 
 ### Required GitHub repository variables and secrets
 
@@ -251,41 +211,44 @@ After the first manual `terraform apply`, populate these under **Settings → Se
 
 | Variable | How to get the value |
 |---|---|
+| `AWS_REGION` | AWS region for the deployment (e.g., `us-east-1`) |
 | `AWS_ROLE_ARN` | `terraform output -raw github_actions_role_arn` |
-| `SITE_BUCKET` | `terraform output -raw site_bucket_name` |
 | `CLOUDFRONT_DISTRIBUTION_ID` | `terraform output -raw cloudfront_distribution_id` |
 | `REACT_APP_API_URL` | `terraform output -raw api_url` |
+| `SITE_BUCKET` | `terraform output -raw site_bucket_name` |
+| `TF_DOMAIN` | Base domain name (e.g., `brewsentry.com`) |
+| `TF_ENVIRONMENT` | Environment name for Terraform and Lambda naming (e.g., `agentic_ai_demo`) |
 
 **Secrets** (encrypted, never visible in logs):
 
 | Secret | How to get the value |
 |---|---|
-| `REACT_APP_API_KEY` | Value of the API key stored in Secrets Manager (`terraform output -raw api_key_secret_name`, then read via AWS console or `aws secretsmanager get-secret-value`) |
+| `REACT_APP_API_KEY` | API key from Secrets Manager (`terraform output -raw api_key_secret_name`) |
 
 ### First-time setup
 
 ```bash
-# 1. Apply infrastructure (creates OIDC provider + IAM role)
 cd terraform
 terraform apply
 
-# 2. Capture outputs into GitHub repo variables and secrets
+gh variable set AWS_REGION                 --body "us-east-1"
+gh variable set TF_DOMAIN                  --body "brewsentry.com"
+gh variable set TF_ENVIRONMENT             --body "agentic_ai_demo"
 gh variable set AWS_ROLE_ARN               --body "$(terraform output -raw github_actions_role_arn)"
-gh variable set SITE_BUCKET                --body "$(terraform output -raw site_bucket_name)"
 gh variable set CLOUDFRONT_DISTRIBUTION_ID --body "$(terraform output -raw cloudfront_distribution_id)"
 gh variable set REACT_APP_API_URL          --body "$(terraform output -raw api_url)"
-# 3. Set the API key as an encrypted secret
+gh variable set SITE_BUCKET                --body "$(terraform output -raw site_bucket_name)"
+
 API_KEY=$(aws secretsmanager get-secret-value \
   --secret-id "$(terraform output -raw api_key_secret_name)" \
   --query SecretString --output text | jq -r .API_KEY)
 gh secret set REACT_APP_API_KEY --body "$API_KEY"
 ```
 
-After that, every pull request touching `terraform/` will receive an auto-posted plan comment, every push to `main` that touches `backend/` will directly update Lambda function code, and every push to `main` that touches `terraform/` will run a full apply.
-
 ### Frontend deploy details
 
 The S3 sync uses split cache-control headers:
+
 - Hashed assets (`static/js/*.js`, `static/css/*.css`) → `max-age=31536000,immutable`
 - Entry points (`index.html`, `asset-manifest.json`) → `max-age=0,must-revalidate`
 
@@ -296,4 +259,4 @@ A CloudFront invalidation on `/*` follows every deploy.
 1. Follow the coding conventions in `.cursor/rules/`
 2. Add unit tests for any new Lambda handler logic
 3. Run `terraform fmt` before committing Terraform changes
-4. Keep `AGENTS.md` current when adding routes or changing auth behavior
+4. Keep [AGENTS.md](AGENTS.md) current when adding routes or changing auth behavior

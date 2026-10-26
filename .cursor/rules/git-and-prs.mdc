@@ -1,0 +1,16 @@
+---
+description: Git commits and pull request workflow
+alwaysApply: true
+---
+
+# Git and Pull Requests
+
+- Only create git commits when the user explicitly asks. If unclear, ask first.
+- Never update git config. Never run destructive git commands (force push, hard reset) unless explicitly requested.
+- Never skip hooks (`--no-verify`, `--no-gpg-sign`) unless explicitly requested.
+- Never force push to `main` or `master`. Warn the user if they request it.
+- Avoid `git commit --amend` unless the user requested it, HEAD was created in the current session and not pushed, or a hook auto-modified files after a successful commit.
+- If a commit fails or is rejected by a hook, fix the issue and create a new commit — do not amend.
+- Do not push unless the user explicitly asks.
+- Use `gh` for GitHub issues, PRs, checks, and releases.
+- When creating a PR: push with `-u`, use `gh pr create`, include summary and test plan, return the PR URL.

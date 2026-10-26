@@ -1,6 +1,6 @@
 module "lambda_store_results" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.1"
+  version = "~> 8.12"
 
   function_name = "${var.environment}_store_results"
   description   = "${replace(var.environment, "_", " ")} finalize sprint report location"

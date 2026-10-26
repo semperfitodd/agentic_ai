@@ -5,7 +5,7 @@ data "aws_route53_zone" "public" {
 
 module "cdn" {
   source  = "terraform-aws-modules/cloudfront/aws"
-  version = "~> 5.0"
+  version = "~> 6.7"
 
   aliases             = [local.domain_name]
   comment             = "${local.domain_name} Site CDN"
@@ -17,7 +17,6 @@ module "cdn" {
 
   default_root_object = "index.html"
 
-  create_origin_access_control = true
   origin_access_control = {
     (local.domain_name) = {
       description      = "${local.domain_name} CloudFront access to S3"
@@ -55,7 +54,6 @@ module "cdn" {
     allowed_methods = ["GET", "HEAD", "OPTIONS"]
     cached_methods  = ["GET", "HEAD"]
     compress        = true
-    query_string    = true
   }
 
   viewer_certificate = {

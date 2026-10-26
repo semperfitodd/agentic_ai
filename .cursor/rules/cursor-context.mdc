@@ -1,0 +1,10 @@
+---
+description: Keeping .cursor context current
+alwaysApply: true
+---
+
+# Cursor Context
+
+- Always update `.cursor` settings/context/rules when repository conventions, architecture, commands, security rules, coding patterns, or implementation guidance changes.
+- Keep Cursor context concise, current, and specific to this repository.
+- Remove stale Cursor instructions when they no longer apply.

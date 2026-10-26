@@ -1,0 +1,13 @@
+---
+description: Frontend styling and mobile CSS standards
+globs: **/*.css,**/*.scss,**/*.sass,**/*.less,**/*.tsx,**/*.jsx,**/*.vue,**/*.svelte,**/*.html
+alwaysApply: false
+---
+
+# Frontend and Styling
+
+- Keep mobile CSS current and tested.
+- Do not use raw inline styles. All styling must live in CSS files or the project's established styling system.
+- If a style is reused more than once, move it to a shared/global CSS pattern.
+- Keep CSS DRY, consistent, and organized.
+- Remove unused styles.

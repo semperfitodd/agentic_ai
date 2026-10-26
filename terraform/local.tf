@@ -5,9 +5,9 @@ locals {
   environment      = replace(var.environment, "_", "-")
 
   lambda_defaults = {
-    runtime                           = "nodejs20.x"
+    runtime                           = "nodejs24.x"
     publish                           = true
-    cloudwatch_logs_retention_in_days = 7
+    cloudwatch_logs_retention_in_days = 30
     tags                              = var.tags
   }
 

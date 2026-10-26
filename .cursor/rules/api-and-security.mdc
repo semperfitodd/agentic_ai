@@ -1,0 +1,11 @@
+---
+description: API authorization and Cognito security standards
+alwaysApply: true
+---
+
+# API and Security
+
+- Confirm all API calls are secured with Cognito.
+- No API endpoint should allow unauthorized access unless explicitly required and documented in the architecture.
+- Validate authentication and authorization paths for every new or modified API call.
+- Do not assume frontend checks are sufficient for security. Backend/API authorization must be enforced server-side.

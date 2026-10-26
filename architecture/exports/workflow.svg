@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="584" height="504" viewBox="0 0 584 504">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<g transform="translate(-48 -8)">
+<rect x="80" y="40" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="340" y="70" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Client POST /workflow (x-api-key)</text>
+<rect x="80" y="96" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="340" y="126" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">API Gateway → lambda_workflow → Step Functions</text>
+<line x1="340" y1="88" x2="340" y2="96" stroke="#1e1e1e" stroke-width="2"/>
+<polygon points="340,96 335,87.33974596215562 345,87.33974596215562" fill="#1e1e1e"/>
+<rect x="80" y="152" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="340" y="182" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Client polls GET /results?executionArn=…</text>
+<line x1="340" y1="144" x2="340" y2="152" stroke="#1e1e1e" stroke-width="2"/>
+<polygon points="340,152 335,143.3397459621556 345,143.3397459621556" fill="#1e1e1e"/>
+<rect x="80" y="208" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="340" y="238" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Step Functions: GitHub PRs, diffs, reviews</text>
+<line x1="340" y1="200" x2="340" y2="208" stroke="#1e1e1e" stroke-width="2"/>
+<polygon points="340,208 335,199.3397459621556 345,199.3397459621556" fill="#1e1e1e"/>
+<rect x="80" y="264" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="340" y="294" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Bedrock: analyze PRs + aggregate sprint report</text>
+<line x1="340" y1="256" x2="340" y2="264" stroke="#1e1e1e" stroke-width="2"/>
+<polygon points="340,264 335,255.3397459621556 345,255.3397459621556" fill="#1e1e1e"/>
+<rect x="80" y="320" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="340" y="350" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">store_results → S3 markdown</text>
+<line x1="340" y1="312" x2="340" y2="320" stroke="#1e1e1e" stroke-width="2"/>
+<polygon points="340,320 335,311.33974596215563 345,311.33974596215563" fill="#1e1e1e"/>
+<rect x="80" y="376" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="340" y="406" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Client GET /markdown?key=… → report</text>
+<line x1="340" y1="368" x2="340" y2="376" stroke="#1e1e1e" stroke-width="2"/>
+<polygon points="340,376 335,367.33974596215563 345,367.33974596215563" fill="#1e1e1e"/>
+<rect x="80" y="432" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="340" y="462" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Alt: NoValidAnalyses → inline warning (terminal)</text>
+<line x1="340" y1="424" x2="340" y2="432" stroke="#1e1e1e" stroke-width="2"/>
+<polygon points="340,432 335,423.33974596215563 345,423.33974596215563" fill="#1e1e1e"/>
+</g></svg>

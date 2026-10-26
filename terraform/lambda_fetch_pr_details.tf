@@ -1,6 +1,6 @@
 module "lambda_fetch_pr_details" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.1"
+  version = "~> 8.12"
 
   function_name = "${var.environment}_fetch_pr_details"
   description   = "${replace(var.environment, "_", " ")} fetch GitHub PR details"

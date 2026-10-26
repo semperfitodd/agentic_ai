@@ -1,6 +1,6 @@
 module "lambda_get_markdown" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.1"
+  version = "~> 8.12"
 
   function_name = "${var.environment}_get_markdown"
   description   = "${replace(var.environment, "_", " ")} serve sprint report markdown"

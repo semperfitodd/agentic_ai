@@ -1,0 +1,13 @@
+---
+description: README and documentation standards
+alwaysApply: true
+---
+
+# Documentation
+
+- Update README.md when the setup, architecture, commands, environment variables, deployment process, API behavior, or user workflow changes.
+- Keep the README complete but concise.
+- Remove outdated README content.
+- Do not add unnecessary documentation.
+- Do not create extra `.md` or `.txt` files unless explicitly required.
+- Avoid duplicating information across documentation files.

@@ -1,0 +1,13 @@
+---
+description: DRY, production-quality, and consistency standards
+alwaysApply: true
+---
+
+# Core Principles
+
+- Keep all code DRY. Alphabetize where possible in lists.
+- Do not duplicate logic, styles, constants, API handlers, validation rules, or infrastructure definitions.
+- Share reusable code where appropriate, but do not over-abstract.
+- Write professional, production-ready, enterprise-grade code.
+- Maintain consistent patterns, naming, formatting, structure, and implementation style across the repository.
+- Remove unused code, imports, functions, resources, dependencies, stale files, and dead configuration.

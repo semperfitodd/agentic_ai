@@ -1,0 +1,12 @@
+---
+description: Test maintenance and coverage standards
+alwaysApply: true
+---
+
+# Tests
+
+- Update tests for every functional change.
+- Add or update unit tests, integration tests, API tests, or frontend tests as appropriate.
+- Remove obsolete tests when code is removed.
+- Ensure tests cover security-sensitive behavior, error handling, and updated API/database logic.
+- Do not leave failing, skipped, or placeholder tests unless there is a clear existing project convention allowing it.

@@ -1,6 +1,6 @@
 module "lambda_prepare_data" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.1"
+  version = "~> 8.12"
 
   function_name = "${var.environment}_prepare_data"
   description   = "${replace(var.environment, "_", " ")} prepare data structure"

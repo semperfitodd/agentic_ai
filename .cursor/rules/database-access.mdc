@@ -1,0 +1,11 @@
+---
+description: Database access patterns and abstraction requirements
+alwaysApply: true
+---
+
+# Database Access
+
+- Do not write raw inline SQL from application code.
+- All database access must go through approved database functions, stored procedures, repository methods, or the established database abstraction layer.
+- Keep database calls secure, validated, and consistent with existing patterns.
+- Include error handling around database operations.

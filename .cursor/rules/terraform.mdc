@@ -16,7 +16,7 @@ runtime                           = local.lambda_defaults.runtime
 cloudwatch_logs_retention_in_days = local.lambda_defaults.cloudwatch_logs_retention_in_days
 
 # ❌ BAD
-runtime = "nodejs20.x"
+runtime = "nodejs24.x"
 ```
 
 ## Lambda Modules

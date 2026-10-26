@@ -48,3 +48,7 @@ logger.error('Fetch failed', toPublicError(err));
 
 - API Gateway handlers → `apiResponse(statusCode, body)` or `apiTextResponse(statusCode, body, contentType)`
 - Step Functions task states → `stepResponse(statusCode, body)`
+
+## Jest
+
+Lambda `jest.config.js` files load [`backend/shared/jest.setup.cjs`](backend/shared/jest.setup.cjs) via `setupFilesAfterEnv` so `@octokit/rest` (ESM-only) is mocked before handlers import `@sprint/shared`. Prefer mocking `createOctokit`, S3 helpers, or Bedrock helpers from `@sprint/shared` in tests rather than importing `@octokit/rest` or `@aws-sdk/*` in lambda test files.

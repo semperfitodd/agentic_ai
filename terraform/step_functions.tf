@@ -19,7 +19,7 @@ locals {
 
 module "step_function" {
   source  = "terraform-aws-modules/step-functions/aws"
-  version = "~> 5.0"
+  version = "~> 5.1"
 
   name = "${var.environment}_sprint_pr_intelligence"
   type = "STANDARD"

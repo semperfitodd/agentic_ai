@@ -17,9 +17,9 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
   NPM_VERSION: '11'
-  ENVIRONMENT: agentic_ai_demo
+  ENVIRONMENT: ${{ vars.TF_ENVIRONMENT }}
 
 jobs:
   # ── 1. Detect which backend directories changed ──────────────────────────
@@ -32,9 +32,9 @@ jobs:
       any_lambda: ${{ steps.matrix.outputs.any_lambda }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -96,9 +96,9 @@ jobs:
     if: needs.detect-changes.outputs.any_lambda == 'true' || needs.detect-changes.outputs.shared_changed == 'true'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -112,7 +112,7 @@ jobs:
         run: npm ci && npm run build
 
       - name: Cache shared dist
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: |
             backend/shared/dist
@@ -132,9 +132,9 @@ jobs:
         lambda: ${{ fromJSON(needs.detect-changes.outputs.lambdas) }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -144,7 +144,7 @@ jobs:
         run: npm install -g npm@${{ env.NPM_VERSION }}
 
       - name: Restore shared dist
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             backend/shared/dist
@@ -175,9 +175,9 @@ jobs:
         lambda: ${{ fromJSON(needs.detect-changes.outputs.lambdas) }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -187,7 +187,7 @@ jobs:
         run: npm install -g npm@${{ env.NPM_VERSION }}
 
       - name: Restore shared dist
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             backend/shared/dist
@@ -196,7 +196,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}

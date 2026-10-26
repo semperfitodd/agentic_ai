@@ -12,8 +12,27 @@ Guidance for AI coding agents working in this repository.
 | `terraform/` | All AWS infrastructure (Terraform) |
 | `static_site/` | React web frontend |
 | `mobile/Arc Agent/` | SwiftUI iOS/iPadOS app |
-| `architecture/` | Draw.io source files |
-| `img/` | Generated PNG architecture diagrams |
+| `architecture/diagrams/` | Excalidraw diagram sources (`.excalidraw`) |
+| `architecture/exports/` | Generated PNG/SVG diagram outputs |
+| `architecture/scripts/` | Excalidraw export script (`npm run export`) |
+
+## Lambda Functions
+
+| Function | Route | Purpose |
+|---|---|---|
+| `lambda_aggregate_sprint` | Step | Invokes Bedrock Claude across PR analyses to produce markdown sprint report |
+| `lambda_analyze_pr` | Step | Invokes Bedrock Claude per PR to produce structured analysis JSON |
+| `lambda_authorizer` | — | Custom Lambda authorizer; validates `x-api-key` against Secrets Manager |
+| `lambda_fetch_pr_details` | Step | Fetches diffs, comments, reviews per PR (parallel Map) |
+| `lambda_fetch_repo_data` | Step | Fetches PR metadata per repo via GitHub API (parallel Map) |
+| `lambda_get_markdown` | `GET /markdown` | Retrieves a specific markdown report from S3 by `?key=` |
+| `lambda_get_results` | `GET /results` | Polls execution status by `executionArn`; lists reports (`?list=true`) |
+| `lambda_parse_repos` | Step | Normalizes GitHub URLs into structured list |
+| `lambda_prepare_data` | Step | Aggregates raw PR data, writes consolidated JSON to S3 |
+| `lambda_store_results` | Step | Validates and surfaces final S3 locations as execution output |
+| `lambda_workflow` | `POST /workflow` | Validates request, starts Step Functions execution, returns `executionArn` |
+
+All API routes are protected by the custom Lambda authorizer (`authorization_type = "CUSTOM"`).
 
 ## API Gateway Authorization Audit
 
@@ -49,6 +68,10 @@ Every route must use `authorization_type = "CUSTOM"`. Values are sourced from `l
 5. Write unit tests in `__tests__/index.test.ts` using `aws-sdk-client-mock` and mock `@sprint/shared` where needed
 
 ## Testing Commands
+
+When updating [README.md](README.md) **Project Status → Verification log**, record only commands you actually ran, with the date and the tool-reported pass/fail counts. Do not copy expected results from this section.
+
+Lambda Jest configs use `setupFilesAfterEnv: ['../shared/jest.setup.cjs']` (shared uses `<rootDir>/jest.setup.cjs`) to mock ESM-only `@octokit/rest` before loading `@sprint/shared`.
 
 ```bash
 # Shared library
@@ -97,8 +120,9 @@ Rules in `.cursor/rules/` provide file-scoped guidance:
 
 | Rule file | Applies to |
 |---|---|
-| `security.mdc` | Always — entire repo |
-| `typescript-lambda.mdc` | `backend/**/*.ts` |
+| `architecture-diagrams.mdc` | Excalidraw diagrams and exports |
+| `core-principles.mdc`, `security.mdc`, and other shared rules | Repository-wide conventions |
 | `react-frontend.mdc` | `static_site/src/**/*.{js,jsx,ts,tsx}` |
 | `swiftui-ios.mdc` | `mobile/**/*.swift` |
 | `terraform.mdc` | `terraform/**/*.tf` |
+| `typescript-lambda.mdc` | `backend/**/*.ts` |

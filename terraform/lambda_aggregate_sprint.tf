@@ -1,6 +1,6 @@
 module "lambda_aggregate_sprint" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.1"
+  version = "~> 8.12"
 
   function_name = "${var.environment}_aggregate_sprint"
   description   = "${replace(var.environment, "_", " ")} aggregate sprint report with Bedrock"

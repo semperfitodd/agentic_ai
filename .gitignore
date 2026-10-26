@@ -8,6 +8,7 @@ plan.out
 !terraform/lambda_stub.zip
 
 # Node
+architecture/scripts/node_modules/
 **/node_modules/*
 **/dist/
 **/coverage/

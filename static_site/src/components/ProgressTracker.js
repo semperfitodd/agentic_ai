@@ -26,7 +26,7 @@ const ProgressTracker = ({ progress, currentStep, completedSteps, loading }) => 
             </div>
 
             <div className="progress-bar-wrapper">
-                <div className="progress-bar-fill" style={{ width: `${progress}%` }}>
+                <div className="progress-bar-fill" style={{ '--progress': `${progress}%` }}>
                     <div className="progress-bar-glow" />
                 </div>
             </div>

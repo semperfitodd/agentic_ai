@@ -1,0 +1,86 @@
+---
+description: Excalidraw architecture diagram standards, export workflow, and correctness/layout/validation requirements. Apply whenever infrastructure, APIs, authentication, data flow, deployment flow, security boundaries, integrations, or major application components change, or when creating/updating architecture diagrams.
+alwaysApply: false
+---
+
+# Architecture Diagrams
+
+Keep architecture diagrams current whenever infrastructure, APIs, authentication, data flow, deployment flow, security boundaries, integrations, or major application components change.
+
+Architecture diagrams must use **Excalidraw**.
+
+## Required files
+
+When an architecture diagram is needed, create or update the diagram source in the architecture folder:
+
+```text
+architecture/
+  diagrams/
+    <diagram-name>.excalidraw
+  scripts/
+    export-excalidraw.cjs
+  exports/
+    <diagram-name>.png
+    <diagram-name>.svg
+```
+
+Create an Excalidraw export script in the architecture folder when needed. The export script must regenerate all generated diagram outputs from the Excalidraw source files. Do not leave generated outputs stale.
+
+## Export requirements
+
+Use the installed Excalidraw tooling or the project-approved Excalidraw export dependency to generate diagram outputs.
+
+The export script must produce at least:
+
+```text
+.png
+.svg
+```
+
+Generated outputs must be committed alongside the source `.excalidraw` files.
+
+## Diagram correctness requirements
+
+Before considering the task complete, verify that every architecture diagram is:
+
+- 100% accurate against the current implementation.
+- 100% readable by humans.
+- Free of overlapping text.
+- Free of clipped, hidden, or partially visible text.
+- Free of ambiguous arrows or lines.
+- Clear about what each arrow represents.
+- Clear about direction of data flow, auth flow, deployment flow, or control flow.
+- Clear about trust boundaries, network boundaries, and external dependencies when relevant.
+- Consistent with the current infrastructure, APIs, authentication model, data stores, queues, services, and deployment path.
+- Updated in both source form and generated output form.
+
+## Layout requirements
+
+- Use a clean left-to-right or top-to-bottom flow.
+- Group related components visually.
+- Use labels for: APIs, auth boundaries, data stores, external services, async events, deployment steps, and security or permission boundaries.
+- Do not create spaghetti diagrams.
+- Lines should not cross unless absolutely unavoidable. If lines cross, reposition components or use intermediate labeled connectors.
+- Text must be large enough to read in the generated PNG/SVG without excessive zooming.
+
+## Validation checklist
+
+Before finishing, inspect the generated diagram outputs manually and confirm:
+
+```text
+[ ] Architecture source file was updated.
+[ ] Generated PNG/SVG outputs were regenerated.
+[ ] No overlapping text.
+[ ] No clipped or hidden text.
+[ ] All text is visible.
+[ ] All arrows point to the correct component.
+[ ] Every arrow has a clear meaning.
+[ ] Diagram matches the current code and infrastructure.
+[ ] Diagram is readable without needing extra context.
+```
+
+If any item fails, fix the diagram and regenerate the outputs before completing the task.
+
+## Staleness rule
+
+If code, infrastructure, APIs, auth, data flow, deployment flow, security boundaries, integrations, or major components change, check whether architecture diagrams are affected. If they are affected, update them in the same change. Never leave architecture diagrams stale.

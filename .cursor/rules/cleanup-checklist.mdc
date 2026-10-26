@@ -1,0 +1,22 @@
+---
+description: Pre-completion cleanup checklist for every change
+alwaysApply: true
+---
+
+# Cleanup Requirements
+
+Before finishing any change:
+
+- Remove unused code and files.
+- Remove unnecessary comments.
+- Confirm secrets are not hardcoded.
+- Confirm API calls are Cognito-secured.
+- Confirm database access follows the approved function/abstraction pattern.
+- Confirm mobile CSS remains current.
+- Confirm tests are updated and passing where possible.
+- Confirm README updates are accurate and concise.
+- Confirm `.gitignore` is updated if new generated/local/secret files were introduced.
+- Confirm `.cursor` context is updated.
+- Confirm architecture diagrams and Excalidraw outputs are updated if architecture changed.
+
+When making changes, do not only implement the requested feature. Also inspect the surrounding code for violations of these repository standards caused by or related to the change. Fix those issues as part of the same task. Do not perform broad unrelated rewrites.

@@ -1,0 +1,14 @@
+---
+description: Comments, readability, error handling, and logging standards
+alwaysApply: true
+---
+
+# Code Quality
+
+- Do not add unnecessary comments. Comments are only allowed when they explain non-obvious business logic, security reasoning, architecture decisions, or operational constraints.
+- Keep formatting and style consistent with the existing codebase.
+- Do not introduce unused helper functions, components, variables, CSS classes, or infrastructure resources.
+- Prefer clear, readable implementation over clever code.
+- Include proper error handling.
+- Include structured, useful error logging.
+- Do not log secrets, tokens, credentials, PII, or sensitive request/response payloads.

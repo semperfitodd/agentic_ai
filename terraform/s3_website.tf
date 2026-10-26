@@ -17,7 +17,7 @@ data "aws_iam_policy_document" "site" {
 
 module "site_s3_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "~> 5.0"
+  version = "~> 5.17"
 
   bucket = local.domain_name
 

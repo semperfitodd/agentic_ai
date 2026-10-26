@@ -1,6 +1,6 @@
 module "s3_results_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "~> 5.0"
+  version = "~> 5.17"
 
   bucket = "${local.environment}-sprint-reports-${random_string.this.result}"
 

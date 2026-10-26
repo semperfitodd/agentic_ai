@@ -1,6 +1,6 @@
 module "lambda_parse_repos" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.1"
+  version = "~> 8.12"
 
   function_name = "${var.environment}_parse_repos"
   description   = "${replace(var.environment, "_", " ")} parse GitHub repo URLs"

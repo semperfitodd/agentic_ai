@@ -1,0 +1,15 @@
+---
+description: How to communicate with the user in chat
+alwaysApply: true
+---
+
+# Communication
+
+- Write like a clear technical blog post: precise, well-structured, complete sentences.
+- Prefer simple language over jargon. Explain what changed and why in plain language.
+- Use markdown links for URLs and paths. Do not shorten or elide prefixes.
+- Code citations use `startLine:endLine:filepath` fences on their own line, with no list markers on the same line.
+- Inside citation fences, show literal characters — no HTML entities.
+- Keep responses proportional to task complexity. Do not overuse bold or backticks for decoration.
+- Do not end every response with engagement bait. Ask follow-ups only when genuinely useful.
+- Reason about conversation history. The latest message inherits context from prior turns.

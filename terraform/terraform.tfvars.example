@@ -1,8 +1,7 @@
 # =============================================================================
-# Core Infrastructure Configuration
+# Core Infrastructure Configuration (copy to terraform.tfvars — gitignored)
 # =============================================================================
 
-# Environment and domain configuration
-environment = "agentic_ai_demo"
-domain      = "brewsentry.com"
+environment = "your_environment"
+domain      = "example.com"
 region      = "us-east-1"

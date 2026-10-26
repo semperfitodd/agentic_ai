@@ -1,6 +1,6 @@
 module "api_gateway" {
   source  = "terraform-aws-modules/apigateway-v2/aws"
-  version = "~> 5.3"
+  version = "~> 6.1"
 
   name          = var.environment
   description   = "HTTP API Gateway for ${var.environment} environment"
