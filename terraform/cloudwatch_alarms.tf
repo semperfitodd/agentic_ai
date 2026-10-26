@@ -1,4 +1,6 @@
 resource "aws_cloudwatch_metric_alarm" "step_function_executions_failed" {
+  depends_on = [aws_iam_role_policy.github_actions]
+
   alarm_name          = "${var.environment}_sprint_sfn_executions_failed"
   alarm_description   = "Sprint intelligence Step Functions reported failed executions"
   comparison_operator = "GreaterThanThreshold"
