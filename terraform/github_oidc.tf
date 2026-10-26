@@ -52,6 +52,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "acm:*",
       "apigateway:*",
       "bedrock:*",
+      "cloudwatch:*",
       "cloudfront:*",
       "events:*",
       "iam:AttachRolePolicy",
