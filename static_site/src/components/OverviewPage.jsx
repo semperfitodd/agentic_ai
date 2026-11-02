@@ -84,7 +84,6 @@ const OverviewPage = ({ onNavigate }) => (
                 </div>
                 <div className="hero-app">
                     <AppStoreBadge />
-                    <span className="text-small text-tertiary">Also on iPhone and iPad</span>
                 </div>
             </div>
 
