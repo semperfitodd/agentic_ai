@@ -11,6 +11,7 @@ import {
     Sparkles,
     Users,
 } from 'lucide-react';
+import AppStoreBadge from './AppStoreBadge';
 
 const PIPELINE = [
     {
@@ -80,6 +81,10 @@ const OverviewPage = ({ onNavigate }) => (
                         See how it works
                         <ArrowRight size={18} aria-hidden="true" />
                     </button>
+                </div>
+                <div className="hero-app">
+                    <AppStoreBadge />
+                    <span className="text-small text-tertiary">Also on iPhone and iPad</span>
                 </div>
             </div>
 

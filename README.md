@@ -19,7 +19,7 @@ An agentic AI system that analyzes GitHub sprint activity and generates executiv
 | `fetch_repo_data`, `fetch_pr_details` | Only Lambdas allowed to decrypt the GitHub token |
 | KMS key (`alias/<env>_github_token`) | Per-execution encryption context; only ciphertext appears in execution history and logs |
 | S3 results bucket | Per-user prefixes `users/<cognito-email>/…` for reports and workflow JSON; SSE-S3, versioned, objects expire after 3 days |
-| React app (`static_site/`) | Vite + Vitest, `react-oidc-context`; light/dark/system themes, vector PDF export (jsPDF); served by CloudFront + S3 (OAC) |
+| React app (`static_site/`) | Vite + Vitest, `react-oidc-context`; light/dark/system themes, vector PDF export (jsPDF), App Store badge and Safari Smart App Banner (`src/config/appStore.js`); served by CloudFront + S3 (OAC) |
 | iOS app (`mobile/Arc Agent/`) | SwiftUI, iOS 27.2, iPhone tab bar and iPad sidebar; `WebAuthenticationSession` PKCE sign-in, tokens and GitHub PAT in the Keychain; CoreText PDF export |
 
 ### Security
