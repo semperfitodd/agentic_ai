@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 
 #if os(iOS)
@@ -226,12 +227,12 @@ struct SettingsView: View {
                 DatePicker("Start Date", selection: $customSinceDate, displayedComponents: [.date])
                     .datePickerStyle(.compact)
                     .modifier(InputFieldStyle(background: inputBackgroundColor))
-                    .onChange(of: customSinceDate) { _ in saveDates() }
+                    .onChange(of: customSinceDate) { saveDates() }
                 
                 DatePicker("End Date", selection: $customUntilDate, displayedComponents: [.date])
                     .datePickerStyle(.compact)
                     .modifier(InputFieldStyle(background: inputBackgroundColor))
-                    .onChange(of: customUntilDate) { _ in saveDates() }
+                    .onChange(of: customUntilDate) { saveDates() }
             }
             
             apiDatePreview
@@ -544,28 +545,28 @@ private struct InputFieldStyle: ViewModifier {
 // MARK: - Static Helpers
 
 extension SettingsView {
-    static let githubTokenKey = "github_token"
+    nonisolated static let githubTokenKey = "github_token"
 
-    static func effectiveGithubToken() -> String {
+    nonisolated static func effectiveGithubToken() -> String {
         KeychainStore.string(for: githubTokenKey) ?? ""
     }
     
-    static func effectiveRepos() -> [String] {
+    nonisolated static func effectiveRepos() -> [String] {
         let customString = UserDefaults.standard.string(forKey: "custom_repos") ?? ""
         let custom = customString.isEmpty ? [] : customString.split(separator: ",").map { String($0) }
         return custom.isEmpty ? Secrets.defaultRepos : custom
     }
     
-    static func effectiveSprintName() -> String {
+    nonisolated static func effectiveSprintName() -> String {
         let custom = UserDefaults.standard.string(forKey: "custom_sprint_name") ?? ""
         return custom.isEmpty ? Secrets.sprintName : custom
     }
     
-    static func effectiveSince() -> String {
+    nonisolated static func effectiveSince() -> String {
         UserDefaults.standard.string(forKey: "custom_since_date") ?? Secrets.defaultSince
     }
     
-    static func effectiveUntil() -> String {
+    nonisolated static func effectiveUntil() -> String {
         UserDefaults.standard.string(forKey: "custom_until_date") ?? Secrets.defaultUntil
     }
 }
