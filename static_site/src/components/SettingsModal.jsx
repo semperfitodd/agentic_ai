@@ -53,8 +53,8 @@ const SettingsModal = ({ show, onClose, onDeleteAccount, authSubject }) => {
         storeGithubToken(githubToken, authSubject);
         saveOrRemove(STORAGE_KEYS.repos, repos);
         saveOrRemove(STORAGE_KEYS.sprintName, sprintName, defaults.sprintName);
-        saveOrRemove(STORAGE_KEYS.since, formatDateForAPI(since));
-        saveOrRemove(STORAGE_KEYS.until, formatDateForAPI(until));
+        saveOrRemove(STORAGE_KEYS.since, formatDateForAPI(since), formatDateForAPI(formatDateForInput(defaults.since)));
+        saveOrRemove(STORAGE_KEYS.until, formatDateForAPI(until), formatDateForAPI(formatDateForInput(defaults.until)));
         onClose();
     };
 
