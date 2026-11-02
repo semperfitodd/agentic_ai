@@ -146,7 +146,7 @@ cd architecture/scripts && npm install && npm run export
 
 ## Design system
 
-[`design/tokens.json`](design/tokens.json) defines color (light and dark), type, spacing, radius, elevation, and motion. It generates `static_site/src/styles/tokens.css`, `static_site/src/styles/palette.js` (PDF), and `mobile/Arc Agent/Arc Agent/Theme/DesignTokens.swift`; `npm test` in `static_site` fails if they drift or a declared contrast pair drops below WCAG AA. Figma: FIGMA_URL.
+[`design/tokens.json`](design/tokens.json) defines color (light and dark), type, spacing, radius, elevation, and motion. It generates `static_site/src/styles/tokens.css`, `static_site/src/styles/palette.js` (PDF), and `mobile/Arc Agent/Arc Agent/Theme/DesignTokens.swift`; `npm test` in `static_site` fails if they drift or a declared contrast pair drops below WCAG AA. Figma: [Arc Agent — Design System & Screens](https://www.figma.com/design/M14FX6HZHVd5d4tL6PHRrZ).
 
 ```bash
 node design/build-tokens.mjs
