@@ -137,7 +137,7 @@ resource "aws_route53_record" "site_verify" {
 
 resource "aws_route53_record" "google_site_verification" {
   zone_id = data.aws_route53_zone.public.zone_id
-  name    = var.domain
+  name    = local.domain_name
   type    = "TXT"
   ttl     = 300
   records = ["google-site-verification=ylJMKxS3KA26LDJ_JxLMzx6n_Psxub42AW9yBf14ZXs"]
