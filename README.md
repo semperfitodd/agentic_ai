@@ -19,8 +19,8 @@ An agentic AI system that analyzes GitHub sprint activity and generates executiv
 | `fetch_repo_data`, `fetch_pr_details` | Only Lambdas allowed to decrypt the GitHub token |
 | KMS key (`alias/<env>_github_token`) | Per-execution encryption context; only ciphertext appears in execution history and logs |
 | S3 results bucket | Reports and intermediate JSON; SSE-S3, versioned, objects expire after 3 days |
-| React app (`static_site/`) | Vite + Vitest, `react-oidc-context`; served by CloudFront + S3 (OAC) |
-| iOS app (`mobile/Arc Agent/`) | SwiftUI, iOS 27.2; `WebAuthenticationSession` PKCE sign-in, tokens and GitHub PAT in the Keychain |
+| React app (`static_site/`) | Vite + Vitest, `react-oidc-context`; light/dark/system themes, vector PDF export (jsPDF); served by CloudFront + S3 (OAC) |
+| iOS app (`mobile/Arc Agent/`) | SwiftUI, iOS 27.2, iPhone tab bar and iPad sidebar; `WebAuthenticationSession` PKCE sign-in, tokens and GitHub PAT in the Keychain; CoreText PDF export |
 
 ### Security
 
@@ -142,6 +142,14 @@ cd static_site && npm install && npm run dev
 
 ```bash
 cd architecture/scripts && npm install && npm run export
+```
+
+## Design system
+
+[`design/tokens.json`](design/tokens.json) defines color (light and dark), type, spacing, radius, elevation, and motion. It generates `static_site/src/styles/tokens.css`, `static_site/src/styles/palette.js` (PDF), and `mobile/Arc Agent/Arc Agent/Theme/DesignTokens.swift`; `npm test` in `static_site` fails if they drift or a declared contrast pair drops below WCAG AA. Figma: FIGMA_URL.
+
+```bash
+node design/build-tokens.mjs
 ```
 
 ## Testing

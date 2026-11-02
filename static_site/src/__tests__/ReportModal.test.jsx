@@ -1,48 +1,59 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ReportModal from '../components/ReportModal';
+import { downloadPDF } from '../utils/pdfExport';
+import sampleReport from './fixtures/sampleReport.md?raw';
 
 vi.mock('../utils/pdfExport', () => ({ downloadPDF: vi.fn() }));
-vi.mock('react-markdown', () => ({ default: ({ children }) => <div>{children}</div> }));
-vi.mock('remark-gfm', () => ({ default: () => {} }));
-vi.mock('rehype-raw', () => ({ default: () => {} }));
 
 describe('ReportModal', () => {
     it('renders nothing when show is false', () => {
-        const { container } = render(
-            <ReportModal show={false} markdownReport="# Report" onClose={vi.fn()} />
-        );
-        expect(container.firstChild).toBeNull();
+        render(<ReportModal show={false} markdownReport="# Report" onClose={vi.fn()} />);
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 
     it('renders nothing when markdownReport is null', () => {
-        const { container } = render(
-            <ReportModal show={true} markdownReport={null} onClose={vi.fn()} />
-        );
-        expect(container.firstChild).toBeNull();
+        render(<ReportModal show={true} markdownReport={null} onClose={vi.fn()} />);
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 
-    it('renders report content when shown with content', () => {
-        render(
-            <ReportModal show={true} markdownReport="# Sprint Report\nSome content" onClose={vi.fn()} />
-        );
+    it('renders the cover, KPIs, contents, and body', () => {
+        render(<ReportModal show={true} markdownReport={sampleReport} onClose={vi.fn()} />);
+        const dialog = screen.getByRole('dialog', { name: 'Sprint 42 — Platform Hardening' });
+        expect(dialog).toBeInTheDocument();
         expect(screen.getByText('Sprint Intelligence Report')).toBeInTheDocument();
+        expect(screen.getByText('PRs merged').nextSibling).toHaveTextContent('18');
+        expect(screen.getByRole('navigation', { name: 'Report contents' })).toHaveTextContent('Executive Summary');
+        expect(screen.getByRole('heading', { level: 2, name: 'Executive Summary' })).toHaveAttribute('id', 'executive-summary');
+        expect(screen.queryByRole('heading', { name: 'At a Glance' })).toBeNull();
     });
 
-    it('calls onClose when close button clicked', () => {
+    it('calls onClose from the close button and Escape', () => {
         const onClose = vi.fn();
-        render(
-            <ReportModal show={true} markdownReport="# Report" onClose={onClose} />
-        );
-        fireEvent.click(screen.getByRole('button', { name: /close/i }));
+        render(<ReportModal show={true} markdownReport="# Report" onClose={onClose} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Close report' }));
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(onClose).toHaveBeenCalledTimes(2);
+    });
+
+    it('calls onClose when the overlay is pressed', () => {
+        const onClose = vi.fn();
+        render(<ReportModal show={true} markdownReport="# Report" onClose={onClose} />);
+        fireEvent.mouseDown(document.querySelector('.dialog-overlay'));
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('calls onClose when overlay is clicked', () => {
-        const onClose = vi.fn();
-        const { container } = render(
-            <ReportModal show={true} markdownReport="# Report" onClose={onClose} />
-        );
-        fireEvent.click(container.querySelector('.modal-overlay'));
-        expect(onClose).toHaveBeenCalledTimes(1);
+    it('exports the markdown as a PDF', async () => {
+        render(<ReportModal show={true} markdownReport={sampleReport} onClose={vi.fn()} />);
+        fireEvent.click(screen.getByRole('button', { name: /download pdf/i }));
+        await waitFor(() => expect(downloadPDF).toHaveBeenCalledWith(sampleReport));
+    });
+
+    it('copies the markdown to the clipboard', async () => {
+        const writeText = vi.fn().mockResolvedValue();
+        Object.assign(navigator, { clipboard: { writeText } });
+        render(<ReportModal show={true} markdownReport="# Report" onClose={vi.fn()} />);
+        fireEvent.click(screen.getByRole('button', { name: /copy markdown/i }));
+        await waitFor(() => expect(screen.getByRole('button', { name: /copied/i })).toBeInTheDocument());
+        expect(writeText).toHaveBeenCalledWith('# Report');
     });
 });

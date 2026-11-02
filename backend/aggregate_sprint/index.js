@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
+exports.buildMarkdownReport = buildMarkdownReport;
 const shared_1 = require("@sprint/shared");
 async function loadAnalysis(bucket, owner, repo, prNumber) {
     try {
@@ -14,96 +15,98 @@ async function loadAnalysis(bucket, owner, repo, prNumber) {
     }
 }
 const safeArray = (value) => (Array.isArray(value) ? value : []);
-function addSection(lines, title, items, fallback = 'Not specified.') {
-    lines.push(`- **${title}**:`);
-    if (items.length > 0) {
-        items.forEach((item) => lines.push(`  - ${item}`));
-    }
-    else {
-        lines.push(`  - ${fallback}`);
-    }
+const formatNumber = (value) => value.toLocaleString('en-US');
+const cell = (value) => value.replace(/\|/g, '\\|').replace(/\s*\n\s*/g, ' ').trim();
+function table(headers, rows, align = []) {
+    const divider = headers.map((_, i) => (align[i] === 'right' ? '---:' : '---'));
+    return [headers, divider, ...rows].map((row) => `| ${row.map(cell).join(' | ')} |`);
 }
+function bulletSection(lines, title, items, fallback) {
+    lines.push(`### ${title}`, '');
+    (items.length > 0 ? items : [fallback]).forEach((item) => lines.push(`- ${item}`));
+    lines.push('');
+}
+/**
+ * Renders the sprint report. Clients read the "At a Glance" table for cover KPIs,
+ * so keep its heading and two-column shape stable.
+ */
 function buildMarkdownReport(data, meta) {
+    const period = `${meta.since} – ${meta.until}`;
     const lines = [
         `# Sprint Report: ${meta.sprintName}`,
         '',
-        `- **Sprint Period**: ${meta.since} to ${meta.until}`,
-        `- **Total PRs Merged**: ${meta.totalPRs}`,
-        `- **Total Lines Added**: ${meta.totalAdditions}`,
-        `- **Total Lines Deleted**: ${meta.totalDeletions}`,
-        `- **Total Files Changed**: ${meta.totalFiles}`,
-        `- **Contributors**: ${meta.contributorList || 'Not available'}`,
+        '## At a Glance',
         '',
-        `## Executive Summary`,
+        ...table(['Metric', 'Value'], [
+            ['Sprint period', period],
+            ['PRs merged', formatNumber(meta.totalPRs)],
+            ['Lines added', `+${formatNumber(meta.totalAdditions)}`],
+            ['Lines deleted', `-${formatNumber(meta.totalDeletions)}`],
+            ['Files changed', formatNumber(meta.totalFiles)],
+            ['Contributors', formatNumber(meta.contributors.length)],
+        ]),
         '',
-        `- **Overview**: ${data.executiveSummary.overview || 'No overview provided.'}`,
+        '## Executive Summary',
+        '',
+        data.executiveSummary?.overview || 'No overview provided.',
+        '',
     ];
-    addSection(lines, 'Key Outcomes', safeArray(data.executiveSummary.keyOutcomes));
-    addSection(lines, 'Key Risks', safeArray(data.executiveSummary.risks), 'None highlighted.');
-    lines.push('');
-    lines.push(`## Key Metrics Dashboard`, '');
+    bulletSection(lines, 'Key Outcomes', safeArray(data.executiveSummary?.keyOutcomes), 'Not specified.');
+    bulletSection(lines, 'Key Risks', safeArray(data.executiveSummary?.risks), 'None highlighted.');
+    lines.push('## Key Metrics', '');
     if (data.keyMetricsDashboard?.summary)
         lines.push(data.keyMetricsDashboard.summary, '');
     const metrics = safeArray(data.keyMetricsDashboard?.metrics);
     if (metrics.length > 0) {
-        metrics.forEach((m) => lines.push(`- **${m.label}**: ${m.value}${m.context ? ` — ${m.context}` : ''}`));
+        lines.push(...table(['Metric', 'Value', 'Context'], metrics.map((m) => [m.label, m.value, m.context ?? ''])), '');
     }
     else {
-        lines.push(`- **Note**: No additional metrics provided.`);
+        lines.push('No additional metrics provided.', '');
     }
-    lines.push('');
-    lines.push(`## Work Breakdown`, '');
+    lines.push('## Work Breakdown', '');
     const categories = safeArray(data.workBreakdown?.categories);
-    if (categories.length > 0) {
-        categories.forEach((cat) => {
-            lines.push(`- **${cat.name}**: ${cat.description || 'No description provided.'}`);
-            const items = safeArray(cat.items);
-            if (items.length > 0) {
-                items.forEach((item) => lines.push(`  - ${item}`));
-            }
-            else {
-                lines.push(`  - No specific items noted.`);
-            }
-        });
-    }
-    else {
-        lines.push(`- **Note**: No categorized work breakdown was provided.`);
-    }
-    lines.push('');
-    lines.push(`## Technical Highlights`, '');
-    addSection(lines, 'Most Impactful Changes', safeArray(data.technicalHighlights?.highlights), 'None specifically highlighted.');
-    addSection(lines, 'Notable Technical Decisions', safeArray(data.technicalHighlights?.decisions), 'None specifically highlighted.');
-    addSection(lines, 'Quality Improvements / Technical Debt', safeArray(data.technicalHighlights?.qualityImprovements), 'None specifically highlighted.');
-    lines.push('');
-    lines.push(`## Repository Insights`, '', `- **Repositories Summary**:`, `  - ${meta.repoBreakdown || 'No repository breakdown available.'}`);
-    safeArray(data.repositoryInsights?.repos).forEach((r) => {
-        lines.push(`- **${r.name}**: ${r.summary || 'No summary provided.'}`);
-        const repoHighlights = safeArray(r.highlights);
-        if (repoHighlights.length > 0) {
-            repoHighlights.forEach((item) => lines.push(`  - ${item}`));
-        }
-        else {
-            lines.push(`  - No specific highlights noted.`);
-        }
+    if (categories.length === 0)
+        lines.push('No categorized work breakdown was provided.', '');
+    categories.forEach((category) => {
+        lines.push(`### ${category.name}`, '');
+        if (category.description)
+            lines.push(category.description, '');
+        safeArray(category.items).forEach((item) => lines.push(`- ${item}`));
+        lines.push('');
     });
-    lines.push('');
-    lines.push(`## Team Collaboration`, '', `- **Summary**: ${data.teamCollaboration?.summary || 'No collaboration summary provided.'}`);
-    addSection(lines, 'Details', safeArray(data.teamCollaboration?.details), 'No additional collaboration details provided.');
-    lines.push('');
-    lines.push(`## Sprint Retrospective`, '');
-    addSection(lines, 'What Went Well', safeArray(data.sprintRetrospective?.wentWell));
-    addSection(lines, 'Areas for Improvement', safeArray(data.sprintRetrospective?.toImprove));
-    addSection(lines, 'Lessons Learned', safeArray(data.sprintRetrospective?.lessonsLearned));
-    lines.push('');
-    lines.push(`## Recommendations`, '');
-    addSection(lines, 'Next Sprint Focus', safeArray(data.recommendations?.nextSprintFocus));
-    addSection(lines, 'Technical Debt to Address', safeArray(data.recommendations?.technicalDebt));
-    addSection(lines, 'Process Improvements', safeArray(data.recommendations?.processImprovements));
-    lines.push('');
-    if (data.appendix?.trim()) {
-        lines.push(`## Appendix: Detailed PR Analyses`, '', data.appendix.trim(), '');
+    lines.push('## Technical Highlights', '');
+    bulletSection(lines, 'Most Impactful Changes', safeArray(data.technicalHighlights?.highlights), 'None specifically highlighted.');
+    bulletSection(lines, 'Notable Technical Decisions', safeArray(data.technicalHighlights?.decisions), 'None specifically highlighted.');
+    bulletSection(lines, 'Quality Improvements', safeArray(data.technicalHighlights?.qualityImprovements), 'None specifically highlighted.');
+    lines.push('## Repository Insights', '');
+    if (meta.repoStats.length > 0) {
+        lines.push(...table(['Repository', 'PRs', 'Added', 'Deleted'], meta.repoStats.map((r) => [r.repo, formatNumber(r.prs), `+${formatNumber(r.additions)}`, `-${formatNumber(r.deletions)}`]), ['left', 'right', 'right', 'right']), '');
     }
-    return lines.join('\n');
+    safeArray(data.repositoryInsights?.repos).forEach((repo) => {
+        lines.push(`### ${repo.name}`, '');
+        if (repo.summary)
+            lines.push(repo.summary, '');
+        safeArray(repo.highlights).forEach((item) => lines.push(`- ${item}`));
+        lines.push('');
+    });
+    lines.push('## Team Collaboration', '', data.teamCollaboration?.summary || 'No collaboration summary provided.', '');
+    if (meta.contributors.length > 0) {
+        lines.push(...table(['Contributor', 'PRs'], meta.contributors.map(([author, count]) => [author, formatNumber(count)]), ['left', 'right']), '');
+    }
+    safeArray(data.teamCollaboration?.details).forEach((item) => lines.push(`- ${item}`));
+    lines.push('');
+    lines.push('## Sprint Retrospective', '');
+    bulletSection(lines, 'What Went Well', safeArray(data.sprintRetrospective?.wentWell), 'Not specified.');
+    bulletSection(lines, 'Areas for Improvement', safeArray(data.sprintRetrospective?.toImprove), 'Not specified.');
+    bulletSection(lines, 'Lessons Learned', safeArray(data.sprintRetrospective?.lessonsLearned), 'Not specified.');
+    lines.push('## Recommendations', '');
+    bulletSection(lines, 'Next Sprint Focus', safeArray(data.recommendations?.nextSprintFocus), 'Not specified.');
+    bulletSection(lines, 'Technical Debt to Address', safeArray(data.recommendations?.technicalDebt), 'Not specified.');
+    bulletSection(lines, 'Process Improvements', safeArray(data.recommendations?.processImprovements), 'Not specified.');
+    if (data.appendix?.trim()) {
+        lines.push('## Appendix', '', data.appendix.trim(), '');
+    }
+    return `${lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()}\n`;
 }
 function buildAggregationPrompt(sprintName, since, until, repos, analyses, repoBreakdown, contributorList) {
     const totalPRs = analyses.length;
@@ -178,22 +181,20 @@ const handler = async (event) => {
         byRepo[key] = byRepo[key] ?? [];
         byRepo[key].push(a);
     });
-    const contributors = {};
+    const counts = {};
     validAnalyses.forEach((a) => {
         const author = a.metadata?.author ?? 'Unknown';
-        contributors[author] = (contributors[author] ?? 0) + 1;
+        counts[author] = (counts[author] ?? 0) + 1;
     });
-    const repoBreakdown = Object.entries(byRepo)
-        .map(([repo, prs]) => {
-        const add = prs.reduce((s, p) => s + (p.metadata?.additions ?? 0), 0);
-        const del = prs.reduce((s, p) => s + (p.metadata?.deletions ?? 0), 0);
-        return `${repo}: ${prs.length} PR(s), +${add}/-${del}`;
-    })
-        .join('\n  - ');
-    const contributorList = Object.entries(contributors)
-        .sort((a, b) => b[1] - a[1])
-        .map(([author, count]) => `${author} (${count} PRs)`)
-        .join(', ');
+    const repoStats = Object.entries(byRepo).map(([repo, prs]) => ({
+        repo,
+        prs: prs.length,
+        additions: prs.reduce((s, p) => s + (p.metadata?.additions ?? 0), 0),
+        deletions: prs.reduce((s, p) => s + (p.metadata?.deletions ?? 0), 0),
+    }));
+    const repoBreakdown = repoStats.map((r) => `${r.repo}: ${r.prs} PR(s), +${r.additions}/-${r.deletions}`).join('\n  - ');
+    const contributors = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const contributorList = contributors.map(([author, count]) => `${author} (${count} PRs)`).join(', ');
     const sprintName = event.sprintName ?? process.env.DEFAULT_SPRINT_NAME ?? 'sprint';
     const prompt = buildAggregationPrompt(sprintName, event.since, event.until, event.repos, validAnalyses, repoBreakdown, contributorList);
     const rawText = await (0, shared_1.invokeModel)({
@@ -206,14 +207,14 @@ const handler = async (event) => {
     const totalFiles = validAnalyses.reduce((s, a) => s + (a.metadata?.changed_files ?? 0), 0);
     const markdownReport = buildMarkdownReport(reportData, {
         sprintName,
-        since: new Date(event.since).toLocaleDateString(),
-        until: new Date(event.until).toLocaleDateString(),
+        since: new Date(event.since).toLocaleDateString('en-US', { timeZone: 'UTC' }),
+        until: new Date(event.until).toLocaleDateString('en-US', { timeZone: 'UTC' }),
         totalPRs: validAnalyses.length,
         totalAdditions,
         totalDeletions,
         totalFiles,
-        repoBreakdown,
-        contributorList,
+        repoStats,
+        contributors,
     });
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const sanitizedName = sprintName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();

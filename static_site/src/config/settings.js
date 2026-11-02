@@ -9,6 +9,26 @@ const SESSION_KEYS = {
     githubToken: 'arc_github_token',
 };
 
+// index.html reads the same key before first paint to avoid a theme flash.
+const THEME_KEY = 'arc_theme';
+export const THEME_PREFERENCES = ['light', 'system', 'dark'];
+
+export const getThemePreference = () => {
+    const stored = localStorage.getItem(THEME_KEY);
+    return THEME_PREFERENCES.includes(stored) ? stored : 'system';
+};
+
+export const setThemePreference = (preference) => {
+    if (preference === 'system') localStorage.removeItem(THEME_KEY);
+    else localStorage.setItem(THEME_KEY, preference);
+};
+
+export const parseRepos = (value) =>
+    value
+        .split(/[\s,]+/)
+        .map((repo) => repo.trim())
+        .filter(Boolean);
+
 const getDefaults = () => ({
     repos: import.meta.env.VITE_DEFAULT_REPOS || '',
     sprintName: import.meta.env.VITE_SPRINT_NAME || 'Sprint Analysis',
@@ -49,4 +69,4 @@ export const formatDateForInput = (isoString) => {
 export const formatDateForAPI = (dateString) =>
     dateString ? `${dateString}T00:00:00Z` : '';
 
-export { STORAGE_KEYS, SESSION_KEYS, getDefaults };
+export { STORAGE_KEYS, SESSION_KEYS, THEME_KEY, getDefaults };

@@ -1,111 +1,48 @@
-//
-//  ContentView.swift
-//  Arc Agent
-//
-//  Created by Todd Bernson on 11/30/25.
-//
-
 import SwiftUI
+
+enum AppTab: String, Hashable {
+    case overview, features, run, settings
+}
 
 struct ContentView: View {
     @StateObject private var viewModel = SprintAnalysisViewModel()
-    @State private var selectedPage = 0
-    @State private var showSettings = false
-    
+    @State private var selection: AppTab = .overview
+
     var body: some View {
-        Group {
-            #if os(macOS)
-            VStack(spacing: 0) {
-                HStack {
-                    Spacer()
-                    Button(action: { showSettings = true }) {
-                        Image(systemName: "gearshape.fill")
-                            .foregroundColor(Color(red: 0.32, green: 0.52, blue: 0.87))
-                    }
-                    .buttonStyle(.plain)
-                    .padding()
+        TabView(selection: $selection) {
+            Tab("Overview", systemImage: "sparkles", value: AppTab.overview) {
+                NavigationStack {
+                    OverviewView(onRun: { selection = .run }, onLearnMore: { selection = .features })
+                        .navigationTitle("Arc Agent")
                 }
-                pagedInterface
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            #else
-            NavigationStack {
-                pagedInterface
-                    .toolbar {
-                        ToolbarItem(placement: .principal) {
-                            if let title = tabTitle(for: selectedPage) {
-                                Text(title)
-                                    .font(.headline)
-                            }
-                        }
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button(action: { showSettings = true }) {
-                                Image(systemName: "gearshape.fill")
-                                    .foregroundColor(Color(red: 0.32, green: 0.52, blue: 0.87))
-                            }
-                        }
-                    }
-                    .navigationBarTitleDisplayMode(.inline)
+            Tab("Features", systemImage: "square.grid.2x2", value: AppTab.features) {
+                NavigationStack {
+                    FeaturesView()
+                        .navigationTitle("Features")
+                }
             }
-            #endif
+            Tab("Run", systemImage: "play.circle", value: AppTab.run) {
+                NavigationStack {
+                    RunAgentView(viewModel: viewModel, onEditSettings: { selection = .settings })
+                        .navigationTitle("Run Analysis")
+                }
+            }
+            Tab("Settings", systemImage: "gearshape", value: AppTab.settings) {
+                NavigationStack {
+                    SettingsView()
+                        .navigationTitle("Settings")
+                }
+            }
         }
+        .tabViewStyle(.sidebarAdaptable)
+        .tint(Palette.accentSolid)
         .sheet(isPresented: $viewModel.showReportModal) {
-            ReportModalView(
-                markdown: viewModel.markdownReport ?? "",
-                isPresented: $viewModel.showReportModal
-            )
+            ReportModalView(markdown: viewModel.markdownReport ?? "")
+                .presentationSizing(.page)
         }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
-        }
-    }
-    
-    @ViewBuilder
-    private var pagedInterface: some View {
-        TabView(selection: $selectedPage) {
-            pageContainer {
-                AgentOverviewView()
-            }
-            .tag(0)
-            
-            pageContainer {
-                FeaturesView()
-            }
-            .tag(1)
-            
-            pageContainer {
-                RunAgentView(viewModel: viewModel)
-            }
-            .tag(2)
-        }
-        #if os(macOS)
-        .tabViewStyle(DefaultTabViewStyle())
-        #else
-        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-        #endif
-    }
-    
-    @ViewBuilder
-    private func pageContainer<Content: View>(@ViewBuilder content: @escaping () -> Content) -> some View {
-        GeometryReader { proxy in
-            ScrollView {
-                content()
-                    .frame(maxWidth: min(proxy.size.width - 40, 960), alignment: .leading)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 28)
-                    .padding(.horizontal, 20)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-    
-    private func tabTitle(for index: Int) -> String? {
-        switch index {
-        case 0: return nil
-        case 1: return "Key Features"
-        case 2: return "Run the Agent"
-        default: return "Sprint Intelligence"
-        }
+        .sensoryFeedback(.success, trigger: viewModel.showReportModal) { _, shown in shown }
+        .sensoryFeedback(.error, trigger: viewModel.errorMessage) { _, message in message != nil }
     }
 }
 

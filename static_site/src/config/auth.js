@@ -10,8 +10,10 @@ export const buildOidcConfig = (origin = window.location.origin) => ({
     response_type: 'code',
     scope: 'openid email',
     automaticSilentRenew: true,
-    onSigninCallback: () => {
-        window.history.replaceState({}, document.title, window.location.pathname);
+    onSigninCallback: (user) => {
+        const route = user?.state?.route;
+        window.history.replaceState({}, document.title, `${window.location.pathname}${route ? `#/${route}` : ''}`);
+        if (route) window.dispatchEvent(new HashChangeEvent('hashchange'));
     },
 });
 
