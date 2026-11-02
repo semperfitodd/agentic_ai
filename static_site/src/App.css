@@ -40,6 +40,10 @@
     padding-top: var(--space-20);
 }
 
+.section-tight {
+    padding-top: var(--space-10);
+}
+
 @keyframes rise {
     from {
         opacity: 0;
@@ -728,18 +732,20 @@
 
 .preview-sections {
     display: grid;
+    grid-template-columns: 8px max-content minmax(0, 1fr) 1.5em;
+    align-items: center;
     gap: var(--space-3);
-    padding-top: var(--space-2);
+    padding-top: var(--space-4);
     border-top: 1px solid var(--color-border-subtle);
 }
 
 .preview-sections li {
-    display: grid;
-    grid-template-columns: auto auto 1fr;
-    align-items: center;
-    gap: var(--space-3);
+    display: contents;
     font-size: var(--text-small-size);
     font-weight: 600;
+}
+
+.preview-sections li > * {
     animation: fade var(--duration-slow) var(--ease-standard) calc(300ms + var(--i) * 90ms) both;
 }
 
@@ -750,16 +756,33 @@
     background: var(--color-accent-solid);
 }
 
-.preview-sections li:first-child .preview-dot {
+.preview-sections li:first-child .preview-dot,
+.preview-sections li:first-child .preview-fill {
     background: var(--color-brand-ember);
 }
 
-.preview-line {
-    height: 8px;
+.preview-bar {
+    height: 6px;
+    overflow: hidden;
     border-radius: var(--radius-full);
     background: var(--color-bg-subtle);
+}
+
+.preview-fill {
+    display: block;
+    width: calc(var(--fill) * 100%);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-accent-solid);
     transform-origin: left;
     animation: grow var(--duration-slower) var(--ease-emphasized) calc(380ms + var(--i) * 90ms) both;
+}
+
+.preview-count {
+    color: var(--color-text-tertiary);
+    font-size: var(--text-caption-size);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
 }
 
 @keyframes grow {
@@ -833,15 +856,254 @@
 }
 
 .feature-card {
+    position: relative;
     display: grid;
     align-content: start;
     gap: var(--space-3);
     padding: var(--space-6);
-    animation: rise var(--duration-slow) var(--ease-emphasized) calc(var(--i) * 60ms) both;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity var(--duration-slower) var(--ease-emphasized) calc(var(--i) * 70ms),
+        transform var(--duration-slower) var(--ease-emphasized) calc(var(--i) * 70ms),
+        box-shadow var(--duration-base) var(--ease-standard), border-color var(--duration-base) var(--ease-standard);
+}
+
+.feature-grid.is-visible .feature-card {
+    opacity: 1;
+    transform: none;
+}
+
+.feature-grid.is-visible .feature-card:hover {
+    transform: translateY(-3px);
+    transition-delay: 0ms;
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(240px circle at var(--x, 50%) var(--y, 0%), color-mix(in srgb, var(--color-accent-solid) 12%, transparent), transparent 70%);
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-standard);
+    pointer-events: none;
+}
+
+.feature-card:hover::before {
+    opacity: 1;
 }
 
 .feature-card .icon-tile {
     margin-bottom: var(--space-2);
+    transition: transform var(--duration-slow) var(--ease-spring);
+}
+
+.feature-card:hover .icon-tile {
+    transform: rotate(-6deg) scale(1.08);
+}
+
+/* Agent flow diagram */
+
+.agent-flow {
+    position: relative;
+    margin: 0;
+    padding: var(--space-10) var(--space-8);
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+}
+
+.agent-flow-glow {
+    position: absolute;
+    inset: -40% 10%;
+    background:
+        radial-gradient(40% 50% at 50% 50%, color-mix(in srgb, var(--color-ai-solid) 16%, transparent), transparent 70%),
+        radial-gradient(30% 40% at 15% 60%, color-mix(in srgb, var(--color-accent-solid) 12%, transparent), transparent 70%);
+    filter: blur(20px);
+    pointer-events: none;
+}
+
+.agent-flow-track {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.agent-flow-step {
+    position: relative;
+    display: grid;
+    justify-items: center;
+}
+
+.agent-node {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2);
+    text-align: center;
+}
+
+.agent-node .icon-tile {
+    margin-bottom: var(--space-2);
+    box-shadow: 0 0 0 6px var(--color-bg-surface);
+}
+
+.pulse {
+    position: relative;
+}
+
+.pulse::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: calc(var(--radius-lg) + 6px);
+    border: 2px solid var(--color-ai-solid);
+    opacity: 0;
+    animation: pulse-ring 2.4s var(--ease-standard) infinite;
+}
+
+@keyframes pulse-ring {
+    0% {
+        opacity: 0.5;
+        transform: scale(0.92);
+    }
+    80%,
+    100% {
+        opacity: 0;
+        transform: scale(1.25);
+    }
+}
+
+.pr-stack {
+    position: absolute;
+    top: -6px;
+    right: calc(100% - 28px);
+    display: grid;
+    gap: 4px;
+    justify-items: end;
+}
+
+.pr-stack span {
+    padding: 1px 6px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-raised);
+    color: var(--color-text-secondary);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    box-shadow: var(--shadow-sm);
+    animation: bob 3s var(--ease-standard) infinite alternate;
+}
+
+.pr-stack span:nth-child(2) {
+    margin-right: 10px;
+    animation-delay: -1s;
+}
+
+.pr-stack span:nth-child(3) {
+    animation-delay: -2s;
+}
+
+@keyframes bob {
+    to {
+        transform: translateY(-4px);
+    }
+}
+
+.flow-connector {
+    --dot: var(--color-accent-solid);
+    position: absolute;
+    top: 28px;
+    right: calc(50% + 40px);
+    width: calc(100% - 80px);
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--color-border-default) 0 6px, transparent 6px 12px);
+}
+
+.flow-connector-ai {
+    --dot: var(--color-ai-solid);
+}
+
+.flow-connector span {
+    position: absolute;
+    top: -3px;
+    left: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--dot);
+    box-shadow: 0 0 10px var(--dot);
+    animation: travel-x 2.4s linear infinite;
+}
+
+.flow-connector span:nth-child(2) {
+    animation-delay: -0.8s;
+}
+
+.flow-connector span:nth-child(3) {
+    animation-delay: -1.6s;
+}
+
+@keyframes travel-x {
+    0% {
+        left: 0;
+        opacity: 0;
+    }
+    15%,
+    85% {
+        opacity: 1;
+    }
+    100% {
+        left: calc(100% - 8px);
+        opacity: 0;
+    }
+}
+
+@keyframes travel-y {
+    0% {
+        top: 0;
+        opacity: 0;
+    }
+    15%,
+    85% {
+        opacity: 1;
+    }
+    100% {
+        top: calc(100% - 8px);
+        opacity: 0;
+    }
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-5);
+}
+
+.stat {
+    padding: var(--space-5);
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-bg-surface);
+}
+
+.stat .kpi-value {
+    order: -1;
+    font-size: var(--text-h1-size);
+    line-height: var(--text-h1-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .feature-card {
+        opacity: 1;
+        transform: none;
+    }
+
+    .flow-connector span {
+        animation: none;
+        opacity: 1;
+        left: calc(50% - 4px);
+    }
 }
 
 .stack-strip {
@@ -1690,6 +1952,36 @@ textarea.input {
     .feature-grid,
     .deliverables {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .agent-flow {
+        padding: var(--space-6) var(--space-5);
+    }
+
+    .agent-flow-track {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-16);
+    }
+
+    .flow-connector {
+        top: auto;
+        bottom: calc(100% + 8px);
+        right: auto;
+        left: calc(50% - 1px);
+        width: 2px;
+        height: calc(var(--space-16) - 16px);
+        background: repeating-linear-gradient(180deg, var(--color-border-default) 0 6px, transparent 6px 12px);
+    }
+
+    .flow-connector span {
+        top: 0;
+        left: -3px;
+        animation-name: travel-y;
+    }
+
+    .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-3);
     }
 
     .pipeline-card:not(:last-child)::after {
