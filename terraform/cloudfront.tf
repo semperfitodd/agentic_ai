@@ -42,8 +42,8 @@ module "cdn" {
 
   origin = {
     s3_primary = {
-      domain_name           = module.site_s3_bucket.s3_bucket_bucket_domain_name
-      origin_access_control = local.domain_name
+      domain_name               = module.site_s3_bucket.s3_bucket_bucket_domain_name
+      origin_access_control_key = local.domain_name
     }
   }
 
