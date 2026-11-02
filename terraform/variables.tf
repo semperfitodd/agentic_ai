@@ -35,7 +35,7 @@ variable "tags" {
 variable "bedrock_model_id" {
   description = "AWS Bedrock model ID for AI analysis"
   type        = string
-  default     = "us.anthropic.claude-opus-5-5"
+  default     = "us.anthropic.claude-haiku-5-5"
 }
 
 variable "log_level" {
