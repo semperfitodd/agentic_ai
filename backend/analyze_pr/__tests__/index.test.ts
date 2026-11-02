@@ -5,15 +5,15 @@ vi.mock('@sprint/shared', async (importOriginal) => ({
   listLatestKey: vi.fn(),
   getJson: vi.fn(),
   putJson: vi.fn(),
-  invokeClaude: vi.fn(),
+  invokeModel: vi.fn(),
 }));
 
-import { listLatestKey, getJson, putJson, invokeClaude } from '@sprint/shared';
+import { listLatestKey, getJson, putJson, invokeModel } from '@sprint/shared';
 
 const listLatestKeyMock = listLatestKey as Mock;
 const getJsonMock = getJson as Mock;
 const putJsonMock = putJson as Mock;
-const invokeClaudeMock = invokeClaude as Mock;
+const invokeModelMock = invokeModel as Mock;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -37,7 +37,7 @@ describe('lambda_analyze_pr handler', () => {
     const result = await handler(baseEvent);
 
     expect(result.statusCode).toBe(500);
-    expect(invokeClaudeMock).not.toHaveBeenCalled();
+    expect(invokeModelMock).not.toHaveBeenCalled();
   });
 
   it('stores analysis and returns success', async () => {
@@ -72,14 +72,14 @@ describe('lambda_analyze_pr handler', () => {
         },
       });
     listLatestKeyMock.mockResolvedValue('pr-details/acme/app/42/foo.json');
-    invokeClaudeMock.mockResolvedValue('## Analysis');
+    invokeModelMock.mockResolvedValue('## Analysis');
     putJsonMock.mockResolvedValue(undefined);
 
     const { handler } = await import('../index');
     const result = await handler(baseEvent);
 
     expect(result.statusCode).toBe(200);
-    expect(invokeClaudeMock).toHaveBeenCalled();
+    expect(invokeModelMock).toHaveBeenCalled();
     expect(putJsonMock).toHaveBeenCalled();
   });
 });

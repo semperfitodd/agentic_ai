@@ -11,7 +11,7 @@ struct FeaturesView: View {
                 FeatureCard(
                     icon: "brain",
                     title: "AI-Powered Analysis",
-                    description: "Advanced Claude 3.5 Sonnet models analyze code changes with expert-level understanding"
+                    description: "Amazon Nova models on Bedrock analyze code changes with expert-level understanding"
                 )
                 
                 FeatureCard(

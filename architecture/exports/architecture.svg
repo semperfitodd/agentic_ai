@@ -42,8 +42,8 @@
 <text x="745" y="46" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">KMS</text>
 <text x="745" y="66" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">GitHub token key</text>
 <rect x="660" y="280" width="170" height="60" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
-<text x="745" y="306" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">AWS Bedrock</text>
-<text x="745" y="326" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Claude</text>
+<text x="745" y="306" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Amazon Bedrock</text>
+<text x="745" y="326" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Nova 2 Lite</text>
 <rect x="660" y="380" width="170" height="60" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
 <text x="745" y="416" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">GitHub API</text>
 <line x1="180" y1="100" x2="240" y2="55" stroke="#1e1e1e" stroke-width="2"/>

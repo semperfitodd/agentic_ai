@@ -7,5 +7,5 @@ domain      = "example.com"
 region      = "us-east-1"
 
 # Optional overrides
-# bedrock_model_id       = "us.anthropic.claude-haiku-5-5"
+# bedrock_model_id       = "us.amazon.nova-2-lite-v1:0"
 # auth_dev_callback_urls = ["http://localhost:5173/"]

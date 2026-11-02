@@ -78,7 +78,7 @@ const handler = async (event) => {
         if (!prDetails.pr)
             throw new Error('PR data is missing from S3');
         const prompt = buildAnalysisPrompt({ ...prDetails, owner, repo }, readme);
-        const analysis = await (0, shared_1.invokeClaude)({
+        const analysis = await (0, shared_1.invokeModel)({
             user: prompt,
             maxTokens: parseInt(process.env.BEDROCK_MAX_TOKENS ?? '16000', 10),
         });

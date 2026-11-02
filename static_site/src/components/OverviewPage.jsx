@@ -25,7 +25,7 @@ const OverviewPage = () => (
                         <div className="process-step">
                             <div className="process-icon">🤖</div>
                             <h3>Intelligent Analysis</h3>
-                            <p>Each PR is analyzed by Claude 3.5 Sonnet, acting as an expert software engineer to understand context, impact, and quality.</p>
+                            <p>Each PR is analyzed by an Amazon Nova model on Bedrock, acting as an expert software engineer to understand context, impact, and quality.</p>
                         </div>
                         <div className="process-step">
                             <div className="process-icon">📊</div>

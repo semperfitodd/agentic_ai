@@ -1,6 +1,6 @@
 const FEATURES = [
     { icon: '🤖', title: 'Autonomous Analysis', description: 'AI agents independently analyze pull requests and generate comprehensive insights without human intervention.' },
-    { icon: '⚡', title: 'Real-Time Intelligence', description: 'Instant sprint reports with actionable recommendations powered by Claude 3.5 Sonnet.' },
+    { icon: '⚡', title: 'Real-Time Intelligence', description: 'Instant sprint reports with actionable recommendations powered by Amazon Nova on Bedrock.' },
     { icon: '📊', title: 'Executive Summaries', description: 'Clear, concise reports suitable for both technical and non-technical stakeholders.' },
     { icon: '🔗', title: 'Multi-Repo Support', description: 'Analyze multiple repositories simultaneously and get unified insights across your entire codebase.' },
     { icon: '📈', title: 'Trend Analysis', description: 'Track development patterns, identify bottlenecks, and measure team velocity over time.' },

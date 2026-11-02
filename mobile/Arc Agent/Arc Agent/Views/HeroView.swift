@@ -107,7 +107,7 @@ struct AgentOverviewView: View {
                 .font(.title2)
                 .fontWeight(.bold)
             
-            Text("The system autonomously analyzes your GitHub repositories to craft a boardroom-ready sprint report. Each stage blends self-directed discovery, Claude Sonnet analysis, and synthesis by a master coordination agent.")
+            Text("The system autonomously analyzes your GitHub repositories to craft a boardroom-ready sprint report. Each stage blends self-directed discovery, Amazon Nova analysis, and synthesis by a master coordination agent.")
                 .font(.body)
                 .foregroundColor(.secondary)
             
@@ -115,7 +115,7 @@ struct AgentOverviewView: View {
                 BulletPoint(title: "Sprint Summary:", description: "Executive overview with KPIs, narratives, and trend lines.")
                 BulletPoint(title: "Work Breakdown:", description: "Feature, bug, refactor, and documentation analytics.")
                 BulletPoint(title: "Repository Activity:", description: "Heatmaps of contributors, cadence, and dependencies.")
-                BulletPoint(title: "Detailed PR Insights:", description: "Claude-level reasoning on impact, quality, and risk.")
+                BulletPoint(title: "Detailed PR Insights:", description: "Model-driven reasoning on impact, quality, and risk.")
                 BulletPoint(title: "Recommendations:", description: "Next-best actions surfaced by goal-oriented agents.")
             }
             .padding(20)
@@ -134,7 +134,7 @@ struct AgentOverviewView: View {
             ProcessStepCard(
                 icon: "🤖",
                 title: "Intelligent Analysis",
-                description: "Claude 3.5 Sonnet inspects each code path for impact, regressions, and product context."
+                description: "Amazon Nova inspects each code path for impact, regressions, and product context."
             )
             
             ProcessStepCard(
