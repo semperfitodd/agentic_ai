@@ -22,7 +22,7 @@
     "jest": "^30.5.2",
     "nock": "^15.0.5",
     "ts-jest": "^29.4.15",
-    "typescript": "~6.0.3"
+    "typescript": "~7.0.2"
   },
   "license": "MIT"
 }
