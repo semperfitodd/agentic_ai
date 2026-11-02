@@ -124,7 +124,7 @@ export const handler = async (event: PRDetailsInput) => {
 
   try {
     const bucketName = requireEnv('RESULTS_BUCKET');
-    const octokit = createOctokit(await decryptGithubToken(encryptedGithubToken, executionName));
+    const octokit = await createOctokit(await decryptGithubToken(encryptedGithubToken, executionName));
     const perPage = parseInt(process.env.GITHUB_PER_PAGE ?? '100', 10);
 
     const [{ data: pr }, { data: issueComments }, { data: reviewComments }, { data: reviews }, { data: files }] = await Promise.all([

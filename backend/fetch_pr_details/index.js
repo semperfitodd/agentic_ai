@@ -62,7 +62,7 @@ const handler = async (event) => {
     shared_1.logger.info('Fetching PR details', { owner, repo, prNumber });
     try {
         const bucketName = (0, shared_1.requireEnv)('RESULTS_BUCKET');
-        const octokit = (0, shared_1.createOctokit)(await (0, shared_1.decryptGithubToken)(encryptedGithubToken, executionName));
+        const octokit = await (0, shared_1.createOctokit)(await (0, shared_1.decryptGithubToken)(encryptedGithubToken, executionName));
         const perPage = parseInt(process.env.GITHUB_PER_PAGE ?? '100', 10);
         const [{ data: pr }, { data: issueComments }, { data: reviewComments }, { data: reviews }, { data: files }] = await Promise.all([
             octokit.pulls.get({ owner, repo, pull_number: prNumber }),
