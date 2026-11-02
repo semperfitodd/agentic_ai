@@ -10,6 +10,7 @@ Guidance for AI coding agents working in this repository.
 | `backend/shared/` | `@sprint/shared` — shared TypeScript utilities for all Lambdas |
 | `backend/<name>/` | Individual Lambda handlers (folder name = `function_name` suffix) |
 | `terraform/` | All AWS infrastructure (Terraform) |
+| `design/` | Design tokens (`tokens.json`) and the generator for web CSS, PDF palette, and SwiftUI tokens |
 | `static_site/` | React web frontend (Vite + Vitest) |
 | `mobile/Arc Agent/` | SwiftUI iOS/iPadOS app |
 | `architecture/diagrams/` | Excalidraw diagram sources (`.excalidraw`) |
@@ -20,7 +21,7 @@ Guidance for AI coding agents working in this repository.
 
 | Function | Route | Purpose |
 |---|---|---|
-| `lambda_aggregate_sprint` | Step | Invokes the Bedrock model across PR analyses to produce markdown sprint report |
+| `lambda_aggregate_sprint` | Step | Invokes the Bedrock model across PR analyses to produce markdown sprint report (format below) |
 | `lambda_analyze_pr` | Step | Invokes the Bedrock model per PR to produce structured analysis JSON |
 | `lambda_delete_account` | `DELETE /account` | Deletes the caller's Cognito user (from the JWT `username` claim) |
 | `lambda_fetch_pr_details` | Step | Decrypts the GitHub token; fetches diffs, comments, reviews per PR (parallel Map) |
@@ -98,6 +99,18 @@ xcodebuild test \
 # Terraform
 cd terraform && terraform fmt -check -recursive && terraform validate
 ```
+
+## Sprint Report Format
+
+`buildMarkdownReport` in `backend/aggregate_sprint/index.ts` emits `# Sprint Report: <name>`, then `## At a Glance` (a two-column `Metric | Value` table whose `Sprint period` row and remaining rows become the cover period and KPI tiles), then `##` sections with `###` subsections, bullet lists, and GFM tables. The web (`static_site/src/utils/reportSummary.js`) and iOS (`Models/ReportDocument.swift`) parsers depend on that heading and table shape; both also read the earlier bullet-list preamble. Shared fixture: `static_site/src/__tests__/fixtures/sampleReport.md`.
+
+## Design System
+
+- Edit `design/tokens.json`, then run `node design/build-tokens.mjs`; never edit the generated `tokens.css`, `palette.js`, or `DesignTokens.swift`.
+- Web styles take color, spacing, radius, and motion from `var(--color-*)`, `var(--space-*)`, `var(--radius-*)`, `var(--duration-*)` and type from the `.text-*` classes; iOS uses `Palette`, `Space`, `DesignTokens.Radius`, and the `Font.arc*` styles in `Theme/Theme.swift`.
+- Theme preference: web `localStorage` `arc_theme` (`light` / `dark`, absent = system) applied as `data-theme` on `<html>`; iOS `@AppStorage("appearance")`.
+- Motion uses token durations; `prefers-reduced-motion` (web) and Reduce Motion (iOS) disable non-essential animation.
+- PDF export renders vector text on US Letter pages with a cover, running header/footer, and `Page n of N` on web (`utils/pdfExport.js`) and iOS (`Services/ReportPDFRenderer.swift`); keep the two layouts in step.
 
 ## Step Functions Terminal States
 

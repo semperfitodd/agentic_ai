@@ -1,6 +1,6 @@
 {
-  "short_name": "Agentic AI",
-  "name": "Agentic AI Demo - BSC Analytics",
+  "short_name": "Arc Agent",
+  "name": "Arc Agent · Sprint Intelligence",
   "description": "Advanced AI-powered sprint analysis platform leveraging autonomous agents for intelligent development insights",
   "icons": [
     {
@@ -11,8 +11,12 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#1a1f36",
-  "background_color": "#0f1419",
-  "categories": ["business", "productivity", "developer tools"],
+  "theme_color": "#11538B",
+  "background_color": "#0A0D14",
+  "categories": [
+    "business",
+    "productivity",
+    "developer tools"
+  ],
   "orientation": "portrait-primary"
 }

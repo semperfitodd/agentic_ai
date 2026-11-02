@@ -1,3 +1,5 @@
+import PDFKit
+import SwiftUI
 import XCTest
 @testable import Arc_Agent
 
@@ -127,5 +129,129 @@ final class AuthServicePKCETests: XCTestCase {
     func testAuthorizationCodeRejectsMissingCode() {
         let callback = URL(string: "arcagent://auth/callback?state=xyz&error=access_denied")!
         XCTAssertThrowsError(try AuthService.authorizationCode(from: callback, expectedState: "xyz"))
+    }
+}
+
+private let sampleReport: String = {
+    let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    return (try? String(contentsOf: root.appendingPathComponent("static_site/src/__tests__/fixtures/sampleReport.md"), encoding: .utf8)) ?? ""
+}()
+
+final class WorkflowPhaseTests: XCTestCase {
+
+    func testEveryPhaseHasSteps() {
+        let manager = WorkflowStepsManager()
+        for phase in WorkflowPhase.allCases {
+            XCTAssertTrue(manager.steps.contains { $0.phase == phase }, "\(phase) has no steps")
+        }
+    }
+
+    func testStepIndexWalksEveryStepInOrder() {
+        let manager = WorkflowStepsManager()
+        XCTAssertEqual(manager.stepIndex(at: 0, of: 10), 0)
+        XCTAssertEqual(manager.stepIndex(at: 20, of: 10), manager.steps.count - 1)
+        let seen = Set(stride(from: 0.0, to: 10.0, by: 0.01).map { manager.stepIndex(at: $0, of: 10) })
+        XCTAssertEqual(seen.count, manager.steps.count)
+    }
+
+    func testPhaseProgress() {
+        let manager = WorkflowStepsManager()
+        XCTAssertEqual(manager.progress(of: .prepare, currentStep: 0, complete: false), 0.125)
+        XCTAssertEqual(manager.progress(of: .prepare, currentStep: 4, complete: false), 1)
+        XCTAssertEqual(manager.progress(of: .synthesize, currentStep: 0, complete: false), 0)
+        XCTAssertEqual(manager.progress(of: .synthesize, currentStep: 0, complete: true), 1)
+    }
+}
+
+final class ReportDocumentTests: XCTestCase {
+
+    func testFixtureIsAvailable() {
+        XCTAssertFalse(sampleReport.isEmpty)
+    }
+
+    func testParsesCoverMetadataFromAtAGlanceTable() {
+        let document = ReportDocument(markdown: sampleReport)
+        XCTAssertEqual(document.sprintName, "Sprint 42 — Platform Hardening")
+        XCTAssertEqual(document.period, "10/1/2026 – 10/14/2026")
+        XCTAssertEqual(document.kpis.map(\.label), ["PRs merged", "Lines added", "Lines deleted", "Files changed", "Contributors"])
+        XCTAssertEqual(document.kpis.first?.value, "18")
+    }
+
+    func testBodyOmitsTitleAndGlanceSection() {
+        let document = ReportDocument(markdown: sampleReport)
+        XCTAssertEqual(document.sections.first, .init(id: "executive-summary", title: "Executive Summary"))
+        XCTAssertEqual(document.sections.count, 8)
+        XCTAssertEqual(document.blocks.first, .heading(level: 2, text: "Executive Summary", id: "executive-summary"))
+        XCTAssertFalse(document.sections.contains { $0.title == "At a Glance" })
+    }
+
+    func testParsesTablesWithAlignment() throws {
+        let document = ReportDocument(markdown: sampleReport)
+        let table = document.blocks.compactMap { block -> ([String], [[String]], [ReportDocument.Alignment])? in
+            if case let .table(header, rows, alignments) = block, header.first == "Repository" { return (header, rows, alignments) }
+            return nil
+        }.first
+        let (header, rows, alignments) = try XCTUnwrap(table)
+        XCTAssertEqual(header, ["Repository", "PRs", "Added", "Deleted"])
+        XCTAssertEqual(rows.first, ["acme/api", "9", "+2,904", "-712"])
+        XCTAssertEqual(alignments, [.leading, .trailing, .trailing, .trailing])
+    }
+
+    func testParsesListsQuotesAndEscapedPipes() {
+        let markdown = "# Sprint Report\n\n## Notes\n\n- one\n  - nested\n1. first\n\n> quoted **text**\n\n| A | B |\n| --- | --- |\n| x \\| y | 2 |"
+        let blocks = ReportDocument(markdown: markdown).blocks
+        XCTAssertTrue(blocks.contains(.list([.init(level: 0, marker: nil, text: "one"), .init(level: 1, marker: nil, text: "nested"), .init(level: 0, marker: "1.", text: "first")])))
+        XCTAssertTrue(blocks.contains(.quote("quoted **text**")))
+        XCTAssertTrue(blocks.contains(.table(header: ["A", "B"], rows: [["x | y", "2"]], alignments: [.leading, .leading])))
+    }
+
+    func testReadsLegacyBulletPreamble() {
+        let markdown = "# Sprint Report: Sprint 7\n\n- **Sprint Period**: 1/1/2024 to 1/14/2024\n- **Total PRs Merged**: 5\n\n## Executive Summary\n\nSteady."
+        let document = ReportDocument(markdown: markdown)
+        XCTAssertEqual(document.sprintName, "Sprint 7")
+        XCTAssertEqual(document.period, "1/1/2024 to 1/14/2024")
+        XCTAssertEqual(document.kpis, [.init(label: "PRs Merged", value: "5")])
+    }
+}
+
+final class ReportPDFRendererTests: XCTestCase {
+
+    func testRendersPaginatedLetterPDFWithCoverAndPageNumbers() throws {
+        let data = ReportPDFRenderer.render(markdown: sampleReport, generatedAt: Date(timeIntervalSince1970: 1_793_620_800))
+        let pdf = try XCTUnwrap(PDFDocument(data: data))
+        XCTAssertGreaterThanOrEqual(pdf.pageCount, 3)
+
+        let cover = try XCTUnwrap(pdf.page(at: 0))
+        XCTAssertEqual(cover.bounds(for: .mediaBox).size, CGSize(width: 612, height: 792))
+        let coverText = cover.string ?? ""
+        XCTAssertTrue(coverText.contains("SPRINT INTELLIGENCE REPORT"))
+        XCTAssertTrue(coverText.contains("IN THIS REPORT"))
+        XCTAssertFalse(coverText.contains("Page 1 of"))
+
+        XCTAssertTrue(pdf.page(at: 1)?.string?.contains("Page 2 of \(pdf.pageCount)") == true)
+        XCTAssertTrue(pdf.page(at: 1)?.string?.contains("Executive Summary") == true)
+        XCTAssertTrue(pdf.page(at: pdf.pageCount - 1)?.string?.contains("Page \(pdf.pageCount) of \(pdf.pageCount)") == true)
+    }
+
+    func testLongReportsFlowAcrossPagesWithoutDroppingText() throws {
+        let items = (0..<120).map { "- Item \($0) with enough words to wrap across the page width in the PDF body text." }.joined(separator: "\n")
+        let data = ReportPDFRenderer.render(markdown: sampleReport + "\n\n## Appendix\n\n" + items)
+        let pdf = try XCTUnwrap(PDFDocument(data: data))
+        XCTAssertGreaterThan(pdf.pageCount, 5)
+        XCTAssertTrue(pdf.string?.contains("Item 119 with enough words") == true)
+    }
+
+    func testFileNameIsSluggedAndDated() {
+        let date = Date(timeIntervalSince1970: 1_793_620_800)
+        XCTAssertEqual(ReportPDFRenderer.fileName(for: "Sprint 42 — Platform Hardening", date: date), "sprint-report-sprint-42-platform-hardening-2026-11-02.pdf")
+    }
+}
+
+final class AppearancePreferenceTests: XCTestCase {
+
+    func testMapsToColorSchemes() {
+        XCTAssertNil(AppearancePreference.system.colorScheme)
+        XCTAssertEqual(AppearancePreference.light.colorScheme, .light)
+        XCTAssertEqual(AppearancePreference.dark.colorScheme, .dark)
     }
 }

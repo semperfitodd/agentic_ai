@@ -1,8 +1,15 @@
 const Footer = () => (
     <footer className="footer">
-        <div className="container">
-            <p>BSC Analytics | Todd Bernson, Chief AI Officer</p>
-            <p className="footer-note">Powered by Amazon Bedrock and Amazon Nova</p>
+        <div className="container footer-inner">
+            <p>
+                <span className="footer-dot" aria-hidden="true" />
+                BSC Analytics · Todd Bernson, Chief AI Officer
+            </p>
+            <p className="footer-meta">
+                <a href="/privacy.html">Privacy</a>
+                <a href="/support.html">Support</a>
+                <span>Powered by Amazon Bedrock and Amazon Nova</span>
+            </p>
         </div>
     </footer>
 );

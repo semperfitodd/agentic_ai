@@ -99,3 +99,54 @@ describe('lambda_aggregate_sprint handler', () => {
     expect(putMarkdownMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('buildMarkdownReport', () => {
+  const data = {
+    executiveSummary: { overview: 'Shipped billing.', keyOutcomes: ['Billing live'], risks: [] },
+    keyMetricsDashboard: { summary: 'Steady.', metrics: [{ label: 'Median merge time', value: '19 h', context: 'a | b' }] },
+    workBreakdown: { categories: [{ name: 'Features', description: 'New things.', items: ['Invoices'] }] },
+    technicalHighlights: { highlights: ['Converse API'], decisions: [], qualityImprovements: [] },
+    repositoryInsights: { repos: [{ name: 'acme/api', summary: 'Busy.', highlights: ['Billing'] }] },
+    teamCollaboration: { summary: 'Shared load.', details: ['Pairing'] },
+    sprintRetrospective: { wentWell: ['Scope'], toImprove: [], lessonsLearned: [] },
+    recommendations: { nextSprintFocus: ['Alerts'], technicalDebt: [], processImprovements: [] },
+  };
+  const meta = {
+    sprintName: 'Sprint 42',
+    since: '10/1/2026',
+    until: '10/14/2026',
+    totalPRs: 18,
+    totalAdditions: 4812,
+    totalDeletions: 1276,
+    totalFiles: 143,
+    repoStats: [{ repo: 'acme/api', prs: 9, additions: 2904, deletions: 712 }],
+    contributors: [['alex', 6], ['priya', 5]] as Array<[string, number]>,
+  };
+
+  it('leads with an At a Glance table that clients read for cover KPIs', async () => {
+    const { buildMarkdownReport } = await import('../index');
+    const md = buildMarkdownReport(data, meta);
+    expect(md.startsWith('# Sprint Report: Sprint 42\n\n## At a Glance\n\n| Metric | Value |\n| --- | --- |\n')).toBe(true);
+    expect(md).toContain('| Sprint period | 10/1/2026 – 10/14/2026 |');
+    expect(md).toContain('| Lines added | +4,812 |');
+    expect(md).toContain('| Lines deleted | -1,276 |');
+    expect(md).toContain('| Contributors | 2 |');
+  });
+
+  it('uses headings and tables instead of nested bold bullets', async () => {
+    const { buildMarkdownReport } = await import('../index');
+    const md = buildMarkdownReport(data, meta);
+    expect(md).toContain('### Key Outcomes\n\n- Billing live');
+    expect(md).toContain('### Key Risks\n\n- None highlighted.');
+    expect(md).toContain('### Features\n\nNew things.\n\n- Invoices');
+    expect(md).toContain('| Repository | PRs | Added | Deleted |\n| --- | ---: | ---: | ---: |\n| acme/api | 9 | +2,904 | -712 |');
+    expect(md).toContain('| Contributor | PRs |\n| --- | ---: |\n| alex | 6 |');
+    expect(md).not.toMatch(/^- \*\*/m);
+    expect(md).not.toMatch(/\n{3,}/);
+  });
+
+  it('escapes pipes inside table cells', async () => {
+    const { buildMarkdownReport } = await import('../index');
+    expect(buildMarkdownReport(data, meta)).toContain('| Median merge time | 19 h | a \\| b |');
+  });
+});

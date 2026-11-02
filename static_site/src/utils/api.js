@@ -1,4 +1,4 @@
-import { getEffectiveSettings, POLL_INTERVAL_MS, MAX_POLL_ATTEMPTS } from '../config/settings';
+import { getEffectiveSettings, parseRepos, POLL_INTERVAL_MS, MAX_POLL_ATTEMPTS } from '../config/settings';
 
 const getApiUrl = () => import.meta.env.VITE_API_URL;
 const fetchWithAuth = (accessToken, url, options = {}) =>
@@ -101,7 +101,7 @@ export const fetchReport = async (accessToken, executionArn, setMarkdownReport, 
 export const startSprintAnalysis = async (accessToken) => {
     const settings = getEffectiveSettings();
 
-    const reposList = settings.repos.split(',').map((r) => r.trim()).filter(Boolean);
+    const reposList = parseRepos(settings.repos);
     if (reposList.length === 0) {
         return { success: false, error: 'At least one repository is required. Configure it in Settings.' };
     }

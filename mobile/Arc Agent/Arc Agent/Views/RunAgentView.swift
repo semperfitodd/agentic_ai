@@ -3,203 +3,182 @@ import SwiftUI
 
 struct RunAgentView: View {
     @ObservedObject var viewModel: SprintAnalysisViewModel
+    var onEditSettings: () -> Void
+
     @ObservedObject private var auth = AuthService.shared
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
-    
-    private let statusItems: [(icon: String, title: String)] = [
-        ("bolt.horizontal.circle", "Orchestrator ready"),
-        ("waveform.path.ecg", "Live telemetry"),
-        ("lock.shield", "Secure channel")
-    ]
-    
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var runRequests = 0
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            missionHeader
-            
-            if let info = viewModel.analysisInfo {
-                glassPanel {
-                    workflowDetails(info: info)
-                }
-            }
-            
-            actionButton
-            
-            if viewModel.isLoading || viewModel.workflowComplete {
-                glassPanel {
-                    ProgressTrackerView(
-                        progress: viewModel.progress,
-                        currentStep: viewModel.currentStepIndex,
-                        completedSteps: viewModel.completedSteps
-                    )
-                }
-            }
-            
-            if viewModel.workflowComplete {
-                glassPanel { CompletedStepsView() }
-                if viewModel.isFetchingReport {
-                    glassPanel { FetchingReportView() }
-                }
-            }
-            
-            if let error = viewModel.errorMessage {
-                glassPanel { ErrorView(message: error) }
-            }
-        }
-    }
-    
-    private var missionHeader: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Label("Autonomous sprint orchestration", systemImage: "sparkles")
-                .font(.caption.bold())
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
-                .background(Color.white.opacity(0.2), in: Capsule())
-                .foregroundColor(.white)
-            
-            Text("Run the Agent")
-                .font(.system(size: 30, weight: .heavy))
-                .foregroundColor(.white)
-            
-            Text("Kick off the multi-agent workflow to analyze your GitHub activity, track progress in real time, and receive an executive-ready report.")
-                .foregroundColor(.white.opacity(0.9))
-                .font(.system(size: 16, weight: .medium))
-            
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 10)], spacing: 10) {
-                ForEach(statusItems, id: \.title) { chip in
-                    statusChip(icon: chip.icon, title: chip.title)
-                }
-            }
-            .font(.footnote.weight(.semibold))
-            .foregroundColor(.white.opacity(0.85))
-        }
-        .padding(26)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.28, green: 0.38, blue: 0.92),
-                            Color(red: 0.12, green: 0.2, blue: 0.46)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .shadow(color: Color(red: 0.15, green: 0.19, blue: 0.44).opacity(0.4), radius: 24, y: 12)
-    }
-    
-    private func statusChip(icon: String, title: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-            Text(title)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .layoutPriority(1)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.18), in: Capsule())
-    }
-    
-    private var actionButton: some View {
-        Button(action: {
-            viewModel.runSprintAnalysis(using: webAuthenticationSession)
-        }) {
-            HStack {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s5) {
+                Text("Configure your sprint, then let the agents work.")
+                    .font(.arcBody)
+                    .foregroundStyle(Palette.textSecondary)
+
+                if sizeClass == .regular {
+                    HStack(alignment: .top, spacing: Space.s5) {
+                        ConfigurationCard(onEditSettings: onEditSettings, isBusy: isBusy)
+                            .frame(width: 340)
+                        runPanel
+                    }
                 } else {
-                    Image(systemName: "play.fill")
+                    runPanel
+                    ConfigurationCard(onEditSettings: onEditSettings, isBusy: isBusy)
                 }
-                Text(buttonTitle)
-                    .fontWeight(.semibold)
             }
+            .padding(.horizontal, Space.s5)
+            .padding(.vertical, Space.s4)
+            .frame(maxWidth: DesignTokens.Layout.contentMax)
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(
-                LinearGradient(
-                    colors: viewModel.isLoading || viewModel.isFetchingReport ?
-                        [Color.gray] :
-                        [Color(red: 0.31, green: 0.53, blue: 0.97), Color(red: 0.33, green: 0.28, blue: 0.86)],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .foregroundColor(.white)
-            .cornerRadius(18)
-            .shadow(color: Color.blue.opacity(0.3), radius: 20, y: 10)
         }
-        .disabled(viewModel.isLoading || viewModel.isFetchingReport)
+        .arcScreen()
+        .sensoryFeedback(.impact(weight: .medium), trigger: runRequests)
     }
-    
-    private func glassPanel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .padding(22)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+
+    private var isBusy: Bool {
+        viewModel.status == .running || viewModel.status == .retrieving
     }
-    
-    private func workflowDetails(info: AnalysisInfo) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Repositories")
-                    .font(.headline)
-                ForEach(info.repos, id: \.self) { repo in
-                    Link(destination: URL(string: "https://github.com/\(repo)")!) {
-                        HStack {
-                            Image(systemName: "arrow.turn.up.right")
-                                .font(.caption)
-                            Text(repo)
-                                .font(.subheadline)
-                            Spacer()
-                            Image(systemName: "arrow.up.right.square")
-                                .font(.caption)
-                        }
-                        .foregroundColor(.blue)
+
+    private var runPanel: some View {
+        Group {
+            switch viewModel.status {
+            case .running, .retrieving:
+                ProgressTrackerView(viewModel: viewModel)
+            case .ready:
+                stateView(icon: "checkmark.circle.fill", tone: .success, title: "Your report is ready",
+                          message: "Open it to read the analysis, copy the markdown, or share a PDF.") {
+                    Button {
+                        viewModel.showReportModal = true
+                    } label: {
+                        Label("Open report", systemImage: "doc.text")
                     }
+                    .buttonStyle(.arcPrimary)
+                    runButton(title: "Run again", systemImage: "arrow.counterclockwise", style: .arcSecondary)
+                }
+            case .idle, .failed:
+                stateView(icon: "play.fill", tone: .accent,
+                          title: viewModel.status == .failed ? "Ready to try again" : "Ready when you are",
+                          message: "The agents will fetch every merged pull request in your period, analyze each change, and assemble a sprint report.") {
+                    runButton(
+                        title: auth.isSignedIn ? (viewModel.status == .failed ? "Try again" : "Run sprint analysis") : "Sign in to run",
+                        systemImage: auth.isSignedIn ? "play.fill" : "person.crop.circle",
+                        style: .arcPrimary
+                    )
+                    Text("Typically takes about a minute.")
+                        .font(.arcCaption)
+                        .foregroundStyle(Palette.textTertiary)
                 }
             }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Date Range")
-                    .font(.headline)
-                HStack {
-                    Label {
-                        Text(info.dateRange.since, style: .date)
-                    } icon: {
-                        Image(systemName: "calendar")
-                    }
-                    Spacer()
-                    Label {
-                        Text(info.dateRange.until, style: .date)
-                    } icon: {
-                        Image(systemName: "flag.checkered")
-                    }
-                }
-                .font(.subheadline)
-            }
         }
+        .arcCard(padding: Space.s6)
+        .animation(reduceMotion ? nil : .smooth(duration: DesignTokens.Duration.slow), value: viewModel.status)
     }
-    
-    private var buttonTitle: String {
-        if viewModel.isLoading {
-            return "Analysis in Progress..."
-        } else if viewModel.isFetchingReport {
-            return "Fetching Report..."
-        } else if !auth.isSignedIn {
-            return "Sign in to Run Analysis"
-        } else {
-            return "Run Sprint Analysis"
+
+    private func runButton(title: String, systemImage: String, style: ArcButtonStyle) -> some View {
+        Button {
+            runRequests += 1
+            viewModel.runSprintAnalysis(using: webAuthenticationSession)
+        } label: {
+            Label(title, systemImage: systemImage)
         }
+        .buttonStyle(style)
+    }
+
+    private func stateView<Actions: View>(icon: String, tone: Tone, title: String, message: String, @ViewBuilder actions: () -> Actions) -> some View {
+        VStack(spacing: Space.s4) {
+            if let error = viewModel.errorMessage, viewModel.status == .failed {
+                HStack(alignment: .top, spacing: Space.s3) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text("Analysis failed").font(.arcTitle)
+                        Text(error).font(.arcSmall).foregroundStyle(Palette.textPrimary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(Palette.dangerText)
+                .padding(Space.s4)
+                .background(Palette.dangerSubtle, in: RoundedRectangle(cornerRadius: DesignTokens.Radius.md, style: .continuous))
+                .accessibilityElement(children: .combine)
+            } else {
+                IconTile(systemName: icon, tone: tone, size: 56)
+            }
+            Text(title).font(.arcH3).foregroundStyle(Palette.textPrimary)
+            Text(message)
+                .font(.arcSmall)
+                .foregroundStyle(Palette.textSecondary)
+                .multilineTextAlignment(.center)
+            actions()
+        }
+        .frame(maxWidth: 460)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Space.s4)
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
     }
 }
 
-#Preview {
-    RunAgentView(viewModel: SprintAnalysisViewModel())
-        .padding()
-}
+private struct ConfigurationCard: View {
+    var onEditSettings: () -> Void
+    var isBusy: Bool
 
+    @AppStorage("custom_repos") private var customRepos = ""
+    @AppStorage("custom_sprint_name") private var customSprintName = ""
+    @AppStorage("custom_since_date") private var customSince = ""
+    @AppStorage("custom_until_date") private var customUntil = ""
+    @State private var hasToken = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s5) {
+            Text("Configuration").font(.arcTitle).foregroundStyle(Palette.textPrimary)
+            row(icon: "tag", label: "Sprint") {
+                Text(SettingsView.effectiveSprintName())
+            }
+            row(icon: "calendar", label: "Period") {
+                Text(period)
+            }
+            row(icon: "folder", label: "Repositories") {
+                FlowLayout(spacing: Space.s2) {
+                    ForEach(SettingsView.effectiveRepos(), id: \.self) { repo in
+                        Text(repo)
+                            .font(.arcMono)
+                            .padding(.horizontal, Space.s2)
+                            .padding(.vertical, 3)
+                            .background(Palette.bgSubtle, in: Capsule())
+                    }
+                }
+            }
+            row(icon: "key", label: "GitHub token") {
+                Badge(text: hasToken ? "Keychain token set" : "Public repos only", tone: hasToken ? .success : .neutral)
+            }
+            Button(action: onEditSettings) {
+                Label("Edit settings", systemImage: "slider.horizontal.3")
+            }
+            .buttonStyle(.arcSecondary)
+            .disabled(isBusy)
+        }
+        .foregroundStyle(Palette.textPrimary)
+        .arcCard()
+        .onAppear { hasToken = !SettingsView.effectiveGithubToken().isEmpty }
+        .id([customRepos, customSprintName, customSince, customUntil].joined())
+    }
+
+    private var period: String {
+        let parser = ISO8601DateFormatter()
+        guard let since = parser.date(from: SettingsView.effectiveSince()),
+              let until = parser.date(from: SettingsView.effectiveUntil()) else { return "Not set" }
+        let style = Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: .gmt)
+        return "\(since.formatted(style)) – \(until.formatted(style))"
+    }
+
+    private func row<Value: View>(icon: String, label: String, @ViewBuilder value: () -> Value) -> some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            Label { Overline(label) } icon: {
+                Image(systemName: icon).font(.caption).foregroundStyle(Palette.textTertiary)
+            }
+            value().font(.arcBody.weight(.medium))
+        }
+        .accessibilityElement(children: .combine)
+    }
+}

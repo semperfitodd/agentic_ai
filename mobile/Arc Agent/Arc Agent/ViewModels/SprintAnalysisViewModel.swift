@@ -3,6 +3,10 @@ import SwiftUI
 import Combine
 import AuthenticationServices
 
+enum RunStatus: Equatable {
+    case idle, running, retrieving, ready, failed
+}
+
 @MainActor
 class SprintAnalysisViewModel: ObservableObject {
     @Published var isLoading = false
@@ -15,14 +19,26 @@ class SprintAnalysisViewModel: ObservableObject {
     @Published var showReportModal = false
     @Published var workflowComplete = false
     @Published var analysisInfo: AnalysisInfo?
+    @Published private(set) var elapsed: TimeInterval = 0
 
-    private var progressTimer: Timer?
-    private let workflowSteps = WorkflowStepsManager.shared.steps
+    private var ticker: Timer?
+    private var startedAt = Date()
+    private let manager = WorkflowStepsManager.shared
     private let totalDuration: TimeInterval
 
     init() {
         self.totalDuration = Double(APIConfig.workflowDuration) / 1000.0
     }
+
+    var status: RunStatus {
+        if isLoading { return .running }
+        if isFetchingReport { return .retrieving }
+        if errorMessage != nil { return .failed }
+        if markdownReport != nil { return .ready }
+        return .idle
+    }
+
+    var currentStep: WorkflowStep { manager.steps[currentStepIndex] }
 
     func runSprintAnalysis(using webAuthenticationSession: WebAuthenticationSession) {
         Task {
@@ -50,86 +66,58 @@ class SprintAnalysisViewModel: ObservableObject {
         workflowComplete = false
         analysisInfo = nil
 
-        startProgressAnimation()
+        startTicker()
 
         do {
             let result = try await APIService.shared.startSprintAnalysis()
+            analysisInfo = AnalysisInfo(repos: result.repos, dateRange: result.dateRange, executionArn: result.executionArn)
 
-            analysisInfo = AnalysisInfo(
-                repos: result.repos,
-                dateRange: result.dateRange,
-                executionArn: result.executionArn
-            )
-
-            let elapsed = (progress / 100.0) * totalDuration
-            let remaining = max(0, totalDuration - elapsed)
-
+            let remaining = max(0, totalDuration - Date().timeIntervalSince(startedAt))
             if remaining > 0 {
-                try await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
+                try await Task.sleep(for: .seconds(remaining))
             }
 
-            stopProgressAnimation()
             progress = 100.0
-            completedSteps = Set(workflowSteps.indices)
+            completedSteps = Set(manager.steps.indices)
             workflowComplete = true
             isLoading = false
-
             isFetchingReport = true
+
             let markdown = try await APIService.shared.pollForReport(executionArn: result.executionArn)
             markdownReport = markdown
             isFetchingReport = false
+            stopTicker()
             showReportModal = true
-
         } catch {
-            stopProgressAnimation()
+            stopTicker()
             isLoading = false
             isFetchingReport = false
             errorMessage = error.localizedDescription
         }
     }
 
-    private func startProgressAnimation() {
-        let startTime = Date()
-        let steps = workflowSteps
-        var stepTimings: [(start: TimeInterval, end: TimeInterval)] = []
-        var accumulatedTime: TimeInterval = 0
-
-        for step in steps {
-            let start = accumulatedTime
-            let stepDuration = (Double(step.duration) / 65.0) * totalDuration
-            accumulatedTime += stepDuration
-            stepTimings.append((start: start, end: accumulatedTime))
-        }
-
-        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in
-                let elapsed = Date().timeIntervalSince(startTime)
-                let progressPercent = min((elapsed / self.totalDuration) * 100.0, 100.0)
-                self.progress = progressPercent
-
-                for (index, timing) in stepTimings.enumerated() {
-                    if elapsed >= timing.start && elapsed < timing.end {
-                        if self.currentStepIndex != index {
-                            self.currentStepIndex = index
-                            self.completedSteps = Set(0..<index)
-                        }
-                        break
-                    }
-                }
-
-                if progressPercent >= 100 {
-                    self.completedSteps = Set(steps.indices)
-                    self.workflowComplete = true
-                    self.stopProgressAnimation()
-                }
-            }
+    private func startTicker() {
+        startedAt = Date()
+        elapsed = 0
+        ticker = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.tick() }
         }
     }
 
-    private func stopProgressAnimation() {
-        progressTimer?.invalidate()
-        progressTimer = nil
+    private func tick() {
+        elapsed = Date().timeIntervalSince(startedAt)
+        guard isLoading else { return }
+        progress = min(elapsed / totalDuration * 100, 100)
+        let index = manager.stepIndex(at: elapsed, of: totalDuration)
+        if index != currentStepIndex {
+            currentStepIndex = index
+            completedSteps = Set(0..<index)
+        }
+    }
+
+    private func stopTicker() {
+        ticker?.invalidate()
+        ticker = nil
     }
 
     func dismissReport() {

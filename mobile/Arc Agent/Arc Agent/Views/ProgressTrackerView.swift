@@ -1,150 +1,142 @@
 import SwiftUI
 
 struct ProgressTrackerView: View {
-    let progress: Double
-    let currentStep: Int
-    let completedSteps: Set<Int>
-    
-    private let steps = WorkflowStepsManager.shared.steps
-    
+    @ObservedObject var viewModel: SprintAnalysisViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private let manager = WorkflowStepsManager.shared
+
+    private var retrieving: Bool { viewModel.status == .retrieving }
+    private var step: WorkflowStep { viewModel.currentStep }
+    private var isAI: Bool { !retrieving && step.type == .ai }
+
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                if currentStep < steps.count {
-                    Text(steps[currentStep].type.displayName)
-                        .font(.subheadline)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(steps[currentStep].type == .ai ? Color.purple.opacity(0.2) : Color.blue.opacity(0.2))
-                        .foregroundColor(steps[currentStep].type == .ai ? .purple : .blue)
-                        .cornerRadius(8)
+        VStack(alignment: .leading, spacing: Space.s5) {
+            HStack(alignment: .center, spacing: Space.s4) {
+                ProgressRing(progress: viewModel.progress / 100, tint: isAI ? Palette.aiSolid : Palette.accentSolid)
+                    .frame(width: 64, height: 64)
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    Badge(
+                        text: retrieving ? "Finishing up" : isAI ? "AI processing" : "System process",
+                        systemImage: isAI ? "cpu" : "gearshape",
+                        tone: isAI ? .ai : .accent
+                    )
+                    Text(Duration.seconds(viewModel.elapsed).formatted(.time(pattern: .minuteSecond)))
+                        .font(.arcMono)
+                        .foregroundStyle(Palette.textTertiary)
+                        .monospacedDigit()
+                        .accessibilityLabel("Elapsed \(Duration.seconds(viewModel.elapsed).formatted(.units(allowed: [.minutes, .seconds], width: .wide)))")
                 }
-                
                 Spacer()
-                
-                Text("\(Int(progress))%")
-                    .font(.headline)
-                    .foregroundColor(.primary)
             }
-            
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.secondary.opacity(0.2))
-                        .frame(height: 12)
-                    
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [.blue, .purple]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: geometry.size.width * (progress / 100.0), height: 12)
-                        .shadow(color: .blue.opacity(0.5), radius: 8, x: 0, y: 0)
-                }
-            }
-            .frame(height: 12)
-            
-            VStack(spacing: 12) {
-                ForEach(displayedStepIndices, id: \.self) { index in
-                    let step = steps[index]
-                    StepItemView(
-                        step: step,
-                        index: index,
-                        isCompleted: completedSteps.contains(index),
-                        isCurrent: currentStep == index
+
+            HStack(spacing: Space.s2) {
+                ForEach(WorkflowPhase.allCases) { phase in
+                    PhaseBar(
+                        title: phase.title,
+                        fill: manager.progress(of: phase, currentStep: viewModel.currentStepIndex, complete: retrieving),
+                        tint: phase.isAI ? Palette.aiSolid : Palette.accentSolid
                     )
                 }
             }
-        }
-        .padding()
-        .background(Color.secondary.opacity(0.05))
-        .cornerRadius(16)
-    }
-    
-    private var displayedStepIndices: [Int] {
-        var order: [Int] = []
-        if currentStep < steps.count {
-            order.append(currentStep)
-        }
-        let completedOrder = completedSteps.sorted(by: >)
-        for index in completedOrder where index != currentStep {
-            order.append(index)
-        }
-        if order.isEmpty {
-            return completedOrder
-        }
-        return order
-    }
-}
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Sprint analysis progress")
+            .accessibilityValue("\(Int(viewModel.progress)) percent")
 
-struct StepItemView: View {
-    let step: WorkflowStep
-    let index: Int
-    let isCompleted: Bool
-    let isCurrent: Bool
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(indicatorColor)
-                    .frame(width: 32, height: 32)
-                
-                if isCompleted {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                } else if isCurrent {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(0.7)
-                } else {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 8, height: 8)
+            Text(retrieving ? "Retrieving your report…" : step.name)
+                .font(.arcH3)
+                .foregroundStyle(Palette.textPrimary)
+                .id(retrieving ? -1 : viewModel.currentStepIndex)
+                .transition(reduceMotion ? .opacity : .asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
+                .animation(.smooth(duration: DesignTokens.Duration.base), value: viewModel.currentStepIndex)
+                .accessibilityAddTraits(.updatesFrequently)
+
+            VStack(spacing: 0) {
+                ForEach(visibleSteps, id: \.self) { index in
+                    StepRowView(step: manager.steps[index], active: !retrieving && index == viewModel.currentStepIndex)
+                    Divider().overlay(Palette.borderSubtle)
                 }
             }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(step.name)
-                    .font(.subheadline)
-                    .fontWeight(isCurrent ? .semibold : .regular)
-                    .foregroundColor(isCompleted || isCurrent ? .primary : .secondary)
-                
-                Text(step.type.displayName)
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(step.type == .ai ? Color.purple.opacity(0.15) : Color.blue.opacity(0.15))
-                    .foregroundColor(step.type == .ai ? .purple : .blue)
-                    .cornerRadius(6)
+            .animation(reduceMotion ? nil : .smooth(duration: DesignTokens.Duration.base), value: visibleSteps)
+        }
+    }
+
+    private var visibleSteps: [Int] {
+        retrieving ? Array(manager.steps.indices.reversed()) : Array((0...viewModel.currentStepIndex).reversed())
+    }
+}
+
+private struct ProgressRing: View {
+    let progress: Double
+    let tint: Color
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(Palette.bgSubtle, lineWidth: 7)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(tint, style: StrokeStyle(lineWidth: 7, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(.linear(duration: 0.1), value: progress)
+            Text("\(Int(progress * 100))%")
+                .font(.system(.subheadline, design: .rounded, weight: .bold))
+                .monospacedDigit()
+                .foregroundStyle(Palette.textPrimary)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+private struct PhaseBar: View {
+    let title: String
+    let fill: Double
+    let tint: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s1) {
+            GeometryReader { proxy in
+                Capsule()
+                    .fill(Palette.bgSubtle)
+                    .overlay(alignment: .leading) {
+                        Capsule()
+                            .fill(tint)
+                            .frame(width: proxy.size.width * fill)
+                            .animation(.smooth(duration: DesignTokens.Duration.slower), value: fill)
+                    }
             }
-            
-            Spacer()
-        }
-        .padding(.vertical, 4)
-    }
-    
-    private var indicatorColor: Color {
-        if isCompleted {
-            return .green
-        } else if isCurrent {
-            return .blue
-        } else {
-            return Color.secondary.opacity(0.3)
+            .frame(height: 8)
+            Text(title)
+                .font(.arcCaption.weight(.semibold))
+                .foregroundStyle(fill > 0 ? Palette.textPrimary : Palette.textTertiary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
     }
 }
 
-#Preview {
-    ProgressTrackerView(
-        progress: 45,
-        currentStep: 5,
-        completedSteps: Set(0..<5)
-    )
-    .padding()
-}
+private struct StepRowView: View {
+    let step: WorkflowStep
+    let active: Bool
 
+    var body: some View {
+        HStack(spacing: Space.s3) {
+            ZStack {
+                Circle().fill(active ? (step.type == .ai ? Palette.aiSubtle : Palette.accentSubtle) : Palette.successSubtle)
+                if active {
+                    ProgressView().controlSize(.mini).tint(step.type == .ai ? Palette.aiText : Palette.accentText)
+                } else {
+                    Image(systemName: "checkmark").font(.caption2.weight(.bold)).foregroundStyle(Palette.successText)
+                }
+            }
+            .frame(width: 24, height: 24)
+            Text(step.name)
+                .font(active ? .arcSmall.weight(.semibold) : .arcSmall)
+                .foregroundStyle(active ? Palette.textPrimary : Palette.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Badge(text: step.type.displayName, tone: step.type == .ai ? .ai : .neutral)
+        }
+        .padding(.vertical, Space.s3)
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(active ? "In progress" : "Completed")
+    }
+}
