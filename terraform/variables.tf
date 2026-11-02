@@ -33,9 +33,9 @@ variable "tags" {
 }
 
 variable "bedrock_model_id" {
-  description = "AWS Bedrock model ID for AI analysis"
+  description = "Bedrock model or inference profile ID used through the Converse API"
   type        = string
-  default     = "us.anthropic.claude-haiku-5-5"
+  default     = "us.amazon.nova-2-lite-v1:0"
 }
 
 variable "log_level" {

@@ -5,17 +5,17 @@ vi.mock('@sprint/shared', async (importOriginal) => ({
   listLatestKey: vi.fn(),
   getJson: vi.fn(),
   putMarkdown: vi.fn(),
-  invokeClaude: vi.fn(),
-  parseJsonFromClaude: vi.fn(),
+  invokeModel: vi.fn(),
+  parseModelJson: vi.fn(),
 }));
 
-import { listLatestKey, getJson, putMarkdown, invokeClaude, parseJsonFromClaude } from '@sprint/shared';
+import { listLatestKey, getJson, putMarkdown, invokeModel, parseModelJson } from '@sprint/shared';
 
 const listLatestKeyMock = listLatestKey as Mock;
 const getJsonMock = getJson as Mock;
 const putMarkdownMock = putMarkdown as Mock;
-const invokeClaudeMock = invokeClaude as Mock;
-const parseJsonFromClaudeMock = parseJsonFromClaude as Mock;
+const invokeModelMock = invokeModel as Mock;
+const parseModelJsonMock = parseModelJson as Mock;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -48,7 +48,7 @@ describe('lambda_aggregate_sprint handler', () => {
     expect(body.markdownS3Key).toBeUndefined();
     expect(body.s3Bucket).toBeUndefined();
     expect(body.warning).toMatch(/failed validation/i);
-    expect(invokeClaudeMock).not.toHaveBeenCalled();
+    expect(invokeModelMock).not.toHaveBeenCalled();
     expect(putMarkdownMock).not.toHaveBeenCalled();
   });
 
@@ -76,8 +76,8 @@ describe('lambda_aggregate_sprint handler', () => {
       analysis: 'Good work',
       metadata: { additions: 10, deletions: 2, changed_files: 3, merged_at: null, author: 'alice', labels: [] },
     });
-    invokeClaudeMock.mockResolvedValue('{}');
-    parseJsonFromClaudeMock.mockReturnValue({
+    invokeModelMock.mockResolvedValue('{}');
+    parseModelJsonMock.mockReturnValue({
       executiveSummary: { overview: 'o', keyOutcomes: [], risks: [] },
       keyMetricsDashboard: { summary: 's', metrics: [] },
       workBreakdown: { categories: [] },

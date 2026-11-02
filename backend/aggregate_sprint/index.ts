@@ -1,4 +1,4 @@
-import { requireEnv, logger, stepResponse, getJson, putMarkdown, listLatestKey, invokeClaude, parseJsonFromClaude } from '@sprint/shared';
+import { requireEnv, logger, stepResponse, getJson, putMarkdown, listLatestKey, invokeModel, parseModelJson } from '@sprint/shared';
 
 interface PRAnalysisReference {
   owner: string;
@@ -270,12 +270,12 @@ export const handler = async (event: AggregateInput) => {
 
   const prompt = buildAggregationPrompt(sprintName, event.since, event.until, event.repos, validAnalyses, repoBreakdown, contributorList);
 
-  const rawText = await invokeClaude({
+  const rawText = await invokeModel({
     user: prompt,
     maxTokens: parseInt(process.env.BEDROCK_MAX_TOKENS ?? '16000', 10),
   });
 
-  const reportData = parseJsonFromClaude<SprintReportData>(rawText);
+  const reportData = parseModelJson<SprintReportData>(rawText);
 
   const totalAdditions = validAnalyses.reduce((s, a) => s + (a.metadata?.additions ?? 0), 0);
   const totalDeletions = validAnalyses.reduce((s, a) => s + (a.metadata?.deletions ?? 0), 0);

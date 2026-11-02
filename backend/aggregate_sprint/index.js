@@ -196,11 +196,11 @@ const handler = async (event) => {
         .join(', ');
     const sprintName = event.sprintName ?? process.env.DEFAULT_SPRINT_NAME ?? 'sprint';
     const prompt = buildAggregationPrompt(sprintName, event.since, event.until, event.repos, validAnalyses, repoBreakdown, contributorList);
-    const rawText = await (0, shared_1.invokeClaude)({
+    const rawText = await (0, shared_1.invokeModel)({
         user: prompt,
         maxTokens: parseInt(process.env.BEDROCK_MAX_TOKENS ?? '16000', 10),
     });
-    const reportData = (0, shared_1.parseJsonFromClaude)(rawText);
+    const reportData = (0, shared_1.parseModelJson)(rawText);
     const totalAdditions = validAnalyses.reduce((s, a) => s + (a.metadata?.additions ?? 0), 0);
     const totalDeletions = validAnalyses.reduce((s, a) => s + (a.metadata?.deletions ?? 0), 0);
     const totalFiles = validAnalyses.reduce((s, a) => s + (a.metadata?.changed_files ?? 0), 0);

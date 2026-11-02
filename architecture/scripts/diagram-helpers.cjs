@@ -198,7 +198,7 @@ function buildArchitectureDiagram() {
   push(box(880, 40, 200, 280, 'Workflow Lambdas\nparse_repos\nfetch_repo_data\nprepare_data\nfetch_pr_details\nanalyze_pr\naggregate_sprint\nstore_results', seed));
   push(box(880, 360, 200, 70, 'S3 Results Bucket\nSSE-S3, versioned', seed));
   push(box(660, 20, 170, 60, 'KMS\nGitHub token key', seed));
-  push(box(660, 280, 170, 60, 'AWS Bedrock\nClaude', seed));
+  push(box(660, 280, 170, 60, 'Amazon Bedrock\nNova 2 Lite', seed));
   push(box(660, 380, 170, 60, 'GitHub API', seed));
 
   push(arrow(180, 100, 240, 55, seed, 'sign in'));

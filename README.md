@@ -1,6 +1,6 @@
 # Sprint Intelligence
 
-An agentic AI system that analyzes GitHub sprint activity and generates executive-quality reports: deterministic orchestration in Step Functions, with Claude on Amazon Bedrock analyzing each PR and writing the sprint summary.
+An agentic AI system that analyzes GitHub sprint activity and generates executive-quality reports: deterministic orchestration in Step Functions, with Amazon Nova on Bedrock analyzing each PR and writing the sprint summary.
 
 ![architecture.png](architecture/exports/architecture.png)
 
@@ -15,7 +15,7 @@ An agentic AI system that analyzes GitHub sprint activity and generates executiv
 | `lambda_workflow` | Validates the request, KMS-encrypts the GitHub token, starts Step Functions |
 | `lambda_delete_account` | `DELETE /account`: deletes the caller's Cognito user (App Store guideline 5.1.1(v)); exposed in web and iOS Settings |
 | Step Functions workflow | Parse repos → fetch PRs → fetch PR details → analyze PRs → aggregate → store; `NoPRsFound` / `NoValidAnalyses` terminal paths |
-| `analyze_pr`, `aggregate_sprint` | Claude on Bedrock (`us.anthropic.claude-haiku-5-5` by default, `var.bedrock_model_id`) |
+| `analyze_pr`, `aggregate_sprint` | Bedrock Converse API with Amazon Nova 2 Lite (`us.amazon.nova-2-lite-v1:0` by default, `var.bedrock_model_id`); IAM allows only the configured model |
 | `fetch_repo_data`, `fetch_pr_details` | Only Lambdas allowed to decrypt the GitHub token |
 | KMS key (`alias/<env>_github_token`) | Per-execution encryption context; only ciphertext appears in execution history and logs |
 | S3 results bucket | Reports and intermediate JSON; SSE-S3, versioned, objects expire after 3 days |

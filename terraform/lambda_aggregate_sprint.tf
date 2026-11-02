@@ -24,17 +24,7 @@ module "lambda_aggregate_sprint" {
 
   attach_policy_statements = true
   policy_statements = {
-    bedrock = {
-      effect = "Allow"
-      actions = [
-        "bedrock:InvokeModel",
-        "bedrock:InvokeModelWithResponseStream"
-      ]
-      resources = [
-        "arn:aws:bedrock:${var.region}:*:inference-profile/${local.bedrock_model_id}",
-        "arn:aws:bedrock:*::foundation-model/*anthropic.claude*"
-      ]
-    }
+    bedrock = local.bedrock_invoke_statement
     s3_read = {
       effect    = "Allow"
       actions   = ["s3:GetObject", "s3:ListBucket"]

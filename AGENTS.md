@@ -20,8 +20,8 @@ Guidance for AI coding agents working in this repository.
 
 | Function | Route | Purpose |
 |---|---|---|
-| `lambda_aggregate_sprint` | Step | Invokes Bedrock Claude across PR analyses to produce markdown sprint report |
-| `lambda_analyze_pr` | Step | Invokes Bedrock Claude per PR to produce structured analysis JSON |
+| `lambda_aggregate_sprint` | Step | Invokes the Bedrock model across PR analyses to produce markdown sprint report |
+| `lambda_analyze_pr` | Step | Invokes the Bedrock model per PR to produce structured analysis JSON |
 | `lambda_delete_account` | `DELETE /account` | Deletes the caller's Cognito user (from the JWT `username` claim) |
 | `lambda_fetch_pr_details` | Step | Decrypts the GitHub token; fetches diffs, comments, reviews per PR (parallel Map) |
 | `lambda_fetch_repo_data` | Step | Decrypts the GitHub token; fetches PR metadata per repo via GitHub API (parallel Map) |
@@ -55,7 +55,7 @@ Every route must use `authorization_type = "JWT"`. Values are sourced from `loca
 - `AppError`, `toPublicError` — error handling primitives
 - `apiResponse`, `apiTextResponse`, `stepResponse` — response builders
 - `s3Client`, `putJson`, `putMarkdown`, `getJson`, `getText`, `listLatestKey`, `listObjects`
-- `bedrockClient`, `invokeClaude`, `parseJsonFromClaude`
+- `bedrockClient`, `invokeModel` (Bedrock Converse API), `parseModelJson`
 - `kmsClient`, `encryptGithubToken`, `decryptGithubToken`
 - `createOctokit`, `DEFAULT_PER_PAGE`
 

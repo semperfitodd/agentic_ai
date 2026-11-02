@@ -1,51 +1,40 @@
-import {
-  BedrockRuntimeClient,
-  InvokeModelCommand,
-} from '@aws-sdk/client-bedrock-runtime';
+import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import { requireEnv } from './env';
 
 export const bedrockClient = new BedrockRuntimeClient({});
 
-export interface ClaudeOptions {
+export interface ModelOptions {
   modelId?: string;
   system?: string;
   user: string;
   maxTokens?: number;
 }
 
-interface ClaudeResponse {
-  stop_reason?: string;
-  content?: Array<{ type: string; text?: string }>;
-}
+const DECLINED_STOP_REASONS = new Set(['guardrail_intervened', 'content_filtered']);
 
-export async function invokeClaude(options: ClaudeOptions): Promise<string> {
+export async function invokeModel(options: ModelOptions): Promise<string> {
   const modelId = options.modelId ?? requireEnv('BEDROCK_MODEL_ID');
   const maxTokens = options.maxTokens ?? parseInt(process.env.BEDROCK_MAX_TOKENS ?? '16000', 10);
-  const anthropicVersion = process.env.BEDROCK_ANTHROPIC_VERSION ?? 'bedrock-2023-05-31';
 
-  const command = new InvokeModelCommand({
-    modelId,
-    contentType: 'application/json',
-    accept: 'application/json',
-    body: JSON.stringify({
-      anthropic_version: anthropicVersion,
-      max_tokens: maxTokens,
-      ...(options.system ? { system: options.system } : {}),
-      messages: [{ role: 'user', content: options.user }],
-    }),
-  });
+  const response = await bedrockClient.send(
+    new ConverseCommand({
+      modelId,
+      ...(options.system ? { system: [{ text: options.system }] } : {}),
+      messages: [{ role: 'user', content: [{ text: options.user }] }],
+      inferenceConfig: { maxTokens },
+    })
+  );
 
-  const response = await bedrockClient.send(command);
-  const responseBody = JSON.parse(new TextDecoder().decode(response.body)) as ClaudeResponse;
-  if (responseBody.stop_reason === 'refusal') {
+  const stopReason = response.stopReason ?? 'unknown';
+  if (DECLINED_STOP_REASONS.has(stopReason)) {
     throw new Error('Model declined the request');
   }
-  const text = responseBody.content?.find((block) => block.type === 'text')?.text;
-  if (!text) throw new Error(`Model returned no text content (stop_reason: ${responseBody.stop_reason ?? 'unknown'})`);
+  const text = response.output?.message?.content?.find((block) => block.text)?.text;
+  if (!text) throw new Error(`Model returned no text content (stopReason: ${stopReason})`);
   return text;
 }
 
-export function parseJsonFromClaude<T>(raw: string): T {
+export function parseModelJson<T>(raw: string): T {
   try {
     return JSON.parse(raw) as T;
   } catch {

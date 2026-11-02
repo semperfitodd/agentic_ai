@@ -1,4 +1,4 @@
-import { requireEnv, logger, stepResponse, getJson, putJson, listLatestKey, invokeClaude } from '@sprint/shared';
+import { requireEnv, logger, stepResponse, getJson, putJson, listLatestKey, invokeModel } from '@sprint/shared';
 
 interface PRDetails {
   owner: string;
@@ -123,7 +123,7 @@ export const handler = async (event: PRAnalysisInput) => {
 
     const prompt = buildAnalysisPrompt({ ...prDetails, owner, repo }, readme);
 
-    const analysis = await invokeClaude({
+    const analysis = await invokeModel({
       user: prompt,
       maxTokens: parseInt(process.env.BEDROCK_MAX_TOKENS ?? '16000', 10),
     });
