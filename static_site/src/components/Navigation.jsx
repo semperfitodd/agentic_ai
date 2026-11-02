@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import bscLogo from '../bsc-logo.svg';
 import { hasCustomSettings } from './SettingsModal';
 
-const Navigation = ({ activePage, onPageChange, onSettingsClick }) => {
+const Navigation = ({ activePage, onPageChange, onSettingsClick, isAuthenticated, onSignIn, onSignOut }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const pages = [
@@ -62,6 +62,13 @@ const Navigation = ({ activePage, onPageChange, onSettingsClick }) => {
                 </nav>
 
                 <div className="nav-actions">
+                    <button
+                        className="nav-link nav-auth"
+                        onClick={isAuthenticated ? onSignOut : onSignIn}
+                    >
+                        {isAuthenticated ? 'Sign out' : 'Sign in'}
+                    </button>
+
                     <button
                         className={`nav-settings ${hasCustomSettings() ? 'has-custom' : ''}`}
                         onClick={onSettingsClick}

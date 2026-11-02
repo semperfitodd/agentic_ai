@@ -2,6 +2,8 @@ import SwiftUI
 
 struct RunAgentView: View {
     @ObservedObject var viewModel: SprintAnalysisViewModel
+    @ObservedObject private var auth = AuthService.shared
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     
     private let statusItems: [(icon: String, title: String)] = [
         ("bolt.horizontal.circle", "Orchestrator ready"),
@@ -103,7 +105,7 @@ struct RunAgentView: View {
     
     private var actionButton: some View {
         Button(action: {
-            viewModel.runSprintAnalysis()
+            viewModel.runSprintAnalysis(using: webAuthenticationSession)
         }) {
             HStack {
                 if viewModel.isLoading {
@@ -187,6 +189,8 @@ struct RunAgentView: View {
             return "Analysis in Progress..."
         } else if viewModel.isFetchingReport {
             return "Fetching Report..."
+        } else if !auth.isSignedIn {
+            return "Sign in to Run Analysis"
         } else {
             return "Run Sprint Analysis"
         }

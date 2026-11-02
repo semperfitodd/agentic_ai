@@ -5,7 +5,7 @@ describe('lambda_parse_repos handler', () => {
     repos: ['owner/repo1', 'https://github.com/owner/repo2'],
     since: '2024-01-01T00:00:00Z',
     until: '2024-01-14T00:00:00Z',
-    githubToken: 'ghp_test',
+    encryptedGithubToken: 'Y2lwaGVy',
     sprintName: 'Test Sprint',
   };
 
@@ -27,10 +27,10 @@ describe('lambda_parse_repos handler', () => {
     expect((result.body as any).repos[0]).toEqual({ owner: 'acme', repo: 'my-app' });
   });
 
-  it('passes through githubToken and dateRange', async () => {
+  it('passes through encryptedGithubToken and dateRange', async () => {
     const result = await handler(baseEvent);
     const body = result.body as any;
-    expect(body.githubToken).toBe('ghp_test');
+    expect(body.encryptedGithubToken).toBe('Y2lwaGVy');
     expect(body.since).toBe('2024-01-01T00:00:00Z');
     expect(body.until).toBe('2024-01-14T00:00:00Z');
     expect(body.sprintName).toBe('Test Sprint');

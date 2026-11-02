@@ -3,6 +3,7 @@ import { getEffectiveSettings, hasCustomSettings, formatDateForInput, formatDate
 describe('settings config', () => {
     beforeEach(() => {
         localStorage.clear();
+        sessionStorage.clear();
     });
 
     describe('getEffectiveSettings', () => {
@@ -15,8 +16,15 @@ describe('settings config', () => {
             expect(settings).toHaveProperty('until');
         });
 
-        it('returns localStorage values over env defaults', () => {
-            localStorage.setItem('arc_github_token', 'ghp_test_token');
+        it('reads the GitHub token from sessionStorage, never localStorage', () => {
+            localStorage.setItem('arc_github_token', 'ghp_persisted');
+            expect(getEffectiveSettings().githubToken).toBe('');
+            sessionStorage.setItem('arc_github_token', 'ghp_session');
+            expect(getEffectiveSettings().githubToken).toBe('ghp_session');
+        });
+
+        it('returns stored values over env defaults', () => {
+            sessionStorage.setItem('arc_github_token', 'ghp_test_token');
             localStorage.setItem('arc_repos', 'owner/repo1');
             const settings = getEffectiveSettings();
             expect(settings.githubToken).toBe('ghp_test_token');
@@ -35,7 +43,12 @@ describe('settings config', () => {
         });
 
         it('returns true when any storage key is set', () => {
-            localStorage.setItem('arc_github_token', 'token');
+            localStorage.setItem('arc_repos', 'owner/repo');
+            expect(hasCustomSettings()).toBe(true);
+        });
+
+        it('returns true when a session GitHub token is set', () => {
+            sessionStorage.setItem('arc_github_token', 'token');
             expect(hasCustomSettings()).toBe(true);
         });
     });

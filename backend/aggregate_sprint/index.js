@@ -198,8 +198,7 @@ const handler = async (event) => {
     const prompt = buildAggregationPrompt(sprintName, event.since, event.until, event.repos, validAnalyses, repoBreakdown, contributorList);
     const rawText = await (0, shared_1.invokeClaude)({
         user: prompt,
-        maxTokens: parseInt(process.env.BEDROCK_MAX_TOKENS ?? '8192', 10),
-        temperature: parseFloat(process.env.BEDROCK_TEMPERATURE ?? '0.7'),
+        maxTokens: parseInt(process.env.BEDROCK_MAX_TOKENS ?? '16000', 10),
     });
     const reportData = (0, shared_1.parseJsonFromClaude)(rawText);
     const totalAdditions = validAnalyses.reduce((s, a) => s + (a.metadata?.additions ?? 0), 0);

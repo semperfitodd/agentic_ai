@@ -1,6 +1,8 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
-  preset: 'ts-jest',
+  transform: {
+    '^.+\\.ts$': ['ts-jest', { diagnostics: { ignoreCodes: [151002] } }],
+  },
   testEnvironment: 'node',
   setupFilesAfterEnv: ['../shared/jest.setup.cjs'],
   testMatch: ['**/*.test.ts'],

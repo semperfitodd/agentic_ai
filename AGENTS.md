@@ -10,7 +10,7 @@ Guidance for AI coding agents working in this repository.
 | `backend/shared/` | `@sprint/shared` — shared TypeScript utilities for all Lambdas |
 | `backend/<name>/` | Individual Lambda handlers (folder name = `function_name` suffix) |
 | `terraform/` | All AWS infrastructure (Terraform) |
-| `static_site/` | React web frontend |
+| `static_site/` | React web frontend (Vite + Vitest) |
 | `mobile/Arc Agent/` | SwiftUI iOS/iPadOS app |
 | `architecture/diagrams/` | Excalidraw diagram sources (`.excalidraw`) |
 | `architecture/exports/` | Generated PNG/SVG diagram outputs |
@@ -21,29 +21,30 @@ Guidance for AI coding agents working in this repository.
 | Function | Route | Purpose |
 |---|---|---|
 | `lambda_aggregate_sprint` | Step | Invokes Bedrock Claude across PR analyses to produce markdown sprint report |
+| `lambda_delete_account` | `DELETE /account` | Deletes the caller's Cognito user (from the JWT `username` claim) |
 | `lambda_analyze_pr` | Step | Invokes Bedrock Claude per PR to produce structured analysis JSON |
-| `lambda_authorizer` | — | Custom Lambda authorizer; validates `x-api-key` against Secrets Manager |
-| `lambda_fetch_pr_details` | Step | Fetches diffs, comments, reviews per PR (parallel Map) |
-| `lambda_fetch_repo_data` | Step | Fetches PR metadata per repo via GitHub API (parallel Map) |
+| `lambda_fetch_pr_details` | Step | Decrypts the GitHub token; fetches diffs, comments, reviews per PR (parallel Map) |
+| `lambda_fetch_repo_data` | Step | Decrypts the GitHub token; fetches PR metadata per repo via GitHub API (parallel Map) |
 | `lambda_get_markdown` | `GET /markdown` | Retrieves a specific markdown report from S3 by `?key=` |
 | `lambda_get_results` | `GET /results` | Polls execution status by `executionArn`; lists reports (`?list=true`) |
 | `lambda_parse_repos` | Step | Normalizes GitHub URLs into structured list |
 | `lambda_prepare_data` | Step | Aggregates raw PR data, writes consolidated JSON to S3 |
 | `lambda_store_results` | Step | Validates and surfaces final S3 locations as execution output |
-| `lambda_workflow` | `POST /workflow` | Validates request, starts Step Functions execution, returns `executionArn` |
+| `lambda_workflow` | `POST /workflow` | Validates request, KMS-encrypts the GitHub token, starts Step Functions execution, returns `executionArn` |
 
-All API routes are protected by the custom Lambda authorizer (`authorization_type = "CUSTOM"`).
+All API routes are protected by the Cognito JWT authorizer (`authorization_type = "JWT"`). The GitHub token only travels through Step Functions as KMS ciphertext (`encryptedGithubToken`) bound to the execution name.
 
 ## API Gateway Authorization Audit
 
-Every route must use `authorization_type = "CUSTOM"`. Values are sourced from `local.api_route_auth` in `apigw.tf` and a `terraform check` block will fail `terraform plan` if any route deviates from this policy.
+Every route must use `authorization_type = "JWT"`. Values are sourced from `local.api_route_auth` in `apigw.tf` and a `terraform check` block will fail `terraform plan` if any route deviates from this policy.
 
 | Route | Lambda | authorization_type |
 |---|---|---|
-| `POST /workflow` | `workflow_proxy` | `CUSTOM` |
-| `POST /sprint-intelligence` | `workflow_proxy` | `CUSTOM` |
-| `GET /results` | `get_results` | `CUSTOM` |
-| `GET /markdown` | `get_markdown` | `CUSTOM` |
+| `POST /workflow` | `workflow_proxy` | `JWT` |
+| `POST /sprint-intelligence` | `workflow_proxy` | `JWT` |
+| `GET /results` | `get_results` | `JWT` |
+| `GET /markdown` | `get_markdown` | `JWT` |
+| `DELETE /account` | `delete_account` | `JWT` |
 
 ## Shared Library
 
@@ -55,6 +56,7 @@ Every route must use `authorization_type = "CUSTOM"`. Values are sourced from `l
 - `apiResponse`, `apiTextResponse`, `stepResponse` — response builders
 - `s3Client`, `putJson`, `putMarkdown`, `getJson`, `getText`, `listLatestKey`, `listObjects`
 - `bedrockClient`, `invokeClaude`, `parseJsonFromClaude`
+- `kmsClient`, `encryptGithubToken`, `decryptGithubToken`
 - `createOctokit`, `DEFAULT_PER_PAGE`
 
 **Never** duplicate these in individual Lambda handlers. When adding a new shared utility, add it to `backend/shared/src/` and re-export it from `src/index.ts`.
@@ -63,7 +65,7 @@ Every route must use `authorization_type = "CUSTOM"`. Values are sourced from `l
 
 1. Create `backend/<name>/` with `index.ts`, `tsconfig.json`, `jest.config.js`, `package.json` (referencing `"@sprint/shared": "file:../shared"`)
 2. Create `terraform/lambda_<name>.tf` — use existing `.tf` files as the template; set `path = "${path.module}/../backend/<name>"`, inherit `local.lambda_defaults`, `local.lambda_common_env`, `local.lambda_build_commands`
-3. If the Lambda is an API Gateway target, add its route to `apigw.tf` and add a corresponding `"CUSTOM"` entry to `local.api_route_auth`
+3. If the Lambda is an API Gateway target, add its route to `apigw.tf` and add a corresponding `"JWT"` entry to `local.api_route_auth`
 4. Add it to the authorization audit table in this file
 5. Write unit tests in `__tests__/index.test.ts` using `aws-sdk-client-mock` and mock `@sprint/shared` where needed
 
@@ -93,7 +95,7 @@ cd static_site && npm test
 xcodebuild test \
   -project "mobile/Arc Agent/Arc Agent.xcodeproj" \
   -scheme "Arc Agent" \
-  -destination "platform=iOS Simulator,name=iPhone 17"
+  -destination "platform=iOS Simulator,name=iPhone 17 Pro"
 
 # Terraform
 cd terraform && terraform fmt -check -recursive && terraform validate

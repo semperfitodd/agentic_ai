@@ -189,17 +189,21 @@ function buildArchitectureDiagram() {
 
   push(box(40, 80, 140, 70, 'Web / iOS\nClient', seed));
   push(box(40, 200, 140, 70, 'CloudFront\n+ S3 Frontend', seed));
-  push(box(240, 140, 160, 90, 'API Gateway\nCUSTOM authorizer\nx-api-key', seed));
+  push(box(240, 20, 160, 70, 'Cognito\nPKCE login', seed));
+  push(box(240, 140, 160, 90, 'API Gateway\nJWT authorizer\n(Cognito)', seed));
   push(box(460, 60, 150, 60, 'lambda_workflow\nPOST /workflow', seed));
   push(box(460, 150, 150, 60, 'lambda_get_results\nGET /results', seed));
   push(box(460, 240, 150, 60, 'lambda_get_markdown\nGET /markdown', seed));
   push(box(660, 120, 170, 80, 'Step Functions\nSPRINT_ANALYSIS', seed));
   push(box(880, 40, 200, 280, 'Workflow Lambdas\nparse_repos\nfetch_repo_data\nprepare_data\nfetch_pr_details\nanalyze_pr\naggregate_sprint\nstore_results', seed));
   push(box(880, 360, 200, 70, 'S3 Results Bucket\nSSE-S3, versioned', seed));
-  push(box(660, 280, 170, 60, 'AWS Bedrock\nClaude 3.5', seed));
+  push(box(660, 20, 170, 60, 'KMS\nGitHub token key', seed));
+  push(box(660, 280, 170, 60, 'AWS Bedrock\nClaude', seed));
   push(box(660, 380, 170, 60, 'GitHub API', seed));
 
-  push(arrow(180, 115, 240, 175, seed, 'HTTPS'));
+  push(arrow(180, 100, 240, 55, seed, 'sign in'));
+  push(arrow(180, 115, 240, 175, seed, 'Bearer JWT'));
+  push(arrow(610, 75, 660, 50, seed, 'encrypt'));
   push(arrow(110, 200, 110, 150, seed));
   push(arrow(400, 185, 460, 90, seed, 'auth'));
   push(arrow(400, 185, 460, 180, seed));
@@ -226,10 +230,10 @@ function buildWorkflowDiagram() {
   const h = 48;
   const gap = 56;
   const steps = [
-    'Client POST /workflow (x-api-key)',
-    'API Gateway → lambda_workflow → Step Functions',
+    'Client signs in with Cognito; POST /workflow (Bearer JWT)',
+    'lambda_workflow KMS-encrypts GitHub token → Step Functions',
     'Client polls GET /results?executionArn=…',
-    'Step Functions: GitHub PRs, diffs, reviews',
+    'Fetch Lambdas decrypt token: GitHub PRs, diffs, reviews',
     'Bedrock: analyze PRs + aggregate sprint report',
     'store_results → S3 markdown',
     'Client GET /markdown?key=… → report',

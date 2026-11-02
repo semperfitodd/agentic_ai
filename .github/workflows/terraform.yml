@@ -1,6 +1,7 @@
 name: Terraform
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'terraform/**'
@@ -16,10 +17,16 @@ permissions:
   contents: read
 
 env:
-  TF_VERSION: '1.16.6'
+  TF_VERSION: '1.17.1'
   TF_VAR_domain: ${{ vars.TF_DOMAIN }}
   TF_VAR_environment: ${{ vars.TF_ENVIRONMENT }}
   TF_VAR_region: ${{ vars.AWS_REGION }}
+  TF_VAR_google_client_id: ${{ vars.GOOGLE_CLIENT_ID }}
+  TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+  TF_VAR_apple_services_id: ${{ vars.APPLE_SERVICES_ID }}
+  TF_VAR_apple_team_id: ${{ vars.APPLE_TEAM_ID }}
+  TF_VAR_apple_key_id: ${{ vars.APPLE_KEY_ID }}
+  TF_VAR_apple_private_key: ${{ secrets.APPLE_PRIVATE_KEY }}
 
 jobs:
   terraform-plan:

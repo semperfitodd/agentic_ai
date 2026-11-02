@@ -20,14 +20,14 @@ let url = URL(string: "https://api.example.com")!
 
 ## Networking
 
-All network calls go through `APIService`. Use the `authorizedRequest(url:method:body:)` helper to add `x-api-key` consistently.
+All network calls go through `APIService`. Use the `authorizedRequest(url:method:body:)` helper, which attaches the Cognito access token from `AuthService` as `Authorization: Bearer`. Tokens and the GitHub token live in the Keychain via `KeychainStore`, never `UserDefaults`.
 
 ```swift
 // ✅ GOOD
-var request = try authorizedRequest(url: url, method: "POST", body: body)
+var request = try await authorizedRequest(url: url, method: "POST", body: body)
 
 // ❌ BAD
-request.setValue(Secrets.apiKey, forHTTPHeaderField: "x-api-key")  // ad-hoc in a view
+request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")  // ad-hoc in a view
 ```
 
 ## Logging

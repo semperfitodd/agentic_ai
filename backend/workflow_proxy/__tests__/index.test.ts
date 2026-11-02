@@ -1,14 +1,25 @@
+jest.mock('@sprint/shared', () => ({
+  ...jest.requireActual('@sprint/shared'),
+  encryptGithubToken: jest.fn(),
+}));
+
 import { mockClient } from 'aws-sdk-client-mock';
 import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
+import { encryptGithubToken } from '@sprint/shared';
 
 const sfnMock = mockClient(SFNClient);
+const encryptGithubTokenMock = encryptGithubToken as jest.Mock;
 
 beforeEach(() => {
   sfnMock.reset();
+  encryptGithubTokenMock.mockReset();
+  encryptGithubTokenMock.mockImplementation(async (token?: string) => (token ? 'Y2lwaGVy' : ''));
   process.env.STATE_MACHINE_ARN = 'arn:aws:states:us-east-1:123:stateMachine:test';
 });
 
 describe('lambda_workflow handler', () => {
+  const requestBody = '{"repos":["acme/app"],"since":"2024-01-01T00:00:00Z","until":"2024-01-14T00:00:00Z","githubToken":"ghp_test"}';
+
   it('returns 202 with executionArn on success', async () => {
     sfnMock.on(StartExecutionCommand).resolves({
       executionArn: 'arn:aws:states:us-east-1:123:execution:test:run-1',
@@ -16,11 +27,40 @@ describe('lambda_workflow handler', () => {
     });
 
     const { handler } = await import('../index');
-    const result = await handler({ body: '{"repos":["acme/app"],"since":"2024-01-01T00:00:00Z","until":"2024-01-14T00:00:00Z","githubToken":"ghp_test"}' });
+    const result = await handler({ body: requestBody });
     expect(result.statusCode).toBe(202);
     const body = JSON.parse(result.body);
     expect(body.executionArn).toBe('arn:aws:states:us-east-1:123:execution:test:run-1');
     expect(body.status).toBe('RUNNING');
+  });
+
+  it('never passes the plaintext GitHub token to Step Functions', async () => {
+    sfnMock.on(StartExecutionCommand).resolves({ executionArn: 'arn' });
+    const { handler } = await import('../index');
+    await handler({ body: requestBody });
+
+    const call = sfnMock.commandCalls(StartExecutionCommand)[0].args[0].input;
+    expect(call.input).not.toContain('ghp_test');
+    const input = JSON.parse(call.input ?? '{}');
+    expect(input.githubToken).toBeUndefined();
+    expect(input.encryptedGithubToken).toBe('Y2lwaGVy');
+    expect(encryptGithubTokenMock).toHaveBeenCalledWith('ghp_test', call.name);
+  });
+
+  it('passes an empty encryptedGithubToken when no token is supplied', async () => {
+    sfnMock.on(StartExecutionCommand).resolves({ executionArn: 'arn' });
+    const { handler } = await import('../index');
+    await handler({ body: '{"repos":["acme/app"]}' });
+
+    const input = JSON.parse(sfnMock.commandCalls(StartExecutionCommand)[0].args[0].input.input ?? '{}');
+    expect(input.encryptedGithubToken).toBe('');
+    expect(encryptGithubTokenMock).toHaveBeenCalledWith(undefined, expect.any(String));
+  });
+
+  it('returns 400 for a non-JSON body', async () => {
+    const { handler } = await import('../index');
+    const result = await handler({ body: 'not json' });
+    expect(result.statusCode).toBe(400);
   });
 
   it('returns 500 when STATE_MACHINE_ARN is missing', async () => {

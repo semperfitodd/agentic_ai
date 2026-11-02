@@ -1,14 +1,18 @@
 jest.mock('@sprint/shared', () => ({
   ...jest.requireActual('@sprint/shared'),
   createOctokit: jest.fn(),
+  decryptGithubToken: jest.fn(),
 }));
 
-import { createOctokit } from '@sprint/shared';
+import { decryptGithubToken, createOctokit } from '@sprint/shared';
 
 const createOctokitMock = createOctokit as jest.Mock;
+const decryptGithubTokenMock = decryptGithubToken as jest.Mock;
 
 beforeEach(() => {
   createOctokitMock.mockReset();
+  decryptGithubTokenMock.mockReset();
+  decryptGithubTokenMock.mockResolvedValue('ghp_test');
 });
 
 describe('lambda_fetch_repo_data handler', () => {
@@ -17,7 +21,8 @@ describe('lambda_fetch_repo_data handler', () => {
     repo: 'app',
     since: '2024-01-01T00:00:00Z',
     until: '2024-01-31T00:00:00Z',
-    githubToken: 'ghp_test',
+    encryptedGithubToken: 'Y2lwaGVy',
+    executionName: 'exec-1',
   };
 
   it('returns merged PRs in date range', async () => {
@@ -56,5 +61,42 @@ describe('lambda_fetch_repo_data handler', () => {
     expect(body.readme).toContain('# Readme');
     expect(body.prs).toHaveLength(1);
     expect(body.prs[0].number).toBe(1);
+  });
+});
+
+describe('lambda_fetch_repo_data token handling', () => {
+  it('decrypts the token with the execution name before creating the client', async () => {
+    createOctokitMock.mockReturnValue({
+      repos: { getReadme: jest.fn().mockRejectedValue(new Error('none')) },
+      pulls: { list: jest.fn().mockResolvedValue({ data: [] }) },
+    });
+
+    const { handler } = await import('../index');
+    await handler({
+      owner: 'acme',
+      repo: 'app',
+      since: '2024-01-01T00:00:00Z',
+      until: '2024-01-31T00:00:00Z',
+      encryptedGithubToken: 'Y2lwaGVy',
+      executionName: 'exec-1',
+    });
+
+    expect(decryptGithubTokenMock).toHaveBeenCalledWith('Y2lwaGVy', 'exec-1');
+    expect(createOctokitMock).toHaveBeenCalledWith('ghp_test');
+  });
+
+  it('returns 500 when the token cannot be decrypted', async () => {
+    decryptGithubTokenMock.mockRejectedValue(new Error('InvalidCiphertextException'));
+    const { handler } = await import('../index');
+    const result = await handler({
+      owner: 'acme',
+      repo: 'app',
+      since: '2024-01-01T00:00:00Z',
+      until: '2024-01-31T00:00:00Z',
+      encryptedGithubToken: 'Y2lwaGVy',
+      executionName: 'other',
+    });
+    expect(result.statusCode).toBe(500);
+    expect(createOctokitMock).not.toHaveBeenCalled();
   });
 });

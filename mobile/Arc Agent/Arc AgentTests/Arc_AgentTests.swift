@@ -110,3 +110,22 @@ final class SprintAnalysisViewModelTests: XCTestCase {
     }
 }
 
+
+final class AuthServicePKCETests: XCTestCase {
+
+    func testCodeChallengeMatchesRFC7636Vector() {
+        let verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+        XCTAssertEqual(AuthService.codeChallenge(for: verifier), "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM")
+    }
+
+    func testAuthorizationCodeRequiresMatchingState() throws {
+        let callback = URL(string: "arcagent://auth/callback?code=abc123&state=xyz")!
+        XCTAssertEqual(try AuthService.authorizationCode(from: callback, expectedState: "xyz"), "abc123")
+        XCTAssertThrowsError(try AuthService.authorizationCode(from: callback, expectedState: "other"))
+    }
+
+    func testAuthorizationCodeRejectsMissingCode() {
+        let callback = URL(string: "arcagent://auth/callback?state=xyz&error=access_denied")!
+        XCTAssertThrowsError(try AuthService.authorizationCode(from: callback, expectedState: "xyz"))
+    }
+}

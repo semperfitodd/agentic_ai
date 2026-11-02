@@ -59,7 +59,7 @@ class APIService {
             repos: repos
         )
 
-        let request = try authorizedRequest(
+        let request = try await authorizedRequest(
             path: "/sprint-intelligence",
             method: "POST",
             body: encoder.encode(body)
@@ -83,7 +83,7 @@ class APIService {
         components.queryItems = [URLQueryItem(name: "executionArn", value: executionArn)]
         guard let url = components.url else { throw APIError.invalidURL }
 
-        let request = authorizedRequest(url: url)
+        let request = try await authorizedRequest(url: url)
         return try await send(request)
     }
 
@@ -94,13 +94,19 @@ class APIService {
         components.queryItems = [URLQueryItem(name: "key", value: key)]
         guard let url = components.url else { throw APIError.invalidURL }
 
-        let request = authorizedRequest(url: url)
+        let request = try await authorizedRequest(url: url)
         let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         guard let text = String(data: data, encoding: .utf8) else {
             throw APIError.invalidResponse(reason: "Markdown response is not valid UTF-8")
         }
         return text
+    }
+
+    func deleteAccount() async throws {
+        let request = try await authorizedRequest(path: "/account", method: "DELETE")
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response, data: data)
     }
 
     func pollForReport(executionArn: String, maxAttempts: Int = 30) async throws -> String {
@@ -135,17 +141,18 @@ class APIService {
 
     // MARK: - Private Helpers
 
-    private func authorizedRequest(path: String, method: String = "GET", body: Data? = nil) throws -> URLRequest {
+    private func authorizedRequest(path: String, method: String = "GET", body: Data? = nil) async throws -> URLRequest {
         guard let url = URL(string: "\(APIConfig.apiURL)\(path)") else {
             throw APIError.invalidURL
         }
-        return authorizedRequest(url: url, method: method, body: body)
+        return try await authorizedRequest(url: url, method: method, body: body)
     }
 
-    private func authorizedRequest(url: URL, method: String = "GET", body: Data? = nil) -> URLRequest {
+    private func authorizedRequest(url: URL, method: String = "GET", body: Data? = nil) async throws -> URLRequest {
+        let accessToken = try await AuthService.shared.validAccessToken()
         var request = URLRequest(url: url)
         request.httpMethod = method
-        request.addValue(APIConfig.apiKey, forHTTPHeaderField: "x-api-key")
+        request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         if let body {
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = body

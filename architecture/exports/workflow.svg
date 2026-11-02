@@ -2,9 +2,9 @@
 <rect width="100%" height="100%" fill="#ffffff"/>
 <g transform="translate(-48 -8)">
 <rect x="80" y="40" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
-<text x="340" y="70" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Client POST /workflow (x-api-key)</text>
+<text x="340" y="70" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Client signs in with Cognito; POST /workflow (Bearer JWT)</text>
 <rect x="80" y="96" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
-<text x="340" y="126" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">API Gateway → lambda_workflow → Step Functions</text>
+<text x="340" y="126" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">lambda_workflow KMS-encrypts GitHub token → Step Functions</text>
 <line x1="340" y1="88" x2="340" y2="96" stroke="#1e1e1e" stroke-width="2"/>
 <polygon points="340,96 335,87.33974596215562 345,87.33974596215562" fill="#1e1e1e"/>
 <rect x="80" y="152" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
@@ -12,7 +12,7 @@
 <line x1="340" y1="144" x2="340" y2="152" stroke="#1e1e1e" stroke-width="2"/>
 <polygon points="340,152 335,143.3397459621556 345,143.3397459621556" fill="#1e1e1e"/>
 <rect x="80" y="208" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
-<text x="340" y="238" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Step Functions: GitHub PRs, diffs, reviews</text>
+<text x="340" y="238" font-family="Arial, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="middle">Fetch Lambdas decrypt token: GitHub PRs, diffs, reviews</text>
 <line x1="340" y1="200" x2="340" y2="208" stroke="#1e1e1e" stroke-width="2"/>
 <polygon points="340,208 335,199.3397459621556 345,199.3397459621556" fill="#1e1e1e"/>
 <rect x="80" y="264" width="520" height="48" rx="8" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import {
     STORAGE_KEYS,
     getDefaults,
+    getGithubToken,
+    setGithubToken as storeGithubToken,
     getEffectiveSettings,
     hasCustomSettings,
     formatDateForInput,
@@ -10,7 +12,7 @@ import {
 
 export { getEffectiveSettings, hasCustomSettings };
 
-const SettingsModal = ({ show, onClose }) => {
+const SettingsModal = ({ show, onClose, onDeleteAccount }) => {
     const defaults = getDefaults();
     const [githubToken, setGithubToken] = useState('');
     const [repos, setRepos] = useState('');
@@ -20,7 +22,7 @@ const SettingsModal = ({ show, onClose }) => {
 
     useEffect(() => {
         if (show) {
-            setGithubToken(localStorage.getItem(STORAGE_KEYS.githubToken) || '');
+            setGithubToken(getGithubToken());
             setRepos(localStorage.getItem(STORAGE_KEYS.repos) || '');
             setSprintName(localStorage.getItem(STORAGE_KEYS.sprintName) || '');
             setSince(formatDateForInput(localStorage.getItem(STORAGE_KEYS.since) || defaults.since));
@@ -34,7 +36,7 @@ const SettingsModal = ({ show, onClose }) => {
     };
 
     const handleSave = () => {
-        saveOrRemove(STORAGE_KEYS.githubToken, githubToken);
+        storeGithubToken(githubToken);
         saveOrRemove(STORAGE_KEYS.repos, repos);
         saveOrRemove(STORAGE_KEYS.sprintName, sprintName, defaults.sprintName);
         saveOrRemove(STORAGE_KEYS.since, formatDateForAPI(since));
@@ -44,6 +46,7 @@ const SettingsModal = ({ show, onClose }) => {
 
     const handleReset = () => {
         Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+        storeGithubToken('');
         setGithubToken('');
         setRepos('');
         setSprintName('');
@@ -69,7 +72,7 @@ const SettingsModal = ({ show, onClose }) => {
                     <div className="settings-section">
                         <label>
                             <span className="label-text">GitHub Token</span>
-                            <span className="label-hint">Required for private repos; optional for public repos</span>
+                            <span className="label-hint">Required for private repos; kept only for this browser tab and encrypted before it leaves the API</span>
                         </label>
                         <input
                             type="password"
@@ -78,11 +81,8 @@ const SettingsModal = ({ show, onClose }) => {
                             placeholder="ghp_… (leave blank for public repos)"
                             className="settings-input"
                         />
-                        {!githubToken && !getDefaults().githubToken && (
+                        {!githubToken && (
                             <span className="status-badge default">Public repos only — no token set</span>
-                        )}
-                        {!githubToken && getDefaults().githubToken && (
-                            <span className="status-badge default">Using default token</span>
                         )}
                     </div>
 
@@ -142,6 +142,16 @@ const SettingsModal = ({ show, onClose }) => {
                         {!repos && <span className="status-badge default">Using default repositories</span>}
                     </div>
                 </div>
+
+                {onDeleteAccount && (
+                    <div className="settings-section settings-danger">
+                        <label>
+                            <span className="label-text">Account</span>
+                            <span className="label-hint">Permanently delete your account and sign out</span>
+                        </label>
+                        <button className="btn-delete-account" onClick={onDeleteAccount}>Delete Account</button>
+                    </div>
+                )}
 
                 <div className="settings-actions">
                     <button className="btn-reset" onClick={handleReset}>Reset to Defaults</button>

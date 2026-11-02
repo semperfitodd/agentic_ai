@@ -1,6 +1,6 @@
 module "lambda_fetch_pr_details" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.12"
+  version = "~> 8.13"
 
   function_name = "${var.environment}_fetch_pr_details"
   description   = "${replace(var.environment, "_", " ")} fetch GitHub PR details"
@@ -28,6 +28,7 @@ module "lambda_fetch_pr_details" {
       actions   = ["s3:PutObject"]
       resources = ["${module.s3_results_bucket.s3_bucket_arn}/pr-details/*"]
     }
+    kms_decrypt = local.github_token_decrypt_statement
   }
 
   cloudwatch_logs_retention_in_days = local.lambda_defaults.cloudwatch_logs_retention_in_days

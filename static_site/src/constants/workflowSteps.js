@@ -21,4 +21,4 @@ export const WORKFLOW_STEPS = [
     { name: 'Generating Report Metadata and Keys', type: 'APPLICATION', duration: 2 },
 ];
 
-export const TOTAL_DURATION = parseInt(process.env.REACT_APP_WORKFLOW_DURATION || '50000', 10);
+export const TOTAL_DURATION = parseInt(import.meta.env.VITE_WORKFLOW_DURATION || '50000', 10);

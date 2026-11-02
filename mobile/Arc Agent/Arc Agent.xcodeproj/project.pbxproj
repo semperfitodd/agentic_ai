@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		0BC1B4CFA123BA5BC0C7D171 /* APIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41D57F0BBA8BC121185BA7AB /* APIConfig.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E103 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E104 /* KeychainStore.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E101 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E102 /* AuthService.swift */; };
 		1265301D424664D50BFCEC7F /* Arc_AgentUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527AF721FABE07F603E4D20A /* Arc_AgentUITests.swift */; };
 		16E98AD0A8448EDD463B14A2 /* CompletedStepsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 633EB26C4DEF54C2F4D37346 /* CompletedStepsView.swift */; };
 		19ACF03B5DBCD59D0002FB8D /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D783947FCB242AA2A375D688 /* MarkdownContentView.swift */; };
@@ -57,6 +59,8 @@
 		2F69ECEEDB9A1ADD1D82624E /* Arc_AgentUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arc_AgentUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		3C40A3B00B1B8BDDD53186F9 /* RunAgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAgentView.swift; sourceTree = "<group>"; };
 		41D57F0BBA8BC121185BA7AB /* APIConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfig.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E104 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E102 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		44E696DE68EC648F637F13AE /* FetchingReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchingReportView.swift; sourceTree = "<group>"; };
 		4B56F518A5DA960AB226DD9C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		527AF721FABE07F603E4D20A /* Arc_AgentUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arc_AgentUITests.swift; sourceTree = "<group>"; };
@@ -84,6 +88,8 @@
 			children = (
 				41D57F0BBA8BC121185BA7AB /* APIConfig.swift */,
 				B664FC68652C5CD1FA6EFD91 /* APIService.swift */,
+				A1B2C3D4E5F6A7B8C9D0E104 /* KeychainStore.swift */,
+				A1B2C3D4E5F6A7B8C9D0E102 /* AuthService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -297,6 +303,8 @@
 			files = (
 				0BC1B4CFA123BA5BC0C7D171 /* APIConfig.swift in Sources */,
 				B13052C91E76AEBEC2812B6C /* APIService.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E103 /* KeychainStore.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E101 /* AuthService.swift in Sources */,
 				579AFDF83345FA57293089E4 /* Arc_AgentApp.swift in Sources */,
 				16E98AD0A8448EDD463B14A2 /* CompletedStepsView.swift in Sources */,
 				8A903EE192523967A78126D3 /* ContentView.swift in Sources */,

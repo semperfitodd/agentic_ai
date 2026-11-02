@@ -1,16 +1,16 @@
-module "lambda_authorizer" {
+module "lambda_delete_account" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.12"
+  version = "~> 8.13"
 
-  function_name = "${var.environment}_authorizer"
-  description   = "${replace(var.environment, "_", " ")} API authorizer"
+  function_name = "${var.environment}_delete_account"
+  description   = "${replace(var.environment, "_", " ")} delete the calling user's account"
   handler       = "index.handler"
   runtime       = local.lambda_defaults.runtime
   publish       = local.lambda_defaults.publish
   timeout       = 30
 
   environment_variables = merge(local.lambda_common_env, {
-    API_KEY_SECRET = aws_secretsmanager_secret.api_key.name
+    USER_POOL_ID = aws_cognito_user_pool.main.id
   })
 
   create_package          = false
@@ -22,10 +22,10 @@ module "lambda_authorizer" {
 
   attach_policy_statements = true
   policy_statements = {
-    secrets = {
+    cognito_delete = {
       effect    = "Allow"
-      actions   = ["secretsmanager:GetSecretValue"]
-      resources = [aws_secretsmanager_secret.api_key.arn]
+      actions   = ["cognito-idp:AdminDeleteUser"]
+      resources = [aws_cognito_user_pool.main.arn]
     }
   }
 
@@ -38,25 +38,4 @@ module "lambda_authorizer" {
 
   cloudwatch_logs_retention_in_days = local.lambda_defaults.cloudwatch_logs_retention_in_days
   tags                              = local.lambda_defaults.tags
-}
-
-resource "aws_secretsmanager_secret" "api_key" {
-  name        = "${var.environment}_api_key"
-  description = "${replace(var.environment, "_", " ")} API key"
-
-  tags = var.tags
-}
-
-resource "aws_secretsmanager_secret_version" "api_key_version" {
-  secret_id     = aws_secretsmanager_secret.api_key.id
-  secret_string = jsonencode({ "API_KEY" : random_string.api_key.result })
-}
-
-resource "random_string" "api_key" {
-  length  = 64
-  lower   = true
-  numeric = true
-  special = false
-  upper   = true
-
 }

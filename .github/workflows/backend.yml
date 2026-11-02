@@ -44,8 +44,8 @@ jobs:
               - 'backend/aggregate_sprint/**'
             analyze_pr:
               - 'backend/analyze_pr/**'
-            authorizer:
-              - 'backend/authorizer/**'
+            delete_account:
+              - 'backend/delete_account/**'
             fetch_pr_details:
               - 'backend/fetch_pr_details/**'
             fetch_repo_data:
@@ -66,14 +66,14 @@ jobs:
       - name: Build lambda matrix
         id: matrix
         run: |
-          ALL_LAMBDAS='["aggregate_sprint","analyze_pr","authorizer","fetch_pr_details","fetch_repo_data","get_markdown","get_results","parse_repos","prepare_data","store_results","workflow_proxy"]'
+          ALL_LAMBDAS='["aggregate_sprint","analyze_pr","delete_account","fetch_pr_details","fetch_repo_data","get_markdown","get_results","parse_repos","prepare_data","store_results","workflow_proxy"]'
 
           # If shared changed, deploy all lambdas; otherwise only changed ones
           if [ "${{ steps.filter.outputs.shared }}" = "true" ]; then
             LAMBDAS="$ALL_LAMBDAS"
           else
             CHANGED='[]'
-            for name in aggregate_sprint analyze_pr authorizer fetch_pr_details fetch_repo_data get_markdown get_results parse_repos prepare_data store_results workflow_proxy; do
+            for name in aggregate_sprint analyze_pr delete_account fetch_pr_details fetch_repo_data get_markdown get_results parse_repos prepare_data store_results workflow_proxy; do
               if [ "$(echo '${{ toJSON(steps.filter.outputs) }}' | jq -r --arg n "$name" '.[$n]')" = "true" ]; then
                 CHANGED=$(echo "$CHANGED" | jq -c --arg n "$name" '. + [$n]')
               fi

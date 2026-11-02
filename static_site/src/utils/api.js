@@ -1,12 +1,10 @@
 import { getEffectiveSettings, POLL_INTERVAL_MS, MAX_POLL_ATTEMPTS } from '../config/settings';
 
-const getApiUrl = () => process.env.REACT_APP_API_URL;
-const getApiKey = () => process.env.REACT_APP_API_KEY;
-
-const fetchWithAuth = (url, options = {}) =>
+const getApiUrl = () => import.meta.env.VITE_API_URL;
+const fetchWithAuth = (accessToken, url, options = {}) =>
     fetch(url, {
         ...options,
-        headers: { ...options.headers, 'x-api-key': getApiKey() },
+        headers: { ...options.headers, Authorization: `Bearer ${accessToken}` },
     });
 
 export const extractMarkdownKey = (output) =>
@@ -27,13 +25,14 @@ export const buildEmptyReportMarkdown = (body) => {
     return lines.join('\n');
 };
 
-export const fetchReport = async (executionArn, setMarkdownReport, setShowReportModal, setFetchingReport, setError) => {
+export const fetchReport = async (accessToken, executionArn, setMarkdownReport, setShowReportModal, setFetchingReport, setError) => {
     setFetchingReport(true);
     let attempts = 0;
 
     const pollReport = async () => {
         try {
             const response = await fetchWithAuth(
+                accessToken,
                 `${getApiUrl()}/results?executionArn=${encodeURIComponent(executionArn)}`
             );
 
@@ -47,6 +46,7 @@ export const fetchReport = async (executionArn, setMarkdownReport, setShowReport
                 const markdownKey = extractMarkdownKey(data.output);
                 if (markdownKey) {
                     const markdownResponse = await fetchWithAuth(
+                        accessToken,
                         `${getApiUrl()}/markdown?key=${encodeURIComponent(markdownKey)}`
                     );
                     if (!markdownResponse.ok) {
@@ -98,7 +98,7 @@ export const fetchReport = async (executionArn, setMarkdownReport, setShowReport
     pollReport();
 };
 
-export const startSprintAnalysis = async () => {
+export const startSprintAnalysis = async (accessToken) => {
     const settings = getEffectiveSettings();
 
     const reposList = settings.repos.split(',').map((r) => r.trim()).filter(Boolean);
@@ -107,7 +107,7 @@ export const startSprintAnalysis = async () => {
     }
 
     try {
-        const response = await fetchWithAuth(`${getApiUrl()}/sprint-intelligence`, {
+        const response = await fetchWithAuth(accessToken, `${getApiUrl()}/sprint-intelligence`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -138,5 +138,12 @@ export const startSprintAnalysis = async () => {
         };
     } catch (err) {
         return { success: false, error: err.message || 'Network error — could not reach the API.' };
+    }
+};
+
+export const deleteAccount = async (accessToken) => {
+    const response = await fetchWithAuth(accessToken, `${getApiUrl()}/account`, { method: 'DELETE' });
+    if (!response.ok) {
+        throw new Error(`Account deletion failed (${response.status})`);
     }
 };

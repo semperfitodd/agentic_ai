@@ -28,11 +28,11 @@ Every Lambda module must:
 
 ## Authorization
 
-Every API Gateway route must set `authorization_type = "CUSTOM"` and reference the authorizer. The route's value is sourced from `local.api_route_auth` and a `terraform check` block in `apigw.tf` enforces this at plan time.
+Every API Gateway route must set `authorization_type = "JWT"` and reference the `cognito` authorizer. The route's value is sourced from `local.api_route_auth` and a `terraform check` block in `apigw.tf` enforces this at plan time.
 
 ## Secrets
 
-Never hardcode secrets in `.tf` files. Use `aws_secretsmanager_secret` and reference via data sources or outputs. Sensitive outputs must use `sensitive = true`.
+Never hardcode secrets in `.tf` files. Use `aws_secretsmanager_secret` or KMS and reference via data sources or outputs. Sensitive outputs must use `sensitive = true`.
 
 ## Step Functions
 

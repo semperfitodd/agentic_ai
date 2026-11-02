@@ -1,6 +1,6 @@
 module "lambda_analyze_pr" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.12"
+  version = "~> 8.13"
 
   function_name = "${var.environment}_analyze_pr"
   description   = "${replace(var.environment, "_", " ")} analyze PR with Bedrock"

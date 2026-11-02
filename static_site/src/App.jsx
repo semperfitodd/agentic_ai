@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from 'react-oidc-context';
 import './App.css';
 import Navigation from './components/Navigation';
 import OverviewPage from './components/OverviewPage';
@@ -8,9 +9,12 @@ import Footer from './components/Footer';
 import ReportModal from './components/ReportModal';
 import SettingsModal from './components/SettingsModal';
 import { TOTAL_DURATION, WORKFLOW_STEPS } from './constants/workflowSteps';
-import { fetchReport, startSprintAnalysis } from './utils/api';
+import { deleteAccount, fetchReport, startSprintAnalysis } from './utils/api';
+import { buildSignOutUrl } from './config/auth';
+import { setGithubToken } from './config/settings';
 
 function App() {
+    const auth = useAuth();
     const [activePage, setActivePage] = useState('overview');
     const [showSettings, setShowSettings] = useState(false);
     
@@ -66,7 +70,28 @@ function App() {
         return () => clearInterval(interval);
     }, [loading]);
 
+    const signOut = async () => {
+        await auth.removeUser();
+        window.location.assign(buildSignOutUrl());
+    };
+
+    const deleteCurrentAccount = async () => {
+        if (!window.confirm('Delete your account? This permanently removes your sign-in and cannot be undone.')) return;
+        try {
+            await deleteAccount(auth.user.access_token);
+            setGithubToken('');
+            await signOut();
+        } catch (err) {
+            window.alert(err.message);
+        }
+    };
+
     const runSprintAnalysis = async () => {
+        if (!auth.isAuthenticated) {
+            auth.signinRedirect();
+            return;
+        }
+        const accessToken = auth.user.access_token;
         setActivePage('run');
         setLoading(true);
         setError(null);
@@ -80,7 +105,7 @@ function App() {
         const startTime = Date.now();
 
         try {
-            const result = await startSprintAnalysis();
+            const result = await startSprintAnalysis(accessToken);
 
             if (result.success) {
                 setRepos(result.repos);
@@ -92,6 +117,7 @@ function App() {
                 setTimeout(() => {
                     setLoading(false);
                     fetchReport(
+                        accessToken,
                         result.executionArn,
                         setMarkdownReport,
                         setShowReportModal,
@@ -121,6 +147,7 @@ function App() {
                         loading={loading}
                         fetchingReport={fetchingReport}
                         onRunAnalysis={runSprintAnalysis}
+                        isAuthenticated={auth.isAuthenticated}
                         repos={repos}
                         dateRange={dateRange}
                         progress={progress}
@@ -141,6 +168,9 @@ function App() {
                 activePage={activePage}
                 onPageChange={setActivePage}
                 onSettingsClick={() => setShowSettings(true)}
+                isAuthenticated={auth.isAuthenticated}
+                onSignIn={() => auth.signinRedirect()}
+                onSignOut={signOut}
             />
 
             <main className="main">
@@ -158,6 +188,7 @@ function App() {
             <SettingsModal
                 show={showSettings}
                 onClose={() => setShowSettings(false)}
+                onDeleteAccount={auth.isAuthenticated ? deleteCurrentAccount : undefined}
             />
         </div>
     );

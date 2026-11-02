@@ -11,21 +11,17 @@ export interface ClaudeOptions {
   system?: string;
   user: string;
   maxTokens?: number;
-  temperature?: number;
+}
+
+interface ClaudeResponse {
+  stop_reason?: string;
+  content?: Array<{ type: string; text?: string }>;
 }
 
 export async function invokeClaude(options: ClaudeOptions): Promise<string> {
   const modelId = options.modelId ?? requireEnv('BEDROCK_MODEL_ID');
-  const maxTokens = options.maxTokens ?? parseInt(process.env.BEDROCK_MAX_TOKENS ?? '4096', 10);
-  const temperature = options.temperature ?? parseFloat(process.env.BEDROCK_TEMPERATURE ?? '0.7');
+  const maxTokens = options.maxTokens ?? parseInt(process.env.BEDROCK_MAX_TOKENS ?? '16000', 10);
   const anthropicVersion = process.env.BEDROCK_ANTHROPIC_VERSION ?? 'bedrock-2023-05-31';
-
-  const messages: Array<{ role: string; content: string }> = [];
-  if (options.system) {
-    messages.push({ role: 'user', content: options.system });
-    messages.push({ role: 'assistant', content: 'Understood.' });
-  }
-  messages.push({ role: 'user', content: options.user });
 
   const command = new InvokeModelCommand({
     modelId,
@@ -34,14 +30,19 @@ export async function invokeClaude(options: ClaudeOptions): Promise<string> {
     body: JSON.stringify({
       anthropic_version: anthropicVersion,
       max_tokens: maxTokens,
-      temperature,
-      messages,
+      ...(options.system ? { system: options.system } : {}),
+      messages: [{ role: 'user', content: options.user }],
     }),
   });
 
   const response = await bedrockClient.send(command);
-  const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-  return responseBody.content[0].text as string;
+  const responseBody = JSON.parse(new TextDecoder().decode(response.body)) as ClaudeResponse;
+  if (responseBody.stop_reason === 'refusal') {
+    throw new Error('Model declined the request');
+  }
+  const text = responseBody.content?.find((block) => block.type === 'text')?.text;
+  if (!text) throw new Error(`Model returned no text content (stop_reason: ${responseBody.stop_reason ?? 'unknown'})`);
+  return text;
 }
 
 export function parseJsonFromClaude<T>(raw: string): T {
