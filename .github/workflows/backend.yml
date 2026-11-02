@@ -207,7 +207,10 @@ jobs:
           FN_NAME: ${{ env.ENVIRONMENT }}_${{ matrix.lambda }}
         run: |
           npm ci && npm run build
-          zip -r function.zip dist node_modules index.js package.json
+          # Reinstall production dependencies only, copying @sprint/shared instead of symlinking it.
+          npm install --omit=dev --install-links --no-save
+          zip -qr function.zip index.js package.json node_modules
+          echo "Package size: $(du -h function.zip | cut -f1)"
           aws lambda update-function-code \
             --function-name "$FN_NAME" \
             --zip-file fileb://function.zip \
