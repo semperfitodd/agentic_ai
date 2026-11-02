@@ -1,11 +1,13 @@
-jest.mock('@sprint/shared', () => ({
-  ...jest.requireActual('@sprint/shared'),
-  putJson: jest.fn(),
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+
+vi.mock('@sprint/shared', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sprint/shared')>()),
+  putJson: vi.fn(),
 }));
 
 import { putJson } from '@sprint/shared';
 
-const putJsonMock = putJson as jest.Mock;
+const putJsonMock = putJson as Mock;
 
 beforeEach(() => {
   putJsonMock.mockReset();

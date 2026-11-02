@@ -1,6 +1,8 @@
-jest.mock('@sprint/shared', () => ({
-  ...jest.requireActual('@sprint/shared'),
-  encryptGithubToken: jest.fn(),
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+
+vi.mock('@sprint/shared', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sprint/shared')>()),
+  encryptGithubToken: vi.fn(),
 }));
 
 import { mockClient } from 'aws-sdk-client-mock';
@@ -8,7 +10,7 @@ import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
 import { encryptGithubToken } from '@sprint/shared';
 
 const sfnMock = mockClient(SFNClient);
-const encryptGithubTokenMock = encryptGithubToken as jest.Mock;
+const encryptGithubTokenMock = encryptGithubToken as Mock;
 
 beforeEach(() => {
   sfnMock.reset();

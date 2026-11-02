@@ -49,6 +49,6 @@ logger.error('Fetch failed', toPublicError(err));
 - API Gateway handlers → `apiResponse(statusCode, body)` or `apiTextResponse(statusCode, body, contentType)`
 - Step Functions task states → `stepResponse(statusCode, body)`
 
-## Jest
+## Testing
 
-Lambda `jest.config.js` files load [`backend/shared/jest.setup.cjs`](backend/shared/jest.setup.cjs) via `setupFilesAfterEnv` so `@octokit/rest` (ESM-only) is mocked before handlers import `@sprint/shared`. Prefer mocking `createOctokit`, S3 helpers, or Bedrock helpers from `@sprint/shared` in tests rather than importing `@octokit/rest` or `@aws-sdk/*` in lambda test files.
+Tests use Vitest with the shared [`backend/vitest.config.mjs`](backend/vitest.config.mjs) (each package runs `vitest run --config ../vitest.config.mjs`). Mock `@sprint/shared` with `vi.mock('@sprint/shared', async (importOriginal) => ({ ...(await importOriginal()), createOctokit: vi.fn() }))` rather than importing `@octokit/rest` or `@aws-sdk/*` in Lambda test files. `@octokit/rest` is ESM-only, so `createOctokit` is async and loads it with a native `import()`.

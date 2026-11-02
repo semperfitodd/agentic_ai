@@ -1,18 +1,20 @@
+import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
+
 import { logger } from '../logger';
 
 describe('logger', () => {
-  let infoSpy: jest.SpyInstance;
-  let warnSpy: jest.SpyInstance;
-  let errorSpy: jest.SpyInstance;
+  let infoSpy: MockInstance;
+  let warnSpy: MockInstance;
+  let errorSpy: MockInstance;
 
   beforeEach(() => {
-    infoSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    infoSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('redacts githubToken from meta', () => {

@@ -1,15 +1,17 @@
-jest.mock('@sprint/shared', () => ({
-  ...jest.requireActual('@sprint/shared'),
-  createOctokit: jest.fn(),
-  decryptGithubToken: jest.fn(),
-  putJson: jest.fn(),
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+
+vi.mock('@sprint/shared', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sprint/shared')>()),
+  createOctokit: vi.fn(),
+  decryptGithubToken: vi.fn(),
+  putJson: vi.fn(),
 }));
 
 import { decryptGithubToken, createOctokit, putJson } from '@sprint/shared';
 
-const createOctokitMock = createOctokit as jest.Mock;
-const decryptGithubTokenMock = decryptGithubToken as jest.Mock;
-const putJsonMock = putJson as jest.Mock;
+const createOctokitMock = createOctokit as Mock;
+const decryptGithubTokenMock = decryptGithubToken as Mock;
+const putJsonMock = putJson as Mock;
 
 beforeEach(() => {
   createOctokitMock.mockReset();
@@ -48,17 +50,17 @@ describe('lambda_fetch_pr_details handler', () => {
 
     createOctokitMock.mockReturnValue({
       pulls: {
-        get: jest.fn().mockResolvedValue({ data: prData }),
-        listReviewComments: jest.fn().mockResolvedValue({ data: [] }),
-        listReviews: jest.fn().mockResolvedValue({
+        get: vi.fn().mockResolvedValue({ data: prData }),
+        listReviewComments: vi.fn().mockResolvedValue({ data: [] }),
+        listReviews: vi.fn().mockResolvedValue({
           data: [{ user: { login: 'rev' }, state: 'APPROVED', body: 'LGTM', submitted_at: '2024-01-09T00:00:00Z' }],
         }),
-        listFiles: jest.fn().mockResolvedValue({
+        listFiles: vi.fn().mockResolvedValue({
           data: [{ filename: 'src/a.ts', status: 'modified', additions: 5, deletions: 1, changes: 6 }],
         }),
       },
       issues: {
-        listComments: jest.fn().mockResolvedValue({ data: [] }),
+        listComments: vi.fn().mockResolvedValue({ data: [] }),
       },
     });
 

@@ -1,3 +1,5 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+
 import { mockClient } from 'aws-sdk-client-mock';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { invokeClaude } from '../bedrock';

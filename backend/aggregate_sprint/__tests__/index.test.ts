@@ -1,22 +1,24 @@
-jest.mock('@sprint/shared', () => ({
-  ...jest.requireActual('@sprint/shared'),
-  listLatestKey: jest.fn(),
-  getJson: jest.fn(),
-  putMarkdown: jest.fn(),
-  invokeClaude: jest.fn(),
-  parseJsonFromClaude: jest.fn(),
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+
+vi.mock('@sprint/shared', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sprint/shared')>()),
+  listLatestKey: vi.fn(),
+  getJson: vi.fn(),
+  putMarkdown: vi.fn(),
+  invokeClaude: vi.fn(),
+  parseJsonFromClaude: vi.fn(),
 }));
 
 import { listLatestKey, getJson, putMarkdown, invokeClaude, parseJsonFromClaude } from '@sprint/shared';
 
-const listLatestKeyMock = listLatestKey as jest.Mock;
-const getJsonMock = getJson as jest.Mock;
-const putMarkdownMock = putMarkdown as jest.Mock;
-const invokeClaudeMock = invokeClaude as jest.Mock;
-const parseJsonFromClaudeMock = parseJsonFromClaude as jest.Mock;
+const listLatestKeyMock = listLatestKey as Mock;
+const getJsonMock = getJson as Mock;
+const putMarkdownMock = putMarkdown as Mock;
+const invokeClaudeMock = invokeClaude as Mock;
+const parseJsonFromClaudeMock = parseJsonFromClaude as Mock;
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
   process.env.RESULTS_BUCKET = 'test-bucket';
 });
 

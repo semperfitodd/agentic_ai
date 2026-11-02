@@ -63,15 +63,15 @@ Every route must use `authorization_type = "JWT"`. Values are sourced from `loca
 
 ## Adding a New Lambda
 
-1. Create `backend/<name>/` with `index.ts`, `tsconfig.json`, `jest.config.js`, `package.json` (referencing `"@sprint/shared": "file:../shared"`)
+1. Create `backend/<name>/` with `index.ts`, `tsconfig.json`, `package.json` (referencing `"@sprint/shared": "file:../shared"`, test script `vitest run --config ../vitest.config.mjs`)
 2. Create `terraform/lambda_<name>.tf` — use existing `.tf` files as the template; set `path = "${path.module}/../backend/<name>"`, inherit `local.lambda_defaults`, `local.lambda_common_env`, `local.lambda_build_commands`
 3. If the Lambda is an API Gateway target, add its route to `apigw.tf` and add a corresponding `"JWT"` entry to `local.api_route_auth`
 4. Add it to the authorization audit table in this file
-5. Write unit tests in `__tests__/index.test.ts` using `aws-sdk-client-mock` and mock `@sprint/shared` where needed
+5. Write Vitest unit tests in `__tests__/index.test.ts` using `aws-sdk-client-mock`, and `vi.mock('@sprint/shared', ...)` where needed
 
 ## Testing Commands
 
-Lambda Jest configs use `setupFilesAfterEnv: ['../shared/jest.setup.cjs']` (shared uses `<rootDir>/jest.setup.cjs`) to mock ESM-only `@octokit/rest` before loading `@sprint/shared`.
+All backend packages share [`backend/vitest.config.mjs`](backend/vitest.config.mjs), which resolves `.ts` before the committed `index.js` so `vi.mock` applies to the source. `npm run build` (TypeScript 7 `tsc`) is the type check.
 
 ```bash
 # Shared library

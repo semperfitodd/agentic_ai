@@ -1,16 +1,18 @@
-jest.mock('@sprint/shared', () => {
-  const actual = jest.requireActual('@sprint/shared');
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+
+vi.mock('@sprint/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sprint/shared')>();
   return {
     ...actual,
-    getText: jest.fn(),
+    getText: vi.fn(),
   };
 });
 
 import { getText } from '@sprint/shared';
-const getTextMock = getText as jest.Mock;
+const getTextMock = getText as Mock;
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
   process.env.RESULTS_BUCKET = 'test-bucket';
 });
 

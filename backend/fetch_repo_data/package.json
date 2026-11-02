@@ -5,20 +5,18 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "test": "jest"
+    "test": "vitest run --config ../vitest.config.mjs"
   },
   "dependencies": {
     "@sprint/shared": "file:../shared"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.164",
-    "@types/jest": "^30.0.0",
     "@types/node": "^24.19.2",
     "aws-sdk-client-mock": "^4.1.0",
-    "jest": "^30.5.2",
     "nock": "^15.0.5",
-    "ts-jest": "^29.4.15",
-    "typescript": "~6.0.3"
+    "typescript": "~7.0.2",
+    "vitest": "^5.1.0"
   },
   "license": "MIT"
 }

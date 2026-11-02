@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest';
+
 import { handler } from '../index';
 
 describe('lambda_store_results handler', () => {
