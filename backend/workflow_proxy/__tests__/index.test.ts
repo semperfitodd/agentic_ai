@@ -77,6 +77,21 @@ describe('lambda_workflow handler', () => {
     expect(encryptGithubTokenMock).toHaveBeenCalledWith(undefined, expect.any(String));
   });
 
+  it('sets ownerId from payload 1.0 email claim', async () => {
+    sfnMock.on(StartExecutionCommand).resolves({ executionArn: 'arn' });
+    const { handler } = await import('../index');
+    await handler({
+      body: '{"repos":["acme/app"]}',
+      requestContext: {
+        authorizer: {
+          claims: { email: 'todd@bernsonfamily.com', username: 'Google_abc' },
+        },
+      },
+    });
+    const input = JSON.parse(sfnMock.commandCalls(StartExecutionCommand)[0].args[0].input.input ?? '{}');
+    expect(input.ownerId).toBe('todd@bernsonfamily.com');
+  });
+
   it('ignores ownerId in the request body', async () => {
     sfnMock.on(StartExecutionCommand).resolves({ executionArn: 'arn' });
     const { handler } = await import('../index');

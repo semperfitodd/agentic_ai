@@ -5,11 +5,9 @@ import { CognitoIdentityProviderClient, AdminDeleteUserCommand } from '@aws-sdk/
 
 const cognitoMock = mockClient(CognitoIdentityProviderClient);
 
-const eventFor = (username?: string) => {
-  const claims: Record<string, string> = { sub: 'abc' };
-  if (username) claims.username = username;
-  return { requestContext: { authorizer: { jwt: { claims } } } };
-};
+const eventFor = (claims: Record<string, string>) => ({
+  requestContext: { authorizer: { claims } },
+});
 
 beforeEach(() => {
   cognitoMock.reset();
@@ -17,10 +15,12 @@ beforeEach(() => {
 });
 
 describe('lambda_delete_account handler', () => {
-  it('deletes the user named by the token claims', async () => {
+  it('deletes the Cognito username from payload 1.0 claims', async () => {
     cognitoMock.on(AdminDeleteUserCommand).resolves({});
     const { handler } = await import('../index');
-    const result = await handler(eventFor('google_12345'));
+    const result = await handler(
+      eventFor({ sub: 'abc', username: 'google_12345', email: 'user@example.com' })
+    );
 
     expect(result.statusCode).toBe(200);
     expect(cognitoMock.commandCalls(AdminDeleteUserCommand)[0].args[0].input).toEqual({
@@ -31,7 +31,7 @@ describe('lambda_delete_account handler', () => {
 
   it('returns 401 without a username claim', async () => {
     const { handler } = await import('../index');
-    const result = await handler(eventFor());
+    const result = await handler(eventFor({ sub: 'abc', email: 'only-email@example.com' }));
     expect(result.statusCode).toBe(401);
     expect(cognitoMock.commandCalls(AdminDeleteUserCommand)).toHaveLength(0);
   });
@@ -39,7 +39,7 @@ describe('lambda_delete_account handler', () => {
   it('returns 500 when Cognito fails', async () => {
     cognitoMock.on(AdminDeleteUserCommand).rejects(new Error('UserNotFoundException'));
     const { handler } = await import('../index');
-    const result = await handler(eventFor('google_12345'));
+    const result = await handler(eventFor({ username: 'google_12345' }));
     expect(result.statusCode).toBe(500);
   });
 });

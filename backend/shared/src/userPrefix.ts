@@ -29,16 +29,37 @@ export function assertOwnedKey(ownerId: string, key: string): void {
 export interface JwtAuthorizerContext {
   requestContext?: {
     authorizer?: {
+      claims?: Record<string, string>;
       jwt?: { claims?: Record<string, string> };
     };
   };
 }
 
+export function jwtClaimsFromEvent(event: JwtAuthorizerContext): Record<string, string> | undefined {
+  const authorizer = event.requestContext?.authorizer;
+  if (!authorizer) return undefined;
+  if (authorizer.claims && typeof authorizer.claims === 'object') {
+    return authorizer.claims;
+  }
+  return authorizer.jwt?.claims;
+}
+
+export function ownerIdFromClaims(claims: Record<string, string> | undefined): string | undefined {
+  if (!claims) return undefined;
+  const email = typeof claims.email === 'string' ? claims.email.trim() : '';
+  if (email) return email;
+  const username = typeof claims.username === 'string' ? claims.username.trim() : '';
+  return username || undefined;
+}
+
+export function cognitoUsernameFromClaims(claims: Record<string, string> | undefined): string | undefined {
+  if (!claims) return undefined;
+  const username = typeof claims.username === 'string' ? claims.username.trim() : '';
+  return username || undefined;
+}
+
 export function callerUsernameFromEvent(event: JwtAuthorizerContext): string | undefined {
-  const raw = event.requestContext?.authorizer?.jwt?.claims?.username;
-  if (typeof raw !== 'string') return undefined;
-  const trimmed = raw.trim();
-  return trimmed || undefined;
+  return ownerIdFromClaims(jwtClaimsFromEvent(event));
 }
 
 export function requireCallerUsername(event: JwtAuthorizerContext): string {
@@ -51,4 +72,12 @@ export function requireCallerUsername(event: JwtAuthorizerContext): string {
   } catch {
     throw new AppError('Invalid authenticated user', 401);
   }
+}
+
+export function requireCognitoUsername(event: JwtAuthorizerContext): string {
+  const username = cognitoUsernameFromClaims(jwtClaimsFromEvent(event));
+  if (!username) {
+    throw new AppError('Missing authenticated user', 401);
+  }
+  return username;
 }
