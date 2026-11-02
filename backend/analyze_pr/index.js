@@ -80,8 +80,7 @@ const handler = async (event) => {
         const prompt = buildAnalysisPrompt({ ...prDetails, owner, repo }, readme);
         const analysis = await (0, shared_1.invokeClaude)({
             user: prompt,
-            maxTokens: parseInt(process.env.BEDROCK_MAX_TOKENS ?? '4096', 10),
-            temperature: parseFloat(process.env.BEDROCK_TEMPERATURE ?? '0.7'),
+            maxTokens: parseInt(process.env.BEDROCK_MAX_TOKENS ?? '16000', 10),
         });
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const analysisS3Key = `pr-analyses/${owner}/${repo}/${prDetails.pr.number}/${timestamp}.json`;

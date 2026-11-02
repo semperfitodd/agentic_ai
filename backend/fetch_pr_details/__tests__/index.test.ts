@@ -1,16 +1,20 @@
 jest.mock('@sprint/shared', () => ({
   ...jest.requireActual('@sprint/shared'),
   createOctokit: jest.fn(),
+  decryptGithubToken: jest.fn(),
   putJson: jest.fn(),
 }));
 
-import { createOctokit, putJson } from '@sprint/shared';
+import { decryptGithubToken, createOctokit, putJson } from '@sprint/shared';
 
 const createOctokitMock = createOctokit as jest.Mock;
+const decryptGithubTokenMock = decryptGithubToken as jest.Mock;
 const putJsonMock = putJson as jest.Mock;
 
 beforeEach(() => {
   createOctokitMock.mockReset();
+  decryptGithubTokenMock.mockReset();
+  decryptGithubTokenMock.mockResolvedValue('ghp_test');
   putJsonMock.mockReset();
   putJsonMock.mockResolvedValue(undefined);
   process.env.RESULTS_BUCKET = 'test-bucket';
@@ -21,7 +25,8 @@ describe('lambda_fetch_pr_details handler', () => {
     owner: 'acme',
     repo: 'app',
     prNumber: 7,
-    githubToken: 'ghp_test',
+    encryptedGithubToken: 'Y2lwaGVy',
+    executionName: 'exec-1',
   };
 
   it('fetches PR data and writes summary to S3', async () => {

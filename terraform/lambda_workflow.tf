@@ -1,6 +1,6 @@
 module "lambda_workflow" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.12"
+  version = "~> 8.13"
 
   function_name = "${var.environment}_workflow_proxy"
   description   = "${replace(var.environment, "_", " ")} workflow proxy"
@@ -10,7 +10,8 @@ module "lambda_workflow" {
   timeout       = 30
 
   environment_variables = merge(local.lambda_common_env, {
-    STATE_MACHINE_ARN = module.step_function.state_machine_arn
+    STATE_MACHINE_ARN        = module.step_function.state_machine_arn
+    GITHUB_TOKEN_KMS_KEY_ARN = aws_kms_key.github_token.arn
   })
 
   create_package          = false
@@ -26,6 +27,11 @@ module "lambda_workflow" {
       effect    = "Allow"
       actions   = ["states:StartExecution"]
       resources = [module.step_function.state_machine_arn]
+    }
+    kms_encrypt = {
+      effect    = "Allow"
+      actions   = ["kms:Encrypt"]
+      resources = [aws_kms_key.github_token.arn]
     }
   }
 

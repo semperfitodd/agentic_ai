@@ -1,19 +1,20 @@
-import { createOctokit, logger, stepResponse } from '@sprint/shared';
+import { createOctokit, decryptGithubToken, logger, stepResponse } from '@sprint/shared';
 
 interface RepoInput {
   owner: string;
   repo: string;
   since: string;
   until: string;
-  githubToken: string;
+  encryptedGithubToken: string;
+  executionName: string;
 }
 
 export const handler = async (event: RepoInput) => {
-  const { owner, repo, since, until, githubToken } = event;
+  const { owner, repo, since, until, encryptedGithubToken, executionName } = event;
   logger.info('Fetching repo data', { owner, repo });
 
   try {
-    const octokit = createOctokit(githubToken);
+    const octokit = createOctokit(await decryptGithubToken(encryptedGithubToken, executionName));
     const perPage = parseInt(process.env.GITHUB_PER_PAGE ?? '100', 10);
 
     let readme = '';

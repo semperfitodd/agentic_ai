@@ -1,6 +1,6 @@
 module "lambda_get_results" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.12"
+  version = "~> 8.13"
 
   function_name = "${var.environment}_get_results"
   description   = "${replace(var.environment, "_", " ")} retrieve sprint results"

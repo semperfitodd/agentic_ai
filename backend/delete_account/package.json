@@ -1,24 +1,24 @@
 {
-  "name": "lambda-authorizer",
+  "name": "lambda-delete-account",
   "version": "1.0.0",
-  "description": "Lambda API Gateway authorizer",
+  "description": "Lambda that deletes the calling user's Cognito account",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.1156.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.1161.0",
     "@sprint/shared": "file:../shared"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.164",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.10.0",
+    "@types/node": "^24.19.2",
     "aws-sdk-client-mock": "^4.1.0",
-    "jest": "^30.0.0",
+    "jest": "^30.5.2",
     "ts-jest": "^29.4.15",
-    "typescript": "~5.9.3"
+    "typescript": "~6.0.3"
   },
   "license": "MIT"
 }

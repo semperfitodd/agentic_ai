@@ -36,11 +36,11 @@ module "step_function" {
         Parameters = {
           FunctionName = module.lambda_parse_repos.lambda_function_arn
           Payload = {
-            "repos.$"       = "$.repos"
-            "since.$"       = "$.since"
-            "until.$"       = "$.until"
-            "githubToken.$" = "$.githubToken"
-            "sprintName.$"  = "$.sprintName"
+            "repos.$"                = "$.repos"
+            "since.$"                = "$.since"
+            "until.$"                = "$.until"
+            "encryptedGithubToken.$" = "$.encryptedGithubToken"
+            "sprintName.$"           = "$.sprintName"
           }
         }
         ResultSelector = {
@@ -74,11 +74,11 @@ module "step_function" {
       ExtractParsedData = {
         Type = "Pass"
         Parameters = {
-          "repos.$"       = "$.parsedRepos.body.repos"
-          "since.$"       = "$.parsedRepos.body.since"
-          "until.$"       = "$.parsedRepos.body.until"
-          "githubToken.$" = "$.parsedRepos.body.githubToken"
-          "sprintName.$"  = "$.parsedRepos.body.sprintName"
+          "repos.$"                = "$.parsedRepos.body.repos"
+          "since.$"                = "$.parsedRepos.body.since"
+          "until.$"                = "$.parsedRepos.body.until"
+          "encryptedGithubToken.$" = "$.parsedRepos.body.encryptedGithubToken"
+          "sprintName.$"           = "$.parsedRepos.body.sprintName"
         }
         Next = "FetchRepoData"
       }
@@ -100,11 +100,11 @@ module "step_function" {
         ItemsPath      = "$.repos"
         MaxConcurrency = 5
         Parameters = {
-          "owner.$"       = "$$.Map.Item.Value.owner"
-          "repo.$"        = "$$.Map.Item.Value.repo"
-          "since.$"       = "$.since"
-          "until.$"       = "$.until"
-          "githubToken.$" = "$.githubToken"
+          "owner.$"                = "$$.Map.Item.Value.owner"
+          "repo.$"                 = "$$.Map.Item.Value.repo"
+          "since.$"                = "$.since"
+          "until.$"                = "$.until"
+          "encryptedGithubToken.$" = "$.encryptedGithubToken"
         }
         Iterator = {
           StartAt = "FetchSingleRepo"
@@ -115,11 +115,12 @@ module "step_function" {
               Parameters = {
                 FunctionName = module.lambda_fetch_repo_data.lambda_function_arn
                 Payload = {
-                  "owner.$"       = "$.owner"
-                  "repo.$"        = "$.repo"
-                  "since.$"       = "$.since"
-                  "until.$"       = "$.until"
-                  "githubToken.$" = "$.githubToken"
+                  "owner.$"                = "$.owner"
+                  "repo.$"                 = "$.repo"
+                  "since.$"                = "$.since"
+                  "until.$"                = "$.until"
+                  "encryptedGithubToken.$" = "$.encryptedGithubToken"
+                  "executionName.$"        = "$$.Execution.Name"
                 }
               }
               ResultSelector = {
@@ -164,7 +165,6 @@ module "step_function" {
           Payload = {
             "since.$"           = "$.since"
             "until.$"           = "$.until"
-            "githubToken.$"     = "$.githubToken"
             "sprintName.$"      = "$.sprintName"
             "repos.$"           = "$.repos"
             "repoDataResults.$" = "$.repoDataResults"
@@ -214,10 +214,10 @@ module "step_function" {
         ItemsPath      = "$.preparedData.body.prDetailsInputs"
         MaxConcurrency = 10
         Parameters = {
-          "owner.$"       = "$$.Map.Item.Value.owner"
-          "repo.$"        = "$$.Map.Item.Value.repo"
-          "prNumber.$"    = "$$.Map.Item.Value.prNumber"
-          "githubToken.$" = "$.githubToken"
+          "owner.$"                = "$$.Map.Item.Value.owner"
+          "repo.$"                 = "$$.Map.Item.Value.repo"
+          "prNumber.$"             = "$$.Map.Item.Value.prNumber"
+          "encryptedGithubToken.$" = "$.encryptedGithubToken"
         }
         Iterator = {
           StartAt = "FetchSinglePRDetails"
@@ -228,10 +228,11 @@ module "step_function" {
               Parameters = {
                 FunctionName = module.lambda_fetch_pr_details.lambda_function_arn
                 Payload = {
-                  "owner.$"       = "$.owner"
-                  "repo.$"        = "$.repo"
-                  "prNumber.$"    = "$.prNumber"
-                  "githubToken.$" = "$.githubToken"
+                  "owner.$"                = "$.owner"
+                  "repo.$"                 = "$.repo"
+                  "prNumber.$"             = "$.prNumber"
+                  "encryptedGithubToken.$" = "$.encryptedGithubToken"
+                  "executionName.$"        = "$$.Execution.Name"
                 }
               }
               Retry = local.sfn_lambda_retry
@@ -267,7 +268,6 @@ module "step_function" {
           "until.$"       = "$.until"
           "sprintName.$"  = "$.sprintName"
           "repos.$"       = "$.repos"
-          "githubToken.$" = "$.githubToken"
           "prList.$"      = "$.preparedData.body.prDetailsInputs"
           "readmeS3Key.$" = "$.preparedData.body.readmeS3Key"
           "s3Bucket.$"    = "$.preparedData.body.s3Bucket"

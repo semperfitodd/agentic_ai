@@ -57,7 +57,7 @@ const handler = async (event) => {
             repos: parsed,
             since: event.since,
             until: event.until,
-            githubToken: event.githubToken,
+            encryptedGithubToken: event.encryptedGithubToken,
             sprintName: event.sprintName,
             parseErrors: errors.length > 0 ? errors : undefined,
         });

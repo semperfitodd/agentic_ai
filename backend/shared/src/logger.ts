@@ -4,7 +4,6 @@ const SENSITIVE_KEYS = new Set([
   'githubtoken',
   'github_token',
   'x-api-key',
-  'x-api-key',
   'authorization',
   'apikey',
   'api_key',

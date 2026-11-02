@@ -8,19 +8,21 @@ alwaysApply: false
 
 ## Settings & Configuration
 
-All localStorage keys and default values live in `src/config/settings.js`. Never read from `localStorage` directly in a component.
+All storage keys and default values live in `src/config/settings.js`. Never read from `localStorage` or `sessionStorage` directly in a component. The GitHub token is kept in `sessionStorage` only (via `getGithubToken` / `setGithubToken`); never persist it to `localStorage`.
 
 ```javascript
 // ✅ GOOD
-import { getEffectiveSettings, STORAGE_KEYS } from '../config/settings';
+import { getEffectiveSettings, getGithubToken } from '../config/settings';
 
 // ❌ BAD
 const token = localStorage.getItem('arc_github_token');
 ```
 
+Build-time configuration uses `import.meta.env.VITE_*`; Cognito settings live in `src/config/auth.js`.
+
 ## API Calls
 
-All API interactions go through `src/utils/api.js`. Components never call `fetch` directly.
+All API interactions go through `src/utils/api.js`, which takes the Cognito access token from `useAuth()` and sends it as `Authorization: Bearer`. Components never call `fetch` directly.
 
 ## Component Patterns
 

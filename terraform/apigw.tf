@@ -7,23 +7,24 @@ module "api_gateway" {
   protocol_type = "HTTP"
 
   authorizers = {
-    lambda = {
-      authorizer_payload_format_version = "2.0"
-      authorizer_type                   = "REQUEST"
-      authorizer_uri                    = module.lambda_authorizer.lambda_function_invoke_arn
-      enable_simple_responses           = true
-      identity_sources                  = ["$request.header.x-api-key"]
-      name                              = "APIKeyAuthorizer"
+    cognito = {
+      authorizer_type  = "JWT"
+      identity_sources = ["$request.header.Authorization"]
+      name             = "CognitoJWTAuthorizer"
+      jwt_configuration = {
+        audience = [aws_cognito_user_pool_client.app.id]
+        issuer   = "https://${aws_cognito_user_pool.main.endpoint}"
+      }
     }
   }
 
   cors_configuration = {
     allow_credentials = false
     allow_headers = [
+      "authorization",
       "content-type",
       "x-amz-date",
-      "x-amz-user-agent",
-      "x-api-key"
+      "x-amz-user-agent"
     ]
     allow_methods = ["*"]
     allow_origins = ["https://${local.domain_name}"]
@@ -52,7 +53,7 @@ module "api_gateway" {
   routes = {
     "POST /workflow" = {
       authorization_type = local.api_route_auth["POST /workflow"]
-      authorizer_key     = "lambda"
+      authorizer_key     = "cognito"
       integration = {
         method                 = "POST"
         uri                    = module.lambda_workflow.lambda_function_arn
@@ -62,7 +63,7 @@ module "api_gateway" {
 
     "POST /sprint-intelligence" = {
       authorization_type = local.api_route_auth["POST /sprint-intelligence"]
-      authorizer_key     = "lambda"
+      authorizer_key     = "cognito"
       integration = {
         method                 = "POST"
         uri                    = module.lambda_workflow.lambda_function_arn
@@ -72,7 +73,7 @@ module "api_gateway" {
 
     "GET /results" = {
       authorization_type = local.api_route_auth["GET /results"]
-      authorizer_key     = "lambda"
+      authorizer_key     = "cognito"
       integration = {
         method                 = "GET"
         uri                    = module.lambda_get_results.lambda_function_arn
@@ -80,9 +81,19 @@ module "api_gateway" {
       }
     }
 
+    "DELETE /account" = {
+      authorization_type = local.api_route_auth["DELETE /account"]
+      authorizer_key     = "cognito"
+      integration = {
+        method                 = "POST"
+        uri                    = module.lambda_delete_account.lambda_function_arn
+        payload_format_version = "1.0"
+      }
+    }
+
     "GET /markdown" = {
       authorization_type = local.api_route_auth["GET /markdown"]
-      authorizer_key     = "lambda"
+      authorizer_key     = "cognito"
       integration = {
         method                 = "GET"
         uri                    = module.lambda_get_markdown.lambda_function_arn
@@ -98,17 +109,18 @@ module "api_gateway" {
 
 locals {
   api_route_auth = {
-    "POST /workflow"            = "CUSTOM"
-    "POST /sprint-intelligence" = "CUSTOM"
-    "GET /results"              = "CUSTOM"
-    "GET /markdown"             = "CUSTOM"
+    "POST /workflow"            = "JWT"
+    "POST /sprint-intelligence" = "JWT"
+    "GET /results"              = "JWT"
+    "GET /markdown"             = "JWT"
+    "DELETE /account"           = "JWT"
   }
 }
 
-check "api_routes_all_use_custom_auth" {
+check "api_routes_all_use_jwt_auth" {
   assert {
-    condition     = alltrue([for v in values(local.api_route_auth) : v == "CUSTOM"])
-    error_message = "All API Gateway routes must use authorization_type = \"CUSTOM\". Update local.api_route_auth when adding new routes."
+    condition     = alltrue([for v in values(local.api_route_auth) : v == "JWT"])
+    error_message = "All API Gateway routes must use authorization_type = \"JWT\". Update local.api_route_auth when adding new routes."
   }
 }
 

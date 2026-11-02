@@ -1,4 +1,4 @@
-import { requireEnv, logger, stepResponse, putJson, createOctokit } from '@sprint/shared';
+import { requireEnv, logger, stepResponse, putJson, createOctokit, decryptGithubToken } from '@sprint/shared';
 
 interface PRFile {
   filename: string;
@@ -114,16 +114,17 @@ interface PRDetailsInput {
   owner: string;
   repo: string;
   prNumber: number;
-  githubToken: string;
+  encryptedGithubToken: string;
+  executionName: string;
 }
 
 export const handler = async (event: PRDetailsInput) => {
-  const { owner, repo, prNumber, githubToken } = event;
+  const { owner, repo, prNumber, encryptedGithubToken, executionName } = event;
   logger.info('Fetching PR details', { owner, repo, prNumber });
 
   try {
     const bucketName = requireEnv('RESULTS_BUCKET');
-    const octokit = createOctokit(githubToken);
+    const octokit = createOctokit(await decryptGithubToken(encryptedGithubToken, executionName));
     const perPage = parseInt(process.env.GITHUB_PER_PAGE ?? '100', 10);
 
     const [{ data: pr }, { data: issueComments }, { data: reviewComments }, { data: reviews }, { data: files }] = await Promise.all([

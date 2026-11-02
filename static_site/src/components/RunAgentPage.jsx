@@ -6,6 +6,7 @@ const RunAgentPage = ({
     loading,
     fetchingReport,
     onRunAnalysis,
+    isAuthenticated,
     repos,
     dateRange,
     progress,
@@ -17,6 +18,7 @@ const RunAgentPage = ({
     const getButtonText = () => {
         if (loading) return 'Analysis in Progress...';
         if (fetchingReport) return 'Fetching Report...';
+        if (!isAuthenticated) return 'Sign in to Run Analysis';
         return 'Run Sprint Analysis';
     };
 

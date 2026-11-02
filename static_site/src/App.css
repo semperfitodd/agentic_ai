@@ -596,6 +596,10 @@ body {
     padding: 2rem;
 }
 
+.settings-danger {
+    padding: 0 2rem 2rem;
+}
+
 .settings-description {
     color: var(--text-secondary);
     margin-bottom: 2rem;
@@ -695,7 +699,8 @@ body {
     gap: 1rem;
 }
 
-.btn-reset {
+.btn-reset,
+.btn-delete-account {
     background: transparent;
     border: 1px solid #f56565;
     color: #f56565;
@@ -708,7 +713,8 @@ body {
     font-family: inherit;
 }
 
-.btn-reset:hover {
+.btn-reset:hover,
+.btn-delete-account:hover {
     background: rgba(245, 101, 101, 0.1);
 }
 

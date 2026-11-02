@@ -4,21 +4,23 @@ import {
     extractMarkdownKey,
     extractEmptyReportBody,
     buildEmptyReportMarkdown,
+    deleteAccount,
 } from '../utils/api';
 
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
-jest.mock('../config/settings', () => {
-    const actual = jest.requireActual('../config/settings');
-    return { ...actual, POLL_INTERVAL_MS: 0, MAX_POLL_ATTEMPTS: 3 };
-});
+vi.mock('../config/settings', async (importOriginal) => ({
+    ...(await importOriginal()),
+    POLL_INTERVAL_MS: 0,
+    MAX_POLL_ATTEMPTS: 3,
+}));
 
 beforeEach(() => {
     fetch.mockClear();
     localStorage.clear();
-    process.env.REACT_APP_API_URL = 'https://api.example.com';
-    process.env.REACT_APP_API_KEY = 'test-api-key';
-    localStorage.setItem('arc_github_token', 'ghp_test_token');
+    sessionStorage.clear();
+    vi.stubEnv('VITE_API_URL', 'https://api.example.com');
+    sessionStorage.setItem('arc_github_token', 'ghp_test_token');
     localStorage.setItem('arc_repos', 'owner/repo1');
     localStorage.setItem('arc_sprint_name', 'Test Sprint');
     localStorage.setItem('arc_since', '2024-01-01T00:00:00Z');
@@ -26,17 +28,18 @@ beforeEach(() => {
 });
 
 describe('startSprintAnalysis', () => {
-    it('sends x-api-key header on every request', async () => {
+    it('sends the Cognito access token as a Bearer header', async () => {
         fetch.mockResolvedValueOnce({
             ok: true,
             json: async () => ({ executionArn: 'arn:aws:states:us-east-1:123:execution:test:run-1' }),
         });
 
-        await startSprintAnalysis();
+        await startSprintAnalysis('access-token');
 
         expect(fetch).toHaveBeenCalledTimes(1);
         const [, options] = fetch.mock.calls[0];
-        expect(options.headers['x-api-key']).toBe('test-api-key');
+        expect(options.headers.Authorization).toBe('Bearer access-token');
+        expect(options.headers['x-api-key']).toBeUndefined();
     });
 
     it('POSTs to /sprint-intelligence with correct body', async () => {
@@ -45,7 +48,7 @@ describe('startSprintAnalysis', () => {
             json: async () => ({ executionArn: 'arn:test' }),
         });
 
-        await startSprintAnalysis();
+        await startSprintAnalysis('access-token');
 
         const [url, options] = fetch.mock.calls[0];
         expect(url).toContain('/sprint-intelligence');
@@ -61,7 +64,7 @@ describe('startSprintAnalysis', () => {
             json: async () => ({ executionArn: 'arn:test:123' }),
         });
 
-        const result = await startSprintAnalysis();
+        const result = await startSprintAnalysis('access-token');
         expect(result.success).toBe(true);
         expect(result.executionArn).toBe('arn:test:123');
     });
@@ -73,20 +76,20 @@ describe('startSprintAnalysis', () => {
             json: async () => ({ error: 'Forbidden' }),
         });
 
-        const result = await startSprintAnalysis();
+        const result = await startSprintAnalysis('access-token');
         expect(result.success).toBe(false);
         expect(result.error).toContain('Forbidden');
     });
 
     it('succeeds without a githubToken for public repos', async () => {
-        localStorage.removeItem('arc_github_token');
-        delete process.env.REACT_APP_GITHUB_TOKEN;
+        sessionStorage.removeItem('arc_github_token');
+        vi.stubEnv('VITE_GITHUB_TOKEN', '');
         fetch.mockResolvedValueOnce({
             ok: true,
             json: async () => ({ executionArn: 'arn:test:public' }),
         });
 
-        const result = await startSprintAnalysis();
+        const result = await startSprintAnalysis('access-token');
         expect(result.success).toBe(true);
         const body = JSON.parse(fetch.mock.calls[0][1].body);
         expect(body.githubToken).toBeFalsy();
@@ -95,7 +98,7 @@ describe('startSprintAnalysis', () => {
     it('returns error when repos list is empty', async () => {
         localStorage.setItem('arc_repos', '   ');
 
-        const result = await startSprintAnalysis();
+        const result = await startSprintAnalysis('access-token');
         expect(result.success).toBe(false);
         expect(result.error).toMatch(/repositor/i);
     });
@@ -103,7 +106,7 @@ describe('startSprintAnalysis', () => {
     it('returns network error on fetch failure', async () => {
         fetch.mockRejectedValueOnce(new Error('Network error'));
 
-        const result = await startSprintAnalysis();
+        const result = await startSprintAnalysis('access-token');
         expect(result.success).toBe(false);
         expect(result.error).toContain('Network error');
     });
@@ -163,10 +166,10 @@ describe('buildEmptyReportMarkdown', () => {
 });
 
 describe('fetchReport', () => {
-    const setMarkdown = jest.fn();
-    const setShowModal = jest.fn();
-    const setFetchingReport = jest.fn();
-    const setError = jest.fn();
+    const setMarkdown = vi.fn();
+    const setShowModal = vi.fn();
+    const setFetchingReport = vi.fn();
+    const setError = vi.fn();
 
     beforeEach(() => {
         setMarkdown.mockClear();
@@ -195,7 +198,7 @@ describe('fetchReport', () => {
             }),
         });
 
-        fetchReport('arn:test', setMarkdown, setShowModal, setFetchingReport, setError);
+        fetchReport('access-token', 'arn:test', setMarkdown, setShowModal, setFetchingReport, setError);
         await flushAsync();
 
         expect(setError).not.toHaveBeenCalled();
@@ -220,7 +223,7 @@ describe('fetchReport', () => {
                 text: async () => '# Real Report',
             });
 
-        fetchReport('arn:test', setMarkdown, setShowModal, setFetchingReport, setError);
+        fetchReport('access-token', 'arn:test', setMarkdown, setShowModal, setFetchingReport, setError);
         await flushAsync();
 
         expect(fetch).toHaveBeenCalledTimes(2);
@@ -239,10 +242,26 @@ describe('fetchReport', () => {
             }),
         });
 
-        fetchReport('arn:test', setMarkdown, setShowModal, setFetchingReport, setError);
+        fetchReport('access-token', 'arn:test', setMarkdown, setShowModal, setFetchingReport, setError);
         await flushAsync();
 
         expect(setShowModal).not.toHaveBeenCalled();
         expect(setError).toHaveBeenCalledWith(expect.stringMatching(/no markdown key/i));
+    });
+});
+
+describe('deleteAccount', () => {
+    it('sends DELETE /account with the bearer token', async () => {
+        fetch.mockResolvedValueOnce({ ok: true });
+        await deleteAccount('access-token');
+        const [url, options] = fetch.mock.calls[0];
+        expect(url).toBe('https://api.example.com/account');
+        expect(options.method).toBe('DELETE');
+        expect(options.headers.Authorization).toBe('Bearer access-token');
+    });
+
+    it('throws when the API rejects the deletion', async () => {
+        fetch.mockResolvedValueOnce({ ok: false, status: 500 });
+        await expect(deleteAccount('access-token')).rejects.toThrow('500');
     });
 });

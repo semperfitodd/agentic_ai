@@ -272,8 +272,7 @@ export const handler = async (event: AggregateInput) => {
 
   const rawText = await invokeClaude({
     user: prompt,
-    maxTokens: parseInt(process.env.BEDROCK_MAX_TOKENS ?? '8192', 10),
-    temperature: parseFloat(process.env.BEDROCK_TEMPERATURE ?? '0.7'),
+    maxTokens: parseInt(process.env.BEDROCK_MAX_TOKENS ?? '16000', 10),
   });
 
   const reportData = parseJsonFromClaude<SprintReportData>(rawText);

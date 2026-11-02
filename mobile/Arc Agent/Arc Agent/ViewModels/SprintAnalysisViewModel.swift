@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import AuthenticationServices
 
 @MainActor
 class SprintAnalysisViewModel: ObservableObject {
@@ -23,8 +24,18 @@ class SprintAnalysisViewModel: ObservableObject {
         self.totalDuration = Double(APIConfig.workflowDuration) / 1000.0
     }
 
-    func runSprintAnalysis() {
-        Task { await startAnalysis() }
+    func runSprintAnalysis(using webAuthenticationSession: WebAuthenticationSession) {
+        Task {
+            if !AuthService.shared.isSignedIn {
+                do {
+                    try await AuthService.shared.signIn(using: webAuthenticationSession)
+                } catch {
+                    errorMessage = error.localizedDescription
+                    return
+                }
+            }
+            await startAnalysis()
+        }
     }
 
     private func startAnalysis() async {

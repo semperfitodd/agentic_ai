@@ -5,13 +5,16 @@ enum APIConfig {
         Secrets.apiURL
     }
     
-    static var apiKey: String {
-        Secrets.apiKey
+    static var cognitoDomain: String {
+        Secrets.cognitoDomain
     }
-    
-    static var githubToken: String {
-        Secrets.githubToken
+
+    static var cognitoClientId: String {
+        Secrets.cognitoClientId
     }
+
+    static let authCallbackScheme = "arcagent"
+    static let authRedirectURI = "arcagent://auth/callback"
     
     static var defaultRepos: [String] {
         Secrets.defaultRepos

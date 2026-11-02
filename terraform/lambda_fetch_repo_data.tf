@@ -1,6 +1,6 @@
 module "lambda_fetch_repo_data" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 8.12"
+  version = "~> 8.13"
 
   function_name = "${var.environment}_fetch_repo_data"
   description   = "${replace(var.environment, "_", " ")} fetch GitHub repo data"
@@ -18,6 +18,11 @@ module "lambda_fetch_repo_data" {
 
   attach_policies = true
   policies        = ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"]
+
+  attach_policy_statements = true
+  policy_statements = {
+    kms_decrypt = local.github_token_decrypt_statement
+  }
 
   cloudwatch_logs_retention_in_days = local.lambda_defaults.cloudwatch_logs_retention_in_days
   tags                              = local.lambda_defaults.tags

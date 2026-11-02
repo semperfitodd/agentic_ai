@@ -6,7 +6,12 @@ import UIKit
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("custom_github_token") private var customGithubToken = ""
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
+    @ObservedObject private var auth = AuthService.shared
+    @State private var customGithubToken = KeychainStore.string(for: SettingsView.githubTokenKey) ?? ""
+    @State private var authError: String?
+    @State private var showDeleteConfirmation = false
+    @State private var isDeletingAccount = false
     @AppStorage("custom_repos") private var customReposString = ""
     @AppStorage("custom_sprint_name") private var customSprintName = ""
     @State private var customSinceDate = Date().addingTimeInterval(-30 * 24 * 60 * 60)
@@ -61,6 +66,7 @@ struct SettingsView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     headerSection
+                    accountSection
                     githubTokenSection
                     sprintNameSection
                     dateRangeSection
@@ -111,18 +117,82 @@ struct SettingsView: View {
         .modifier(CardStyle(background: cardBackgroundColor))
     }
     
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader(icon: "person.crop.circle.fill", title: "Account", subtitle: "Cognito sign-in required to run the agent")
+
+            Button(auth.isSignedIn ? "Sign out" : "Sign in") {
+                if auth.isSignedIn {
+                    auth.signOut()
+                } else {
+                    Task {
+                        do {
+                            try await auth.signIn(using: webAuthenticationSession)
+                            authError = nil
+                        } catch {
+                            authError = error.localizedDescription
+                        }
+                    }
+                }
+            }
+            .fontWeight(.semibold)
+
+            if auth.isSignedIn {
+                Button("Delete Account", role: .destructive) {
+                    showDeleteConfirmation = true
+                }
+                .disabled(isDeletingAccount)
+                .confirmationDialog(
+                    "Delete your account?",
+                    isPresented: $showDeleteConfirmation,
+                    titleVisibility: .visible
+                ) {
+                    Button("Delete Account", role: .destructive) {
+                        Task { await deleteAccount() }
+                    }
+                } message: {
+                    Text("This permanently removes your sign-in and the GitHub token stored on this device.")
+                }
+            }
+
+            if let authError {
+                Text(authError)
+                    .font(.system(size: 13))
+                    .foregroundColor(warningOrange)
+            }
+        }
+        .modifier(CardStyle(background: cardBackgroundColor))
+    }
+
+    private func deleteAccount() async {
+        isDeletingAccount = true
+        defer { isDeletingAccount = false }
+        do {
+            try await APIService.shared.deleteAccount()
+            customGithubToken = ""
+            KeychainStore.set(nil as String?, for: SettingsView.githubTokenKey)
+            auth.signOut()
+            authError = nil
+        } catch {
+            authError = error.localizedDescription
+        }
+    }
+
     private var githubTokenSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(icon: "key.fill", title: "GitHub Token", subtitle: "Personal access token for API authentication")
+            sectionHeader(icon: "key.fill", title: "GitHub Token", subtitle: "Stored in the Keychain; required for private repos")
             
             VStack(alignment: .leading, spacing: 8) {
-                SecureField("Enter custom token (optional)", text: $customGithubToken)
+                SecureField("Enter token (optional for public repos)", text: $customGithubToken)
                     .modifier(InputFieldStyle(background: inputBackgroundColor, isMonospaced: true))
-                
+                    .onChange(of: customGithubToken) { _, token in
+                        KeychainStore.set(token, for: SettingsView.githubTokenKey)
+                    }
+
                 statusLabel(
                     isDefault: customGithubToken.isEmpty,
-                    defaultText: "Using default token",
-                    customText: "Using custom token",
+                    defaultText: "Public repos only — no token set",
+                    customText: "Using saved token",
                     showWarning: true
                 )
             }
@@ -474,9 +544,10 @@ private struct InputFieldStyle: ViewModifier {
 // MARK: - Static Helpers
 
 extension SettingsView {
+    static let githubTokenKey = "github_token"
+
     static func effectiveGithubToken() -> String {
-        let custom = UserDefaults.standard.string(forKey: "custom_github_token") ?? ""
-        return custom.isEmpty ? Secrets.githubToken : custom
+        KeychainStore.string(for: githubTokenKey) ?? ""
     }
     
     static func effectiveRepos() -> [String] {

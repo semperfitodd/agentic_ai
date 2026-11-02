@@ -1,5 +1,10 @@
 locals {
   api_domain_name  = "api.${var.domain}"
+  auth_domain_name = "auth.${local.domain_name}"
+  auth_redirect_urls = concat(
+    ["https://${local.domain_name}/", var.ios_auth_callback_url],
+    var.auth_dev_callback_urls,
+  )
   bedrock_model_id = var.bedrock_model_id
   domain_name      = "${local.environment}.${var.domain}"
   environment      = replace(var.environment, "_", "-")

@@ -1,11 +1,12 @@
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-
 export const downloadPDF = async () => {
     const reportElement = document.querySelector('.markdown-report');
     if (!reportElement) return;
 
     try {
+        const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+            import('jspdf'),
+            import('html2canvas'),
+        ]);
         const clone = reportElement.cloneNode(true);
         Object.assign(clone.style, { width: '1200px', position: 'absolute', left: '-9999px' });
         document.body.appendChild(clone);

@@ -3,10 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const shared_1 = require("@sprint/shared");
 const handler = async (event) => {
-    const { owner, repo, since, until, githubToken } = event;
+    const { owner, repo, since, until, encryptedGithubToken, executionName } = event;
     shared_1.logger.info('Fetching repo data', { owner, repo });
     try {
-        const octokit = (0, shared_1.createOctokit)(githubToken);
+        const octokit = (0, shared_1.createOctokit)(await (0, shared_1.decryptGithubToken)(encryptedGithubToken, executionName));
         const perPage = parseInt(process.env.GITHUB_PER_PAGE ?? '100', 10);
         let readme = '';
         let readmeError = null;

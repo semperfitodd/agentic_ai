@@ -48,7 +48,7 @@ interface ParseReposInput {
   repos: (RepoInput | string)[];
   since: string;
   until: string;
-  githubToken: string;
+  encryptedGithubToken: string;
   sprintName?: string;
 }
 
@@ -81,7 +81,7 @@ export const handler = async (event: ParseReposInput) => {
       repos: parsed,
       since: event.since,
       until: event.until,
-      githubToken: event.githubToken,
+      encryptedGithubToken: event.encryptedGithubToken,
       sprintName: event.sprintName,
       parseErrors: errors.length > 0 ? errors : undefined,
     });

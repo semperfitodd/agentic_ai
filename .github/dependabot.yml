@@ -1,0 +1,40 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directories:
+      - /backend/*
+      - /static_site
+      - /architecture/scripts
+    schedule:
+      interval: weekly
+    groups:
+      aws-sdk:
+        patterns:
+          - '@aws-sdk/*'
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: '@types/node'
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: terraform
+    directory: /terraform
+    schedule:
+      interval: weekly
+    groups:
+      terraform:
+        patterns:
+          - '*'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns:
+          - '*'

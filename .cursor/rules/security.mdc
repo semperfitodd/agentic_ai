@@ -12,7 +12,7 @@ Secrets are stored in exactly one canonical location per layer:
 | Layer | Location | Gitignored? |
 |---|---|---|
 | Terraform | `terraform/*.tfvars` | ✅ Yes |
-| Lambda runtime | AWS Secrets Manager | N/A |
+| GitHub token in flight | KMS ciphertext (`encryptedGithubToken`), execution-scoped encryption context | N/A |
 | iOS | `mobile/Arc Agent/Arc Agent/Secrets.swift` | ✅ Yes |
 | React dev | `static_site/.env.local` | ✅ Yes |
 
@@ -20,11 +20,15 @@ Secrets are stored in exactly one canonical location per layer:
 
 ## API Authentication
 
-Every API Gateway route uses `authorization_type = "CUSTOM"` (custom Lambda authorizer). The authorizer validates `x-api-key` against Secrets Manager. No unauthenticated routes are permitted.
+Every API Gateway route uses `authorization_type = "JWT"` with the Cognito authorizer. Clients sign in with the Cognito managed login (authorization code + PKCE) and send the access token as `Authorization: Bearer`. No unauthenticated routes are permitted and no shared keys are embedded in clients.
+
+## GitHub Tokens
+
+`lambda_workflow` KMS-encrypts the user's GitHub token before starting the Step Functions execution; only `fetch_repo_data` and `fetch_pr_details` may decrypt it. Never pass a plaintext token through Step Functions input, output, or logs.
 
 ## Log Redaction
 
-The shared `logger` in `@sprint/shared` auto-redacts keys: `githubToken`, `x-api-key`, `authorization`, `password`, `secret`, `token`. Do not log request bodies that may contain these fields directly.
+The shared `logger` in `@sprint/shared` auto-redacts keys: `githubToken`, `authorization`, `password`, `secret`, `token`. Do not log request bodies that may contain these fields directly.
 
 ## Error Messages
 

@@ -1,91 +1,65 @@
 # Sprint Intelligence
 
-A reference implementation of an agentic AI system that analyzes GitHub sprint activity and generates executive-quality reports. Designed as application-first agentic AI — roughly 70% deterministic orchestration and 30% AI reasoning.
+An agentic AI reference system that analyzes GitHub sprint activity and generates executive-quality reports: deterministic orchestration in Step Functions, with Claude on Amazon Bedrock analyzing each PR and writing the sprint summary.
 
 ![architecture.png](architecture/exports/architecture.png)
 
 ![workflow.png](architecture/exports/workflow.png)
 
+## Services
+
+| Component | Role |
+|---|---|
+| Cognito user pool (managed login, PKCE) | Open sign-up through Google and Sign in with Apple; no password accounts |
+| API Gateway HTTP API + JWT authorizer | Every route requires a Cognito access token (`authorization_type = "JWT"`, enforced by a `terraform check`) |
+| `lambda_workflow` | Validates the request, KMS-encrypts the GitHub token, starts Step Functions |
+| `lambda_delete_account` | `DELETE /account`: deletes the caller's Cognito user (App Store guideline 5.1.1(v)); exposed in web Settings and iOS Settings |
+| Step Functions workflow | Parse repos → fetch PRs → fetch PR details → analyze PRs → aggregate → store; `NoPRsFound` / `NoValidAnalyses` terminal paths |
+| `analyze_pr`, `aggregate_sprint` | Claude on Bedrock (`us.anthropic.claude-opus-5-5` by default, `var.bedrock_model_id`) |
+| `fetch_repo_data`, `fetch_pr_details` | Only Lambdas allowed to decrypt the GitHub token |
+| KMS key (`alias/<env>_github_token`) | Per-execution encryption context; only ciphertext appears in execution history and logs |
+| S3 results bucket | Reports and intermediate JSON; SSE-S3, versioned |
+| React app (`static_site/`) | Vite + Vitest, `react-oidc-context`; served by CloudFront + S3 (OAC) |
+| iOS app (`mobile/Arc Agent/`) | SwiftUI; `WebAuthenticationSession` PKCE sign-in, tokens and GitHub PAT in the Keychain |
+
+### Security model
+
+- **No shared client secrets.** Clients hold only a public Cognito app client ID; each user signs in with Google or Apple and calls the API with a short-lived (1h) access token.
+- **Self-service deletion.** Signed-in users can delete their account from web or iOS Settings; the Lambda deletes only the user named in the caller's own token.
+- **GitHub token never in plaintext at rest.** The web app keeps it in `sessionStorage` (per tab), the iOS app in the Keychain. `lambda_workflow` encrypts it with KMS (context: `purpose`, `executionName`) before `StartExecution`; ciphertext from one execution cannot be decrypted under another.
+- CORS restricted to `https://<env>.<domain>`; the shared logger redacts `githubToken`, `authorization`, `token`, `secret`, `password`.
+
 ## Project Status
 
-This section records what is implemented, what is illustrative only, and **verification results actually observed** (not inferred from the commands below). Re-run the [Testing](#testing) commands and update the verification log when you change the codebase.
-
-**Verification environment (2026-10-26):** macOS; Node v26.12.0; npm 11.20.0; Terraform v1.16.6; Xcode 27.1. CI targets Node 24.x per [`.github/workflows/backend.yml`](.github/workflows/backend.yml).
-
-### Implementation status
-
-| Component | Status | Notes |
-|---|---|---|
-| API Gateway + custom Lambda authorizer (`x-api-key`) | Implemented | `authorization_type = "CUSTOM"` on all routes; `terraform check` in [`terraform/apigw.tf`](terraform/apigw.tf) |
-| `lambda_authorizer` | Implemented | Unit tests present; see verification log |
-| `lambda_workflow` (`POST /workflow`, alias `POST /sprint-intelligence`) | Implemented | Unit tests present |
-| `lambda_get_results`, `lambda_get_markdown` | Implemented | Unit tests present |
-| `lambda_parse_repos`, `lambda_store_results`, `lambda_aggregate_sprint` | Implemented | Unit tests present |
-| `lambda_analyze_pr`, `lambda_fetch_pr_details`, `lambda_fetch_repo_data`, `lambda_prepare_data` | Implemented | Unit tests added; see verification log |
-| CloudWatch alarm (Step Functions `ExecutionsFailed`) | Implemented (config only) | [`terraform/cloudwatch_alarms.tf`](terraform/cloudwatch_alarms.tf) |
-| Step Functions workflow (`NoPRsFound`, `NoValidAnalyses` terminal paths) | Implemented | Defined in [`terraform/step_functions.tf`](terraform/step_functions.tf); not exercised in local tests |
-| `@sprint/shared` | Implemented | Unit tested in isolation |
-| React frontend (`static_site/`) | Implemented | Unit tests + production build verified locally |
-| iOS app (`mobile/Arc Agent/`) | Implemented | XCTest targets exist; not run locally on 2026-10-26 (simulator unavailable) |
-| GitHub Actions (frontend, backend, terraform) | Implemented (workflows only) | Not executed against this branch in the verification pass |
-| Terraform infrastructure | Implemented (config only) | `terraform validate` passed locally; no successful `plan`/`apply` in this pass |
-
-### Illustrative components
-
-These items support understanding or onboarding; they are not live infrastructure diagrams or production data.
-
-| Item | Role |
-|---|---|
-| [`architecture/exports/*.png`](architecture/exports/) / [`.svg`](architecture/exports/) | Simplified diagrams generated from [`architecture/scripts/diagram-helpers.cjs`](architecture/scripts/diagram-helpers.cjs). Omits IAM, logging, and full Step Functions detail. |
-| [`static_site/src/components/OverviewPage.js`](static_site/src/components/OverviewPage.js), [`FeaturesPage.js`](static_site/src/components/FeaturesPage.js) | Marketing / explanatory copy |
-| [`terraform/terraform.tfvars.example`](terraform/terraform.tfvars.example), [`static_site/.env.example`](static_site/.env.example), [`Secrets.swift.example`](mobile/Arc%20Agent/Arc%20Agent/Secrets.swift.example) | Placeholder configuration only |
-| `POST /sprint-intelligence` | Alias route to the same handler as `POST /workflow` |
+**Verification environment (2026-11-02):** macOS; Node v26.13.0; npm 11.20.0; Terraform v1.16.6 (CI: 1.17.1); Xcode 27.2. Record only commands actually run (see [AGENTS.md](AGENTS.md)).
 
 ### Verification log
 
 | Date | Area | Command | Result |
 |---|---|---|---|
-| 2026-10-26 | `@sprint/shared` | `cd backend/shared && npm test` | **Pass** — 4 suites, 18 tests |
-| 2026-10-26 | All Lambdas (except shared) | `npm test -- --passWithNoTests` per package | **Pass** — 11 suites, 34 tests total |
-| 2026-10-26 | `lambda_get_results` | `npm install` (adds `@aws-sdk/client-sfn` devDep) + `npm test` | **Pass** — 1 suite, 4 tests |
-| 2026-10-26 | React frontend | `cd static_site && npm test -- --watchAll=false --ci` | **Pass** — 5 suites, 40 tests |
-| 2026-10-26 | React frontend | `npm run build` | **Pass** — production build completed |
-| 2026-10-26 | Architecture export | `cd architecture/scripts && npm run export` | **Pass** — regenerated PNG/SVG for architecture and workflow |
-| 2026-10-26 | Terraform | `terraform fmt -check -recursive` | **Pass** |
-| 2026-10-26 | Terraform | `terraform init -backend=false` + `terraform validate` (with `TF_VAR_environment`, `TF_VAR_domain`, `TF_VAR_region`) | **Pass** — configuration valid (includes `cloudwatch_alarms.tf`, `use_lockfile = true`, 30-day log retention) |
-| 2026-10-26 | Terraform | `terraform plan` (S3 backend) | **Not run** — S3 state object returned 403 (no access to `bsc.sandbox.terraform.state` from local credentials) |
-| 2026-10-26 | iOS | `xcodebuild test` (README destination) | **Not run** — no matching iOS Simulator (`CoreSimulator` out of date; iPhone 17 simulator not available) |
+| 2026-11-02 | `@sprint/shared` | `cd backend/shared && npm test` | **Pass** — 6 suites, 27 tests |
+| 2026-11-02 | All Lambdas | `npm test -- --passWithNoTests` per package | **Pass** — 11 suites, 37 tests |
+| 2026-11-02 | Backend deps | `npm audit --omit=dev` per package | **Pass** — 0 vulnerabilities in all 12 packages |
+| 2026-11-02 | React frontend | `cd static_site && npm test` (Vitest) | **Pass** — 6 files, 48 tests |
+| 2026-11-02 | React frontend | `npm run build` (Vite) | **Pass** |
+| 2026-11-02 | React frontend | `npm audit` | **Pass** — 0 vulnerabilities (was 57 under Create React App) |
+| 2026-11-02 | iOS | `xcodebuild test -only-testing:"Arc AgentTests"` on iPhone 17 Pro simulator, with `Secrets.swift` copied from the example | **Pass** — 13 tests |
+| 2026-11-02 | Terraform | `terraform fmt -check -recursive` + `terraform validate` | **Pass** |
+| 2026-11-02 | Terraform | `terraform plan` against remote state (`AWS_PROFILE=bscsandbox`) | **Pass** — 22 add, 15 change, 12 destroy (Cognito, KMS, JWT authorizer, `delete_account` added; API key authorizer and secret removed; Bedrock model updated; Google/Apple providers not yet configured) |
+| 2026-11-02 | Architecture export | `cd architecture/scripts && npm run export` | **Pass** |
 
-### Not verified in this pass
+### Not yet verified
 
-- `terraform plan` or `terraform apply` against AWS with readable remote state
-- End-to-end workflow (GitHub API → Step Functions → Bedrock → S3 → report download)
-- GitHub Actions runs for current workflow pins (Node 24, `nodejs24.x`, upgraded action majors, `TF_VAR_*` wiring)
+- Google and Apple sign-in (providers are created once their credentials are set; see Setup → Identity providers)
+- End-to-end sprint report with a signed-in user against live GitHub and Bedrock
+- Account deletion against the live user pool
 - Load, penetration, or accessibility testing
-- Live Bedrock or GitHub calls (unit tests use mocks)
 
 ### Known limitations
 
-- **Shared API key auth:** The API uses a single `x-api-key` validated by the custom authorizer. The key is embedded in the React bundle via `REACT_APP_API_KEY` ([`static_site/src/utils/api.js`](static_site/src/utils/api.js)) and in the iOS app via gitignored `Secrets.swift`. There is no Cognito or per-user identity.
-- **GitHub token handling:** Users store a GitHub token in browser `localStorage` ([`static_site/src/config/settings.js`](static_site/src/config/settings.js)). The token is sent in the workflow request body and propagated through Step Functions as `githubToken` ([`terraform/step_functions.tf`](terraform/step_functions.tf)), so it may appear in execution history.
-- **Bedrock model:** Default model ID is `us.anthropic.claude-3-5-sonnet-20241022-v2:0` ([`terraform/variables.tf`](terraform/variables.tf)). Availability and lifecycle in your AWS account/region must be confirmed before production use.
-- **Terraform state locking:** S3 backend uses native lockfile locking (`use_lockfile = true` in [`terraform/backend.tf`](terraform/backend.tf)). Confirm your Terraform version and IAM permissions support lockfiles before concurrent applies.
-- **Frontend toolchain:** `react-scripts` 5.0.1 is unmaintained. After `npm install` in `static_site/`, `npm audit` reported **57** vulnerabilities (9 low, 29 moderate, 18 high, 1 critical) on 2026-10-26.
-- **Logging retention:** Lambda CloudWatch log retention is **30** days ([`terraform/local.tf`](terraform/local.tf)).
-- **Monitoring:** A Step Functions failure alarm is defined in Terraform; no SNS/email subscription or dashboard is wired yet.
-
-### Remaining production requirements
-
-- Per-user authentication (e.g. Cognito + JWT authorizer) instead of a shared API key in client apps
-- Remove GitHub PAT from Step Functions input; use Secrets Manager, OIDC, or a GitHub App
-- Integration or E2E tests against a non-production AWS stack
-- Run and review `terraform plan` before apply (local plan still blocked without S3 state access)
-- Migrate off Create React App; remediate `npm audit` findings
-- Confirm Bedrock model ID and quotas in target region
-- Run and pass all GitHub Actions workflows on a PR before merge
-- Wire CloudWatch alarm actions (SNS/PagerDuty) and operational dashboards
-
-For repository structure, Lambda inventory, authorization audit, and agent conventions, see [AGENTS.md](AGENTS.md).
+- Any signed-in user can list and read every report; there is no per-user report ownership yet, so account deletion removes the sign-in but not reports.
+- Apple's Sign in with Apple token revocation on deletion is handled by Cognito's brokered session only; the app does not call Apple's revoke endpoint.
+- The Step Functions alarm has no SNS/PagerDuty action or dashboard yet.
 
 ## Prerequisites
 
@@ -94,34 +68,11 @@ For repository structure, Lambda inventory, authorization audit, and agent conve
 | AWS CLI | ≥ 2 |
 | Node.js | 24.x |
 | Terraform | ≥ 1.10.5 |
-| Xcode | ≥ 15 |
+| Xcode | ≥ 16 (iOS 18 target) |
 
-## Secrets Setup
+## Setup
 
-**Never commit real secrets.** All sensitive values live in exactly one of:
-
-- `mobile/Arc Agent/Arc Agent/Secrets.swift` — iOS constants (gitignored)
-- `static_site/.env.local` — React environment overrides (gitignored)
-- `terraform/*.tfvars` — Terraform variables (gitignored)
-
-Copy the example files before local development:
-
-```bash
-cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-cp static_site/.env.example static_site/.env.local
-cp "mobile/Arc Agent/Arc Agent/Secrets.swift.example" \
-   "mobile/Arc Agent/Arc Agent/Secrets.swift"
-```
-
-Retrieve the generated API key after `terraform apply`:
-
-```bash
-aws secretsmanager get-secret-value \
-  --secret-id "$(terraform -chdir=terraform output -raw api_key_secret_name)" \
-  --query SecretString --output text | jq -r .API_KEY
-```
-
-## Infrastructure
+### 1. Infrastructure
 
 ```bash
 cd terraform
@@ -131,132 +82,106 @@ terraform plan -out=plan.out
 terraform apply plan.out
 ```
 
-Outputs after apply:
-
-| Output | Description |
+| Output | Use |
 |---|---|
-| `api_key_secret_name` | Secrets Manager secret containing `API_KEY` |
-| `api_url` | API Gateway base URL (`https://api.<domain>`) |
-| `frontend_url` | CloudFront frontend URL (`https://<env>.<domain>`) |
-| `results_bucket` | S3 bucket name for sprint reports |
+| `api_url` | `API_URL` repo variable |
+| `cognito_authority` | `COGNITO_AUTHORITY` repo variable |
+| `cognito_client_id` | `COGNITO_CLIENT_ID` repo variable, `Secrets.cognitoClientId` |
+| `cognito_domain` | `COGNITO_DOMAIN` repo variable, `Secrets.cognitoDomain` |
+| `cognito_user_pool_id` | Inviting users |
+| `github_actions_role_arn` | `AWS_ROLE_ARN` repo variable |
+| `cloudfront_distribution_id` | `CLOUDFRONT_DISTRIBUTION_ID` repo variable |
+| `site_bucket_name` | `SITE_BUCKET` repo variable |
+| `frontend_url`, `results_bucket`, `github_token_kms_key_arn` | Reference |
 
-## Frontend
+### 2. Identity providers
+
+Register `terraform output -raw cognito_idp_response_url` as the redirect URI on a Google OAuth web client and on an Apple Services ID (Sign in with Apple, with a `.p8` key). Then:
 
 ```bash
-cd static_site
-cp .env.example .env.local
-npm install
-npm start
-npm run build
+gh variable set GOOGLE_CLIENT_ID  --body "<google client id>"
+gh variable set APPLE_SERVICES_ID --body "<apple services id>"
+gh variable set APPLE_TEAM_ID     --body "<apple team id>"
+gh variable set APPLE_KEY_ID      --body "<apple key id>"
+gh secret set GOOGLE_CLIENT_SECRET
+gh secret set APPLE_PRIVATE_KEY < AuthKey_XXXXXXXXXX.p8
+gh workflow run terraform.yml
 ```
 
-## Architecture Diagrams
+Until a provider is configured the app client falls back to admin-created Cognito users only.
 
-Excalidraw sources live under `architecture/diagrams/`. Regenerate PNG and SVG exports:
+### 3. Local config
 
 ```bash
-cd architecture/scripts
-npm install
-npm run export
+cp static_site/.env.example static_site/.env.local
+cp "mobile/Arc Agent/Arc Agent/Secrets.swift.example" "mobile/Arc Agent/Arc Agent/Secrets.swift"
+```
+
+Local web development needs `auth_dev_callback_urls = ["http://localhost:5173/"]` in `terraform.tfvars`.
+
+### 4. Build and run
+
+```bash
+cd static_site && npm install && npm run dev
+```
+
+```bash
+cd architecture/scripts && npm install && npm run export
 ```
 
 ## Testing
 
-Commands below are for local reproduction only. **Observed pass/fail results with dates** belong in [Project Status → Verification log](#verification-log); update that table after you run them.
-
 ```bash
 cd backend/shared && npm install && npm test
+```
 
-for dir in backend/*/; do
-  [[ "$dir" == "backend/shared/" ]] && continue
-  echo "=== $dir ===" && (cd "$dir" && npm test --passWithNoTests)
-done
+```bash
+for dir in backend/*/; do [ "$dir" = "backend/shared/" ] && continue; (cd "$dir" && npm install && npm test -- --passWithNoTests); done
+```
 
+```bash
 cd static_site && npm test
+```
 
-xcodebuild test \
-  -project "mobile/Arc Agent/Arc Agent.xcodeproj" \
-  -scheme "Arc Agent" \
-  -destination "platform=iOS Simulator,name=iPhone 17"
+```bash
+xcodebuild test -project "mobile/Arc Agent/Arc Agent.xcodeproj" -scheme "Arc Agent" -destination "platform=iOS Simulator,name=iPhone 17 Pro"
+```
 
+```bash
 cd terraform && terraform fmt -check -recursive && terraform validate
 ```
 
-## Security
-
-- Every API Gateway route uses `authorization_type = "CUSTOM"` (Lambda authorizer)
-- API key is stored in Secrets Manager; rotatable without redeployment
-- `x-api-key` is redacted in all Lambda logs by the shared logger
-- CORS is restricted to `https://<env>.<domain>`
-- S3 results bucket: SSE-S3, versioning enabled, 90-day lifecycle on old versions
-- CloudFront serves the frontend via Origin Access Control (OAC)
-
 ## CI/CD
 
-Three path-filtered GitHub Actions workflows run automatically. `mobile/` changes are ignored by CI.
+Path-filtered GitHub Actions workflows; each also supports `workflow_dispatch`. `mobile/` is not built in CI. Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) opens grouped weekly updates for npm, Terraform, and Actions.
 
-| Workflow | Triggers on | PR action | Push to `main` action |
+| Workflow | Triggers on | PR | Push to `main` |
 |---|---|---|---|
-| `backend.yml` | `backend/**` | build shared → test changed lambdas | build shared → test → `aws lambda update-function-code` |
+| `backend.yml` | `backend/**` | build shared → test changed Lambdas | test → `aws lambda update-function-code` |
 | `frontend.yml` | `static_site/**` | test + build | test + build + S3 sync + CloudFront invalidation |
-| `terraform.yml` | `terraform/**` | plan (PR comment) | plan → apply |
+| `terraform.yml` | `terraform/**` | plan (PR comment) | plan → apply (`production` environment) |
 
-The Terraform workflow does not read a committed `terraform.tfvars` file. It sources `environment`, `domain`, and `region` from GitHub Actions variables via `TF_VAR_*` environment variables (`TF_ENVIRONMENT`, `TF_DOMAIN`, `AWS_REGION`).
-
-### Required GitHub repository variables and secrets
-
-After the first manual `terraform apply`, populate these under **Settings → Secrets and variables → Actions**:
-
-**Variables** (plaintext, visible in logs):
-
-| Variable | How to get the value |
-|---|---|
-| `AWS_REGION` | AWS region for the deployment (e.g., `us-east-1`) |
-| `AWS_ROLE_ARN` | `terraform output -raw github_actions_role_arn` |
-| `CLOUDFRONT_DISTRIBUTION_ID` | `terraform output -raw cloudfront_distribution_id` |
-| `REACT_APP_API_URL` | `terraform output -raw api_url` |
-| `SITE_BUCKET` | `terraform output -raw site_bucket_name` |
-| `TF_DOMAIN` | Base domain name (e.g., `brewsentry.com`) |
-| `TF_ENVIRONMENT` | Environment name for Terraform and Lambda naming (e.g., `agentic_ai_demo`) |
-
-**Secrets** (encrypted, never visible in logs):
-
-| Secret | How to get the value |
-|---|---|
-| `REACT_APP_API_KEY` | API key from Secrets Manager (`terraform output -raw api_key_secret_name`) |
-
-### First-time setup
+### Repository variables
 
 ```bash
 cd terraform
-terraform apply
-
 gh variable set AWS_REGION                 --body "us-east-1"
-gh variable set TF_DOMAIN                  --body "brewsentry.com"
+gh variable set TF_DOMAIN                  --body "example.com"
 gh variable set TF_ENVIRONMENT             --body "agentic_ai_demo"
 gh variable set AWS_ROLE_ARN               --body "$(terraform output -raw github_actions_role_arn)"
 gh variable set CLOUDFRONT_DISTRIBUTION_ID --body "$(terraform output -raw cloudfront_distribution_id)"
-gh variable set REACT_APP_API_URL          --body "$(terraform output -raw api_url)"
 gh variable set SITE_BUCKET                --body "$(terraform output -raw site_bucket_name)"
-
-API_KEY=$(aws secretsmanager get-secret-value \
-  --secret-id "$(terraform output -raw api_key_secret_name)" \
-  --query SecretString --output text | jq -r .API_KEY)
-gh secret set REACT_APP_API_KEY --body "$API_KEY"
+gh variable set API_URL                    --body "$(terraform output -raw api_url)"
+gh variable set COGNITO_AUTHORITY          --body "$(terraform output -raw cognito_authority)"
+gh variable set COGNITO_CLIENT_ID          --body "$(terraform output -raw cognito_client_id)"
+gh variable set COGNITO_DOMAIN             --body "$(terraform output -raw cognito_domain)"
 ```
 
-### Frontend deploy details
+Secrets: `GOOGLE_CLIENT_SECRET`, `APPLE_PRIVATE_KEY` (see Setup → Identity providers). AWS access uses GitHub OIDC.
 
-The S3 sync uses split cache-control headers:
+## Monitoring
 
-- Hashed assets (`static/js/*.js`, `static/css/*.css`) → `max-age=31536000,immutable`
-- Entry points (`index.html`, `asset-manifest.json`) → `max-age=0,must-revalidate`
+- CloudWatch alarm on Step Functions `ExecutionsFailed` ([`terraform/cloudwatch_alarms.tf`](terraform/cloudwatch_alarms.tf))
+- Lambda logs retained 30 days; Step Functions and API Gateway access logs 7 days
 
-A CloudFront invalidation on `/*` follows every deploy.
-
-## Contributing
-
-1. Follow the coding conventions in `.cursor/rules/`
-2. Add unit tests for any new Lambda handler logic
-3. Run `terraform fmt` before committing Terraform changes
-4. Keep [AGENTS.md](AGENTS.md) current when adding routes or changing auth behavior
+For repository structure, Lambda inventory, the authorization audit, and agent conventions, see [AGENTS.md](AGENTS.md).
