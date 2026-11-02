@@ -51,7 +51,12 @@ const PREVIEW_KPIS = [
     { label: 'Contributors', value: '6' },
 ];
 
-const PREVIEW_SECTIONS = ['Executive Summary', 'Work Breakdown', 'Technical Highlights', 'Recommendations'];
+const PREVIEW_SECTIONS = [
+    { title: 'Executive Summary', fill: 0.92, items: 5 },
+    { title: 'Work Breakdown', fill: 0.74, items: 7 },
+    { title: 'Technical Highlights', fill: 0.58, items: 4 },
+    { title: 'Recommendations', fill: 0.66, items: 3 },
+];
 
 const OverviewPage = ({ onNavigate }) => (
     <div className="page">
@@ -99,11 +104,14 @@ const OverviewPage = ({ onNavigate }) => (
                         ))}
                     </div>
                     <ul className="preview-sections">
-                        {PREVIEW_SECTIONS.map((section, index) => (
-                            <li key={section} style={{ '--i': index }}>
+                        {PREVIEW_SECTIONS.map(({ title, fill, items }, index) => (
+                            <li key={title} style={{ '--i': index, '--fill': fill }}>
                                 <span className="preview-dot" />
-                                <span>{section}</span>
-                                <span className="preview-line" />
+                                <span>{title}</span>
+                                <span className="preview-bar">
+                                    <span className="preview-fill" />
+                                </span>
+                                <span className="preview-count">{items}</span>
                             </li>
                         ))}
                     </ul>
