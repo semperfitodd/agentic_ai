@@ -1,11 +1,18 @@
 import AppStoreBadge from './AppStoreBadge';
+import { AUTHOR, ORGANIZATION } from '../config/seo';
 
 const Footer = () => (
     <footer className="footer">
         <div className="container footer-inner">
-            <p>
+            <p className="footer-credit">
                 <span className="footer-dot" aria-hidden="true" />
-                BSC Analytics · Todd Bernson, Chief AI Officer
+                <span>
+                    Created by{' '}
+                    <a href={AUTHOR.url} rel="author" className="footer-author">
+                        {AUTHOR.name}
+                    </a>
+                    , {AUTHOR.jobTitle}, {ORGANIZATION}
+                </span>
             </p>
             <AppStoreBadge height={32} />
             <p className="footer-meta">

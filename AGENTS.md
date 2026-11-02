@@ -103,6 +103,10 @@ xcodebuild test \
 cd terraform && terraform fmt -check -recursive && terraform validate
 ```
 
+## Web Routing and SEO
+
+Routes are real paths (`/`, `/features`, `/run`; `useRoute` also accepts the old `#/<route>` links). `npm run build` runs `vite build`, an SSR build of `src/entry-server.jsx`, and `scripts/prerender.mjs`, which writes `dist/<route>/index.html` with the title, description, canonical, Open Graph, and JSON-LD from `src/config/seo.js`, plus `sitemap.xml` and `robots.txt`. It requires `SITE_URL` (CI derives it from `TF_ENVIRONMENT` and `TF_DOMAIN`). Code that renders during prerender must not touch `window` or storage at render time; `config/settings.js` returns empty storage on the server. CloudFront's `index_rewrite` function serves the prerendered files.
+
 ## Sprint Report Format
 
 `buildMarkdownReport` in `backend/aggregate_sprint/index.ts` emits `# Sprint Report: <name>`, then `## At a Glance` (a two-column `Metric | Value` table whose `Sprint period` row and remaining rows become the cover period and KPI tiles), then `##` sections with `###` subsections, bullet lists, and GFM tables. The web (`static_site/src/utils/reportSummary.js`) and iOS (`Models/ReportDocument.swift`) parsers depend on that heading and table shape; both also read the earlier bullet-list preamble. Shared fixture: `static_site/src/__tests__/fixtures/sampleReport.md`.

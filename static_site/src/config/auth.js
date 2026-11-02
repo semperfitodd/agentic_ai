@@ -1,3 +1,5 @@
+import { pathFor } from '../hooks/useRoute';
+
 const getAuthority = () => import.meta.env.VITE_COGNITO_AUTHORITY;
 const getClientId = () => import.meta.env.VITE_COGNITO_CLIENT_ID;
 const getDomain = () => import.meta.env.VITE_COGNITO_DOMAIN;
@@ -12,8 +14,8 @@ export const buildOidcConfig = (origin = window.location.origin) => ({
     automaticSilentRenew: true,
     onSigninCallback: (user) => {
         const route = user?.state?.route;
-        window.history.replaceState({}, document.title, `${window.location.pathname}${route ? `#/${route}` : ''}`);
-        if (route) window.dispatchEvent(new HashChangeEvent('hashchange'));
+        window.history.replaceState({}, document.title, route ? pathFor(route) : window.location.pathname);
+        if (route) window.dispatchEvent(new PopStateEvent('popstate'));
     },
 });
 

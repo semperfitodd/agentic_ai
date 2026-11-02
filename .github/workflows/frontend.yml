@@ -48,8 +48,19 @@ jobs:
           VITE_COGNITO_AUTHORITY: ${{ vars.COGNITO_AUTHORITY }}
           VITE_COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
           VITE_COGNITO_DOMAIN: ${{ vars.COGNITO_DOMAIN }}
+          TF_ENVIRONMENT: ${{ vars.TF_ENVIRONMENT }}
+          TF_DOMAIN: ${{ vars.TF_DOMAIN }}
           REQUIRE_CONFIG: ${{ github.event_name != 'pull_request' }}
         run: |
+          # Same host Terraform assigns the site: <environment with "-">.<domain>
+          if [ -n "$TF_ENVIRONMENT" ] && [ -n "$TF_DOMAIN" ]; then
+            export SITE_URL="https://${TF_ENVIRONMENT//_/-}.${TF_DOMAIN}"
+          elif [ "$REQUIRE_CONFIG" = "true" ]; then
+            echo "::error::Missing TF_ENVIRONMENT or TF_DOMAIN GitHub variable (see README)."
+            exit 1
+          else
+            export SITE_URL="https://example.com"
+          fi
           for name in VITE_API_URL VITE_COGNITO_AUTHORITY VITE_COGNITO_CLIENT_ID VITE_COGNITO_DOMAIN; do
             if [ "$REQUIRE_CONFIG" = "true" ] && [ -z "${!name}" ]; then
               echo "::error::Missing GitHub variable for $name (see README)."

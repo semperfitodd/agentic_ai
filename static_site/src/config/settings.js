@@ -1,3 +1,8 @@
+// Pages are prerendered at build time, where browser storage does not exist.
+const NO_STORAGE = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
+const local = () => (typeof window === 'undefined' ? NO_STORAGE : window.localStorage);
+const session = () => (typeof window === 'undefined' ? NO_STORAGE : window.sessionStorage);
+
 const STORAGE_KEYS = {
     repos: 'arc_repos',
     sprintName: 'arc_sprint_name',
@@ -15,13 +20,13 @@ const THEME_KEY = 'arc_theme';
 export const THEME_PREFERENCES = ['light', 'system', 'dark'];
 
 export const getThemePreference = () => {
-    const stored = localStorage.getItem(THEME_KEY);
+    const stored = local().getItem(THEME_KEY);
     return THEME_PREFERENCES.includes(stored) ? stored : 'system';
 };
 
 export const setThemePreference = (preference) => {
-    if (preference === 'system') localStorage.removeItem(THEME_KEY);
-    else localStorage.setItem(THEME_KEY, preference);
+    if (preference === 'system') local().removeItem(THEME_KEY);
+    else local().setItem(THEME_KEY, preference);
 };
 
 export const parseRepos = (value) =>
@@ -41,24 +46,24 @@ export const POLL_INTERVAL_MS = parseInt(import.meta.env.VITE_POLL_INTERVAL_MS |
 export const MAX_POLL_ATTEMPTS = parseInt(import.meta.env.VITE_MAX_POLL_ATTEMPTS || '30', 10);
 
 export const clearGithubToken = () => {
-    sessionStorage.removeItem(SESSION_KEYS.githubToken);
-    sessionStorage.removeItem(SESSION_KEYS.githubTokenSubject);
+    session().removeItem(SESSION_KEYS.githubToken);
+    session().removeItem(SESSION_KEYS.githubTokenSubject);
 };
 
-export const getGithubToken = () => sessionStorage.getItem(SESSION_KEYS.githubToken) || '';
+export const getGithubToken = () => session().getItem(SESSION_KEYS.githubToken) || '';
 
 export const setGithubToken = (token, subject) => {
     if (token && subject) {
-        sessionStorage.setItem(SESSION_KEYS.githubToken, token);
-        sessionStorage.setItem(SESSION_KEYS.githubTokenSubject, subject);
+        session().setItem(SESSION_KEYS.githubToken, token);
+        session().setItem(SESSION_KEYS.githubTokenSubject, subject);
     } else {
         clearGithubToken();
     }
 };
 
 export const reconcileGithubTokenSubject = (subject) => {
-    if (!sessionStorage.getItem(SESSION_KEYS.githubToken)) return;
-    const storedSubject = sessionStorage.getItem(SESSION_KEYS.githubTokenSubject);
+    if (!session().getItem(SESSION_KEYS.githubToken)) return;
+    const storedSubject = session().getItem(SESSION_KEYS.githubTokenSubject);
     if (!subject || storedSubject !== subject) clearGithubToken();
 };
 
@@ -66,15 +71,15 @@ export const getEffectiveSettings = () => {
     const defaults = getDefaults();
     return {
         githubToken: getGithubToken(),
-        repos: localStorage.getItem(STORAGE_KEYS.repos) || defaults.repos,
-        sprintName: localStorage.getItem(STORAGE_KEYS.sprintName) || defaults.sprintName,
-        since: localStorage.getItem(STORAGE_KEYS.since) || defaults.since,
-        until: localStorage.getItem(STORAGE_KEYS.until) || defaults.until,
+        repos: local().getItem(STORAGE_KEYS.repos) || defaults.repos,
+        sprintName: local().getItem(STORAGE_KEYS.sprintName) || defaults.sprintName,
+        since: local().getItem(STORAGE_KEYS.since) || defaults.since,
+        until: local().getItem(STORAGE_KEYS.until) || defaults.until,
     };
 };
 
 export const hasCustomSettings = () =>
-    Boolean(getGithubToken()) || Object.values(STORAGE_KEYS).some((key) => localStorage.getItem(key));
+    Boolean(getGithubToken()) || Object.values(STORAGE_KEYS).some((key) => local().getItem(key));
 
 export const formatDateForInput = (isoString) => {
     if (!isoString) return '';

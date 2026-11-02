@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LogIn, LogOut, Menu, Settings, X } from 'lucide-react';
 import bscLogo from '../bsc-logo.svg';
 import bscLogoDark from '../bsc-logo-dark.svg';
-import { ROUTES } from '../hooks/useHashRoute';
+import { ROUTES } from '../hooks/useRoute';
 import ThemeSwitcher from './ThemeSwitcher';
 
 const Navigation = ({
@@ -56,7 +56,14 @@ const Navigation = ({
     return (
         <header className="nav" ref={header}>
             <div className="nav-inner">
-                <a className="nav-brand" href="#/overview" onClick={() => setMenuOpen(false)}>
+                <a
+                    className="nav-brand"
+                    href="/"
+                    onClick={(event) => {
+                        event.preventDefault();
+                        go('overview');
+                    }}
+                >
                     <img src={bscLogo} alt="BSC Analytics" className="nav-logo theme-light-only" />
                     <img src={bscLogoDark} alt="BSC Analytics" className="nav-logo theme-dark-only" />
                     <span className="nav-divider" aria-hidden="true" />
@@ -67,10 +74,10 @@ const Navigation = ({
                 </a>
 
                 <nav className="nav-tabs" aria-label="Primary">
-                    {ROUTES.map(({ id, label }) => (
+                    {ROUTES.map(({ id, label, path }) => (
                         <a
                             key={id}
-                            href={`#/${id}`}
+                            href={path}
                             className="nav-tab"
                             aria-current={route === id ? 'page' : undefined}
                             onClick={(event) => {
@@ -106,10 +113,10 @@ const Navigation = ({
             {menuOpen && (
                 <div id="nav-menu" className="nav-menu">
                     <nav aria-label="Primary mobile">
-                        {ROUTES.map(({ id, label }) => (
+                        {ROUTES.map(({ id, label, path }) => (
                             <a
                                 key={id}
-                                href={`#/${id}`}
+                                href={path}
                                 className="nav-menu-link"
                                 aria-current={route === id ? 'page' : undefined}
                                 onClick={(event) => {

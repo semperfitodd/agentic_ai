@@ -27,7 +27,7 @@ export const useReveal = (threshold = 0.2) => {
 
 /** Counts from 0 to `target` once `active` turns true; jumps straight to the target under reduced motion. */
 export const useCountUp = (target, active, durationMs = 900) => {
-    const [value, setValue] = useState(0);
+    const [value, setValue] = useState(() => (typeof window === 'undefined' ? target : 0));
 
     useEffect(() => {
         if (!active) return undefined;
