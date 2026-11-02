@@ -23,6 +23,7 @@ class SprintAnalysisViewModel: ObservableObject {
 
     private var ticker: Timer?
     private var startedAt = Date()
+    private var analysisTask: Task<Void, Never>?
     private let manager = WorkflowStepsManager.shared
     private let totalDuration: TimeInterval
 
@@ -41,17 +42,36 @@ class SprintAnalysisViewModel: ObservableObject {
     var currentStep: WorkflowStep { manager.steps[currentStepIndex] }
 
     func runSprintAnalysis(using webAuthenticationSession: WebAuthenticationSession) {
-        Task {
+        analysisTask?.cancel()
+        analysisTask = Task {
             if !AuthService.shared.isSignedIn {
                 do {
                     try await AuthService.shared.signIn(using: webAuthenticationSession)
                 } catch {
-                    errorMessage = error.localizedDescription
+                    if !Task.isCancelled { errorMessage = error.localizedDescription }
                     return
                 }
             }
+            guard !Task.isCancelled else { return }
             await startAnalysis()
         }
+    }
+
+    func reset() {
+        analysisTask?.cancel()
+        analysisTask = nil
+        stopTicker()
+        isLoading = false
+        isFetchingReport = false
+        progress = 0.0
+        currentStepIndex = 0
+        completedSteps = []
+        errorMessage = nil
+        markdownReport = nil
+        showReportModal = false
+        workflowComplete = false
+        analysisInfo = nil
+        elapsed = 0
     }
 
     private func startAnalysis() async {
@@ -76,6 +96,7 @@ class SprintAnalysisViewModel: ObservableObject {
             if remaining > 0 {
                 try await Task.sleep(for: .seconds(remaining))
             }
+            guard !Task.isCancelled else { return }
 
             progress = 100.0
             completedSteps = Set(manager.steps.indices)
@@ -84,6 +105,7 @@ class SprintAnalysisViewModel: ObservableObject {
             isFetchingReport = true
 
             let markdown = try await APIService.shared.pollForReport(executionArn: result.executionArn)
+            guard !Task.isCancelled else { return }
             markdownReport = markdown
             isFetchingReport = false
             stopTicker()

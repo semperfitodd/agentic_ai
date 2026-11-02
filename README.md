@@ -25,7 +25,8 @@ An agentic AI system that analyzes GitHub sprint activity and generates executiv
 ### Security
 
 - **No shared client secrets.** Clients hold only the public Cognito app client ID; each user signs in with Google or Apple and calls the API with a 1-hour access token.
-- **GitHub token never stored in plaintext server-side.** The web app keeps it in `sessionStorage` (per tab), the iOS app in the Keychain. `lambda_workflow` encrypts it with KMS (context: `purpose`, `executionName`) before `StartExecution`; ciphertext from one execution cannot be decrypted under another.
+- **GitHub token never stored in plaintext server-side.** The web app keeps it in `sessionStorage` (per tab), the iOS app in the Keychain. Both clients bind the token to the signed-in Cognito subject and clear it on sign-out or account change. `lambda_workflow` encrypts it with KMS (context: `purpose`, `executionName`) before `StartExecution`; ciphertext from one execution cannot be decrypted under another.
+- **Report markdown is treated as untrusted.** Web and iOS renderers allowlist link schemes (`http`, `https`, `mailto`, and same-page `#` on web) and strip raw HTML; model output never uses `rehype-raw` or equivalent.
 - **Self-service deletion.** Users delete their own account from Settings; the Lambda deletes only the user named in the caller's token.
 - **Per-user report isolation.** `lambda_workflow` sets `ownerId` from the JWT `username` (email). All workflow artifacts live under `users/<email>/` in the results bucket. `GET /results` and `GET /markdown` reject keys and executions that belong to another user.
 - CORS restricted to `https://<env>.<domain>`; the shared logger redacts `githubToken`, `authorization`, `token`, `secret`, `password`.

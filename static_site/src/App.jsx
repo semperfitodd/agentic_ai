@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from 'react-oidc-context';
 import './App.css';
 import Navigation from './components/Navigation';
@@ -13,7 +13,7 @@ import { useRunAnalysis } from './hooks/useRunAnalysis';
 import { useTheme } from './hooks/useTheme';
 import { deleteAccount } from './utils/api';
 import { buildSignOutUrl } from './config/auth';
-import { getEffectiveSettings, hasCustomSettings, setGithubToken } from './config/settings';
+import { clearGithubToken, getEffectiveSettings, hasCustomSettings, reconcileGithubTokenSubject } from './config/settings';
 
 const ReportModal = lazy(() => import('./components/ReportModal'));
 
@@ -25,19 +25,42 @@ function App() {
     const [showSettings, setShowSettings] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-    const settings = useMemo(() => getEffectiveSettings(), [showSettings]);
-    const customized = useMemo(() => hasCustomSettings(), [showSettings]);
+    const settings = useMemo(() => getEffectiveSettings(), [showSettings, auth.isAuthenticated]);
+    const customized = useMemo(() => hasCustomSettings(), [showSettings, auth.isAuthenticated]);
+
+    const subject = auth.user?.profile?.sub;
+
+    const resetRun = run.reset;
+    const prevSubjectRef = useRef(undefined);
+
+    useEffect(() => {
+        if (auth.isLoading) return;
+        if (!auth.isAuthenticated) {
+            reconcileGithubTokenSubject(null);
+            resetRun();
+            prevSubjectRef.current = undefined;
+            return;
+        }
+        if (prevSubjectRef.current && prevSubjectRef.current !== subject) {
+            resetRun();
+        }
+        prevSubjectRef.current = subject;
+        reconcileGithubTokenSubject(subject);
+    }, [auth.isLoading, auth.isAuthenticated, subject, resetRun]);
 
     const signIn = (returnRoute = route) => auth.signinRedirect({ state: { route: returnRoute } });
 
     const signOut = async () => {
+        clearGithubToken();
+        run.reset();
         await auth.removeUser();
         window.location.assign(buildSignOutUrl());
     };
 
     const confirmDeleteAccount = async () => {
         await deleteAccount(auth.user.access_token);
-        setGithubToken('');
+        clearGithubToken();
+        run.reset();
         await signOut();
     };
 
@@ -101,6 +124,7 @@ function App() {
             <SettingsModal
                 show={showSettings}
                 onClose={() => setShowSettings(false)}
+                authSubject={subject}
                 onDeleteAccount={
                     auth.isAuthenticated
                         ? () => {

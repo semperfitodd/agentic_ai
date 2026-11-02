@@ -108,7 +108,12 @@ final class AuthService: ObservableObject {
     func signOut() {
         tokens = nil
         KeychainStore.set(nil as Data?, for: Self.tokensKey)
+        GithubTokenStore.clear()
         isSignedIn = false
+    }
+
+    var accessTokenSubject: String? {
+        tokens.flatMap { Self.subject(from: $0.accessToken) }
     }
 
     // MARK: - Token exchange
@@ -133,6 +138,7 @@ final class AuthService: ObservableObject {
         tokens = newTokens
         KeychainStore.set(try JSONEncoder().encode(newTokens), for: Self.tokensKey)
         isSignedIn = true
+        GithubTokenStore.reconcile(currentSubject: Self.subject(from: newTokens.accessToken))
     }
 
     // MARK: - PKCE helpers
@@ -159,6 +165,20 @@ final class AuthService: ObservableObject {
             .replacingOccurrences(of: "+", with: "-")
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "=", with: "")
+    }
+
+    nonisolated static func subject(from accessToken: String) -> String? {
+        let parts = accessToken.split(separator: ".")
+        guard parts.count >= 2 else { return nil }
+        var payload = String(parts[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let padding = (4 - payload.count % 4) % 4
+        payload += String(repeating: "=", count: padding)
+        guard let data = Data(base64Encoded: payload),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let sub = json["sub"] as? String else { return nil }
+        return sub
     }
 
     private nonisolated static func formEncode(_ form: [String: String]) -> String {

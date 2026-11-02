@@ -25,7 +25,7 @@ const Field = ({ id, label, hint, children }) => (
     </div>
 );
 
-const SettingsModal = ({ show, onClose, onDeleteAccount }) => {
+const SettingsModal = ({ show, onClose, onDeleteAccount, authSubject }) => {
     const defaults = getDefaults();
     const [githubToken, setGithubToken] = useState('');
     const [repos, setRepos] = useState('');
@@ -50,7 +50,7 @@ const SettingsModal = ({ show, onClose, onDeleteAccount }) => {
 
     const handleSave = (event) => {
         event.preventDefault();
-        storeGithubToken(githubToken);
+        storeGithubToken(githubToken, authSubject);
         saveOrRemove(STORAGE_KEYS.repos, repos);
         saveOrRemove(STORAGE_KEYS.sprintName, sprintName, defaults.sprintName);
         saveOrRemove(STORAGE_KEYS.since, formatDateForAPI(since));

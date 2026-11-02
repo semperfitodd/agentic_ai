@@ -86,8 +86,17 @@ struct MarkdownContentView: View {
     }
 
     static func inline(_ markdown: String) -> AttributedString {
+        let sanitized = ReportMarkdownSanitizer.preprocess(markdown)
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        return (try? AttributedString(markdown: markdown, options: options)) ?? AttributedString(markdown)
+        guard var parsed = try? AttributedString(markdown: sanitized, options: options) else {
+            return AttributedString(sanitized)
+        }
+        for run in parsed.runs {
+            if let link = run.link, !ReportMarkdownSanitizer.isAllowedURL(link) {
+                parsed[run.range].link = nil
+            }
+        }
+        return parsed
     }
 }
 

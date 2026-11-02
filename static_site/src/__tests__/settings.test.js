@@ -1,4 +1,14 @@
-import { getEffectiveSettings, hasCustomSettings, formatDateForInput, formatDateForAPI } from '../config/settings';
+import {
+    SESSION_KEYS,
+    clearGithubToken,
+    getEffectiveSettings,
+    getGithubToken,
+    hasCustomSettings,
+    formatDateForInput,
+    formatDateForAPI,
+    reconcileGithubTokenSubject,
+    setGithubToken,
+} from '../config/settings';
 
 describe('settings config', () => {
     beforeEach(() => {
@@ -62,6 +72,33 @@ describe('settings config', () => {
             expect(formatDateForInput(null)).toBe('');
             expect(formatDateForInput(undefined)).toBe('');
             expect(formatDateForInput('')).toBe('');
+        });
+    });
+
+    describe('GitHub token subject binding', () => {
+        it('stores the token with the Cognito sub', () => {
+            setGithubToken('ghp_test', 'sub-abc');
+            expect(getGithubToken()).toBe('ghp_test');
+            expect(sessionStorage.getItem(SESSION_KEYS.githubTokenSubject)).toBe('sub-abc');
+        });
+
+        it('clears the token when the subject mismatches', () => {
+            setGithubToken('ghp_test', 'sub-abc');
+            reconcileGithubTokenSubject('sub-other');
+            expect(getGithubToken()).toBe('');
+        });
+
+        it('keeps the token when the subject matches', () => {
+            setGithubToken('ghp_test', 'sub-abc');
+            reconcileGithubTokenSubject('sub-abc');
+            expect(getGithubToken()).toBe('ghp_test');
+        });
+
+        it('clearGithubToken removes the token and subject', () => {
+            setGithubToken('ghp_test', 'sub-abc');
+            clearGithubToken();
+            expect(getGithubToken()).toBe('');
+            expect(sessionStorage.getItem(SESSION_KEYS.githubTokenSubject)).toBeNull();
         });
     });
 

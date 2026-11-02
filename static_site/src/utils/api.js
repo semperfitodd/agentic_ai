@@ -25,11 +25,23 @@ export const buildEmptyReportMarkdown = (body) => {
     return lines.join('\n');
 };
 
-export const fetchReport = async (accessToken, executionArn, setMarkdownReport, setShowReportModal, setFetchingReport, setError) => {
+export const fetchReport = async (
+    accessToken,
+    executionArn,
+    setMarkdownReport,
+    setShowReportModal,
+    setFetchingReport,
+    setError,
+    shouldContinue = () => true
+) => {
     setFetchingReport(true);
     let attempts = 0;
 
     const pollReport = async () => {
+        if (!shouldContinue()) {
+            setFetchingReport(false);
+            return;
+        }
         try {
             const response = await fetchWithAuth(
                 accessToken,
@@ -52,6 +64,10 @@ export const fetchReport = async (accessToken, executionArn, setMarkdownReport, 
                     if (!markdownResponse.ok) {
                         throw new Error(`Markdown API returned ${markdownResponse.status}: ${await markdownResponse.text()}`);
                     }
+                    if (!shouldContinue()) {
+                        setFetchingReport(false);
+                        return;
+                    }
                     setMarkdownReport(await markdownResponse.text());
                     setShowReportModal(true);
                     setFetchingReport(false);
@@ -60,19 +76,23 @@ export const fetchReport = async (accessToken, executionArn, setMarkdownReport, 
 
                 const emptyMarkdown = buildEmptyReportMarkdown(extractEmptyReportBody(data.output));
                 if (emptyMarkdown) {
+                    if (!shouldContinue()) {
+                        setFetchingReport(false);
+                        return;
+                    }
                     setMarkdownReport(emptyMarkdown);
                     setShowReportModal(true);
                     setFetchingReport(false);
                     return;
                 }
 
-                setError('Report structure unexpected — no markdown key found.');
+                if (shouldContinue()) setError('Report structure unexpected — no markdown key found.');
                 setFetchingReport(false);
                 return;
             }
 
             if (data.status === 'FAILED') {
-                setError('Workflow execution failed: ' + (data.cause || data.error || 'Unknown error'));
+                if (shouldContinue()) setError('Workflow execution failed: ' + (data.cause || data.error || 'Unknown error'));
                 setFetchingReport(false);
                 return;
             }
@@ -80,16 +100,20 @@ export const fetchReport = async (accessToken, executionArn, setMarkdownReport, 
             attempts++;
             if (attempts < MAX_POLL_ATTEMPTS) {
                 setTimeout(pollReport, POLL_INTERVAL_MS);
-            } else {
+            } else if (shouldContinue()) {
                 setError(`Report generation timed out after ${MAX_POLL_ATTEMPTS} attempts`);
+                setFetchingReport(false);
+            } else {
                 setFetchingReport(false);
             }
         } catch (err) {
             attempts++;
             if (attempts < MAX_POLL_ATTEMPTS) {
                 setTimeout(pollReport, POLL_INTERVAL_MS);
-            } else {
+            } else if (shouldContinue()) {
                 setError('Failed to fetch report: ' + (err.message || 'Network error'));
+                setFetchingReport(false);
+            } else {
                 setFetchingReport(false);
             }
         }

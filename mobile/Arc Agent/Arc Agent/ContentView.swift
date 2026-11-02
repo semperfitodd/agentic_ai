@@ -6,6 +6,7 @@ enum AppTab: String, Hashable {
 
 struct ContentView: View {
     @StateObject private var viewModel = SprintAnalysisViewModel()
+    @ObservedObject private var auth = AuthService.shared
     @State private var selection: AppTab = .overview
 
     var body: some View {
@@ -43,6 +44,11 @@ struct ContentView: View {
         }
         .sensoryFeedback(.success, trigger: viewModel.showReportModal) { _, shown in shown }
         .sensoryFeedback(.error, trigger: viewModel.errorMessage) { _, message in message != nil }
+        .onChange(of: auth.isSignedIn) { _, signedIn in
+            if !signedIn {
+                viewModel.reset()
+            }
+        }
     }
 }
 

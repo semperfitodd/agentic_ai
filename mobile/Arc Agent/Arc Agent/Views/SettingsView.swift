@@ -7,7 +7,7 @@ struct SettingsView: View {
     @AppStorage(AppearancePreference.storageKey) private var appearance = AppearancePreference.system
     @AppStorage("custom_repos") private var customReposString = ""
     @AppStorage("custom_sprint_name") private var customSprintName = ""
-    @State private var customGithubToken = KeychainStore.string(for: SettingsView.githubTokenKey) ?? ""
+    @State private var customGithubToken = GithubTokenStore.token()
     @State private var sinceDate = Date()
     @State private var untilDate = Date()
     @State private var authError: String?
@@ -62,7 +62,7 @@ struct SettingsView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .onChange(of: customGithubToken) { _, token in
-                        KeychainStore.set(token, for: SettingsView.githubTokenKey)
+                        persistGithubToken(token)
                     }
             } header: {
                 Text("GitHub Token")
@@ -105,6 +105,13 @@ struct SettingsView: View {
         .scrollContentBackground(.hidden)
         .background(Palette.bgCanvas.ignoresSafeArea())
         .onAppear(perform: loadDates)
+        .onChange(of: auth.isSignedIn) { _, signedIn in
+            if signedIn {
+                customGithubToken = GithubTokenStore.token()
+            } else {
+                customGithubToken = ""
+            }
+        }
         .alert("Add Repository", isPresented: $showAddRepo) {
             TextField("owner/repo or GitHub URL", text: $repoInput)
                 .textInputAutocapitalization(.never)
@@ -144,7 +151,7 @@ struct SettingsView: View {
         do {
             try await APIService.shared.deleteAccount()
             customGithubToken = ""
-            KeychainStore.set(nil as String?, for: SettingsView.githubTokenKey)
+            GithubTokenStore.clear()
             auth.signOut()
             authError = nil
         } catch {
@@ -165,8 +172,22 @@ struct SettingsView: View {
         customReposString = repos.joined(separator: ",")
     }
 
+    private func persistGithubToken(_ token: String) {
+        if token.isEmpty {
+            GithubTokenStore.clear()
+            return
+        }
+        guard let subject = auth.accessTokenSubject else {
+            GithubTokenStore.clear()
+            customGithubToken = ""
+            return
+        }
+        GithubTokenStore.set(token: token, subject: subject)
+    }
+
     private func resetAllSettings() {
         customGithubToken = ""
+        GithubTokenStore.clear()
         customReposString = ""
         customSprintName = ""
         sinceDate = parseDate(Secrets.defaultSince) ?? Date().addingTimeInterval(-14 * 86_400)
@@ -200,10 +221,8 @@ struct SettingsView: View {
 // MARK: - Effective settings
 
 extension SettingsView {
-    nonisolated static let githubTokenKey = "github_token"
-
     nonisolated static func effectiveGithubToken() -> String {
-        KeychainStore.string(for: githubTokenKey) ?? ""
+        GithubTokenStore.token()
     }
 
     nonisolated static func effectiveRepos() -> [String] {

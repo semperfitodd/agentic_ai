@@ -20,7 +20,7 @@ let url = URL(string: "https://api.example.com")!
 
 ## Networking
 
-All network calls go through `APIService`. Use the `authorizedRequest(url:method:body:)` helper, which attaches the Cognito access token from `AuthService` as `Authorization: Bearer`. Tokens and the GitHub token live in the Keychain via `KeychainStore`, never `UserDefaults`.
+All network calls go through `APIService`. Use the `authorizedRequest(url:method:body:)` helper, which attaches the Cognito access token from `AuthService` as `Authorization: Bearer`. Cognito tokens and the GitHub PAT live in the Keychain via `KeychainStore` / `GithubTokenStore`, never `UserDefaults`. Bind the GitHub token to the access-token `sub`, clear it in `AuthService.signOut`, and reconcile on sign-in when the subject changes.
 
 ```swift
 // ✅ GOOD

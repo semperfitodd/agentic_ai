@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
 
 const SESSION_KEYS = {
     githubToken: 'arc_github_token',
+    githubTokenSubject: 'arc_github_token_subject',
 };
 
 // index.html reads the same key before first paint to avoid a theme flash.
@@ -39,11 +40,26 @@ const getDefaults = () => ({
 export const POLL_INTERVAL_MS = parseInt(import.meta.env.VITE_POLL_INTERVAL_MS || '10000', 10);
 export const MAX_POLL_ATTEMPTS = parseInt(import.meta.env.VITE_MAX_POLL_ATTEMPTS || '30', 10);
 
+export const clearGithubToken = () => {
+    sessionStorage.removeItem(SESSION_KEYS.githubToken);
+    sessionStorage.removeItem(SESSION_KEYS.githubTokenSubject);
+};
+
 export const getGithubToken = () => sessionStorage.getItem(SESSION_KEYS.githubToken) || '';
 
-export const setGithubToken = (token) => {
-    if (token) sessionStorage.setItem(SESSION_KEYS.githubToken, token);
-    else sessionStorage.removeItem(SESSION_KEYS.githubToken);
+export const setGithubToken = (token, subject) => {
+    if (token && subject) {
+        sessionStorage.setItem(SESSION_KEYS.githubToken, token);
+        sessionStorage.setItem(SESSION_KEYS.githubTokenSubject, subject);
+    } else {
+        clearGithubToken();
+    }
+};
+
+export const reconcileGithubTokenSubject = (subject) => {
+    if (!sessionStorage.getItem(SESSION_KEYS.githubToken)) return;
+    const storedSubject = sessionStorage.getItem(SESSION_KEYS.githubTokenSubject);
+    if (!subject || storedSubject !== subject) clearGithubToken();
 };
 
 export const getEffectiveSettings = () => {

@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Settings & Configuration
 
-All storage keys and default values live in `src/config/settings.js`. Never read from `localStorage` or `sessionStorage` directly in a component. The GitHub token is kept in `sessionStorage` only (via `getGithubToken` / `setGithubToken`); never persist it to `localStorage`.
+All storage keys and default values live in `src/config/settings.js`. Never read from `localStorage` or `sessionStorage` directly in a component. The GitHub token is kept in `sessionStorage` only (via `getGithubToken` / `setGithubToken`); never persist it to `localStorage`. Always bind the token to the signed-in Cognito `sub` (`arc_github_token_subject`): clear it on sign-out, account deletion, and subject mismatch; pass `authSubject` when saving from Settings.
 
 ```javascript
 // ✅ GOOD

@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CalendarRange, Check, Copy, Download, FileText, Loader2, X } from 'lucide-react';
 import { MarkdownComponents } from '../constants/markdownComponents';
+import { safeReportUrlTransform } from '../utils/safeReportUrl';
 import { downloadPDF } from '../utils/pdfExport';
 import { parseReport } from '../utils/reportSummary';
 import Dialog from './Dialog';
@@ -179,7 +180,11 @@ const ReportModal = ({ show, markdownReport, onClose }) => {
                         </nav>
                     )}
                     <article className="report-prose">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={MarkdownComponents}
+                            urlTransform={safeReportUrlTransform}
+                        >
                             {report.body}
                         </ReactMarkdown>
                     </article>

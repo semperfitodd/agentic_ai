@@ -110,10 +110,72 @@ final class SprintAnalysisViewModelTests: XCTestCase {
         vm.dismissReport()
         XCTAssertFalse(vm.showReportModal)
     }
+
+    @MainActor
+    func testResetClearsReportAndErrors() {
+        let vm = SprintAnalysisViewModel()
+        vm.markdownReport = "# Report"
+        vm.errorMessage = "failed"
+        vm.showReportModal = true
+        vm.reset()
+        XCTAssertNil(vm.markdownReport)
+        XCTAssertNil(vm.errorMessage)
+        XCTAssertFalse(vm.showReportModal)
+        XCTAssertEqual(vm.status, .idle)
+    }
 }
 
 
+final class GithubTokenStoreTests: XCTestCase {
+
+    override func tearDown() {
+        GithubTokenStore.clear()
+        super.tearDown()
+    }
+
+    func testClearsTokenWhenSubjectMismatches() {
+        GithubTokenStore.set(token: "ghp_test", subject: "user-a")
+        GithubTokenStore.reconcile(currentSubject: "user-b")
+        XCTAssertEqual(GithubTokenStore.token(), "")
+    }
+
+    func testKeepsTokenWhenSubjectMatches() {
+        GithubTokenStore.set(token: "ghp_test", subject: "user-a")
+        GithubTokenStore.reconcile(currentSubject: "user-a")
+        XCTAssertEqual(GithubTokenStore.token(), "ghp_test")
+    }
+}
+
+final class ReportMarkdownSanitizerTests: XCTestCase {
+
+    private let hostile = """
+    <script>alert(1)</script>
+    <iframe src="https://evil.example"></iframe>
+    [javascript link](javascript:alert(1))
+    [safe](https://example.com)
+    """
+
+    func testInlineAllowsOnlySafeLinks() {
+        let rendered = MarkdownContentView.inline(hostile)
+        let links = rendered.runs.compactMap(\.link)
+        XCTAssertEqual(links.count, 1)
+        XCTAssertEqual(links.first?.absoluteString, "https://example.com")
+        let text = String(rendered.characters).lowercased()
+        XCTAssertFalse(text.contains("javascript:"))
+        XCTAssertFalse(text.contains("<iframe"))
+    }
+}
+
 final class AuthServicePKCETests: XCTestCase {
+
+    func testSubjectFromAccessTokenPayload() {
+        let payload = Data("{\"sub\":\"user-123\"}".utf8).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+        let jwt = "header.\(payload).sig"
+        XCTAssertEqual(AuthService.subject(from: jwt), "user-123")
+    }
 
     func testCodeChallengeMatchesRFC7636Vector() {
         let verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"

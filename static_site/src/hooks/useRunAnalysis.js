@@ -17,6 +17,7 @@ export const useRunAnalysis = () => {
     const [reportOpen, setReportOpen] = useState(false);
     const handoff = useRef(null);
     const startedAt = useRef(0);
+    const pollGeneration = useRef(0);
 
     const ticking = status === 'running' || status === 'retrieving';
 
@@ -33,9 +34,22 @@ export const useRunAnalysis = () => {
         setStatus('error');
     }, []);
 
+    const reset = useCallback(() => {
+        pollGeneration.current += 1;
+        clearTimeout(handoff.current);
+        handoff.current = null;
+        setStatus('idle');
+        setElapsed(0);
+        setError(null);
+        setReport(null);
+        setReportOpen(false);
+    }, []);
+
     const start = useCallback(
         async (accessToken) => {
             clearTimeout(handoff.current);
+            const generation = pollGeneration.current + 1;
+            pollGeneration.current = generation;
             startedAt.current = Date.now();
             setElapsed(0);
             setError(null);
@@ -43,30 +57,39 @@ export const useRunAnalysis = () => {
             setReportOpen(false);
             setStatus('running');
 
+            const shouldContinue = () => pollGeneration.current === generation;
+
             try {
                 const result = await startSprintAnalysis(accessToken);
+                if (!shouldContinue()) return;
                 if (!result.success) {
                     fail(result.error);
                     return;
                 }
                 const remaining = Math.max(0, TOTAL_DURATION - (Date.now() - startedAt.current));
                 handoff.current = setTimeout(() => {
+                    if (!shouldContinue()) return;
                     setStatus('retrieving');
                     fetchReport(
                         accessToken,
                         result.executionArn,
-                        setReport,
+                        (md) => {
+                            if (shouldContinue()) setReport(md);
+                        },
                         (open) => {
-                            if (!open) return;
+                            if (!shouldContinue() || !open) return;
                             setStatus('ready');
                             setReportOpen(true);
                         },
                         () => {},
-                        fail
+                        (message) => {
+                            if (shouldContinue()) fail(message);
+                        },
+                        shouldContinue
                     );
                 }, remaining);
             } catch (err) {
-                fail(err.message || 'Network error occurred');
+                if (shouldContinue()) fail(err.message || 'Network error occurred');
             }
         },
         [fail]
@@ -75,5 +98,5 @@ export const useRunAnalysis = () => {
     const progress = status === 'running' ? Math.min((elapsed / TOTAL_DURATION) * 100, 100) : status === 'idle' ? 0 : 100;
     const currentStep = status === 'running' ? stepIndexAt(elapsed) : 0;
 
-    return { status, elapsed, progress, currentStep, error, report, reportOpen, setReportOpen, start };
+    return { status, elapsed, progress, currentStep, error, report, reportOpen, setReportOpen, start, reset };
 };

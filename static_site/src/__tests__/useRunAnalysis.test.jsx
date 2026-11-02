@@ -29,7 +29,15 @@ describe('useRunAnalysis', () => {
         expect(result.current.currentStep).toBeGreaterThan(0);
 
         await act(async () => vi.advanceTimersByTime(TOTAL_DURATION));
-        expect(fetchReport).toHaveBeenCalledWith('token', 'arn:1', expect.any(Function), expect.any(Function), expect.any(Function), expect.any(Function));
+        expect(fetchReport).toHaveBeenCalledWith(
+            'token',
+            'arn:1',
+            expect.any(Function),
+            expect.any(Function),
+            expect.any(Function),
+            expect.any(Function),
+            expect.any(Function)
+        );
         expect(result.current.status).toBe('ready');
         expect(result.current.report).toBe('# Report');
         expect(result.current.reportOpen).toBe(true);

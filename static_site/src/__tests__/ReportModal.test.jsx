@@ -48,6 +48,24 @@ describe('ReportModal', () => {
         await waitFor(() => expect(downloadPDF).toHaveBeenCalledWith(sampleReport));
     });
 
+    it('blocks hostile HTML and unsafe links in the report body', () => {
+        const hostile = `# Hostile Report
+
+<script>alert('x')</script>
+
+<iframe src="https://evil.test"></iframe>
+
+[javascript link](javascript:alert(1))
+
+[safe link](https://example.com/safe)
+`;
+        render(<ReportModal show={true} markdownReport={hostile} onClose={vi.fn()} />);
+        expect(document.querySelector('iframe')).toBeNull();
+        expect(document.querySelector('script')).toBeNull();
+        expect(document.querySelector('a[href^="javascript:"]')).toBeNull();
+        expect(document.querySelector('a[href="https://example.com/safe"]')).toBeInTheDocument();
+    });
+
     it('copies the markdown to the clipboard', async () => {
         const writeText = vi.fn().mockResolvedValue();
         Object.assign(navigator, { clipboard: { writeText } });

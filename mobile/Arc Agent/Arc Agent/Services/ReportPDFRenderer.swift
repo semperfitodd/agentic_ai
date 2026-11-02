@@ -318,8 +318,9 @@ private final class Layout {
 
     /// Converts inline markdown (bold, italic, code, links) into PDF text attributes.
     private func inline(_ markdown: String) -> NSAttributedString {
+        let sanitized = ReportMarkdownSanitizer.preprocess(markdown)
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        let parsed = (try? AttributedString(markdown: markdown, options: options)) ?? AttributedString(markdown)
+        let parsed = (try? AttributedString(markdown: sanitized, options: options)) ?? AttributedString(sanitized)
         let result = NSMutableAttributedString(attributedString: attributed("", font: PDFFont.body, color: PDFColor.body))
         for run in parsed.runs {
             let text = String(parsed[run.range].characters)
@@ -330,7 +331,7 @@ private final class Layout {
                 font = UIFont(descriptor: italic, size: font.pointSize)
             }
             var piece = attributed(text, font: font, color: intent.contains(.stronglyEmphasized) ? PDFColor.primary : PDFColor.body)
-            if let link = run.link {
+            if let link = run.link, ReportMarkdownSanitizer.isAllowedURL(link) {
                 let linked = NSMutableAttributedString(attributedString: piece)
                 linked.addAttributes([.link: link, .foregroundColor: PDFColor.link], range: NSRange(location: 0, length: linked.length))
                 piece = linked

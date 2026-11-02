@@ -30,10 +30,11 @@ describe('SettingsModal', () => {
     });
 
     it('saves the GitHub token to sessionStorage only', () => {
-        render(<SettingsModal show={true} onClose={vi.fn()} />);
+        render(<SettingsModal show={true} onClose={vi.fn()} authSubject="sub-test" />);
         fireEvent.change(screen.getByPlaceholderText(/leave blank for public repos/i), { target: { value: 'ghp_newtoken' } });
         fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
         expect(sessionStorage.getItem('arc_github_token')).toBe('ghp_newtoken');
+        expect(sessionStorage.getItem('arc_github_token_subject')).toBe('sub-test');
         expect(localStorage.getItem('arc_github_token')).toBeNull();
     });
 

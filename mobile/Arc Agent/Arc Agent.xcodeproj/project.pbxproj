@@ -8,30 +8,32 @@
 
 /* Begin PBXBuildFile section */
 		0BC1B4CFA123BA5BC0C7D171 /* APIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41D57F0BBA8BC121185BA7AB /* APIConfig.swift */; };
-		A1B2C3D4E5F6A7B8C9D0E103 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E104 /* KeychainStore.swift */; };
-		A1B2C3D4E5F6A7B8C9D0E101 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E102 /* AuthService.swift */; };
 		1265301D424664D50BFCEC7F /* Arc_AgentUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527AF721FABE07F603E4D20A /* Arc_AgentUITests.swift */; };
 		19ACF03B5DBCD59D0002FB8D /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D783947FCB242AA2A375D688 /* MarkdownContentView.swift */; };
+		1D40C42D901D0775D3153AFB /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4866C027594DB806CDFFB7 /* Theme.swift */; };
 		312F72698977855AED1C014F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B56F518A5DA960AB226DD9C /* SettingsView.swift */; };
 		579AFDF83345FA57293089E4 /* Arc_AgentApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 184094D265B58723457052AB /* Arc_AgentApp.swift */; };
+		89199A3EFAECF7DBA970BE68 /* OverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80ACCD1C84876EB9C3F00889 /* OverviewView.swift */; };
 		8A903EE192523967A78126D3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08F4281087908BA06B8642E1 /* ContentView.swift */; };
 		967C0B545A68AF674505DA91 /* Arc_AgentUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F69ECEEDB9A1ADD1D82624E /* Arc_AgentUITestsLaunchTests.swift */; };
 		9E971A0E79FDD8113C61EBF0 /* FeaturesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 937092CA3227C523D40F91CB /* FeaturesView.swift */; };
 		9F57D9619498BEB311564AA8 /* ReportModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF043ADD1E7AD52AFFD5F78D /* ReportModalView.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E101 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E102 /* AuthService.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E103 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E104 /* KeychainStore.swift */; };
+		B2C3D4E5F6A7B8C9D0E105 /* GithubTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E106 /* GithubTokenStore.swift */; };
+		C3D4E5F6A7B8C9D0E107 /* ReportMarkdownSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B8C9D0E108 /* ReportMarkdownSanitizer.swift */; };
 		A3690D4D7086B70CABC6A7E2 /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610744393CFA91BAE4518EF5 /* Secrets.swift */; };
+		A96704A6E654CBBE465F45FD /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2FD897B053BDFD89C48FC7 /* DesignTokens.swift */; };
 		B13052C91E76AEBEC2812B6C /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B664FC68652C5CD1FA6EFD91 /* APIService.swift */; };
 		B61077C2F0E170C971D557D0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5FBC1452B4920C13929AD027 /* Assets.xcassets */; };
 		B6397FF3ECCECB44BD793E3D /* Arc_AgentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2C8705BFF606CCF35EA9D96 /* Arc_AgentTests.swift */; };
 		BB5CF7A6143616ED115A35FA /* WorkflowStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF63B67D8DD4EB58FB1E335 /* WorkflowStep.swift */; };
 		CB9D7CF8044765C6BFEC33A0 /* SprintAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 718895B8804DCE34065EAD9D /* SprintAnalysis.swift */; };
 		D0142F5A58DA36BF6CF2BD58 /* SprintAnalysisViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7FAC74B0641688A3E2FCE59 /* SprintAnalysisViewModel.swift */; };
-		F94523F6CDDB2B82175ECBE4 /* ProgressTrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3A86C50CF18B812888665B9 /* ProgressTrackerView.swift */; };
-		FF634EA93452BB4F523BF560 /* RunAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C40A3B00B1B8BDDD53186F9 /* RunAgentView.swift */; };
 		DB0ECC4DF59C70A208950A43 /* ReportDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06BEC13C17E9ABC493292B09 /* ReportDocument.swift */; };
 		E40B44193CD11C498B59B0FC /* ReportPDFRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054ACDE8737D2C66FE3A8280 /* ReportPDFRenderer.swift */; };
-		89199A3EFAECF7DBA970BE68 /* OverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80ACCD1C84876EB9C3F00889 /* OverviewView.swift */; };
-		A96704A6E654CBBE465F45FD /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2FD897B053BDFD89C48FC7 /* DesignTokens.swift */; };
-		1D40C42D901D0775D3153AFB /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4866C027594DB806CDFFB7 /* Theme.swift */; };
+		F94523F6CDDB2B82175ECBE4 /* ProgressTrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3A86C50CF18B812888665B9 /* ProgressTrackerView.swift */; };
+		FF634EA93452BB4F523BF560 /* RunAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C40A3B00B1B8BDDD53186F9 /* RunAgentView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,6 +54,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		054ACDE8737D2C66FE3A8280 /* ReportPDFRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportPDFRenderer.swift; sourceTree = "<group>"; };
+		06BEC13C17E9ABC493292B09 /* ReportDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportDocument.swift; sourceTree = "<group>"; };
 		08F4281087908BA06B8642E1 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		0FF63B67D8DD4EB58FB1E335 /* WorkflowStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkflowStep.swift; sourceTree = "<group>"; };
 		184094D265B58723457052AB /* Arc_AgentApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arc_AgentApp.swift; sourceTree = "<group>"; };
@@ -59,27 +63,27 @@
 		2F69ECEEDB9A1ADD1D82624E /* Arc_AgentUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arc_AgentUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		3C40A3B00B1B8BDDD53186F9 /* RunAgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAgentView.swift; sourceTree = "<group>"; };
 		41D57F0BBA8BC121185BA7AB /* APIConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfig.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6A7B8C9D0E104 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6A7B8C9D0E102 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		4B56F518A5DA960AB226DD9C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		527AF721FABE07F603E4D20A /* Arc_AgentUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arc_AgentUITests.swift; sourceTree = "<group>"; };
 		5FBC1452B4920C13929AD027 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		610744393CFA91BAE4518EF5 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
 		718895B8804DCE34065EAD9D /* SprintAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SprintAnalysis.swift; sourceTree = "<group>"; };
+		80ACCD1C84876EB9C3F00889 /* OverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewView.swift; sourceTree = "<group>"; };
 		937092CA3227C523D40F91CB /* FeaturesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeaturesView.swift; sourceTree = "<group>"; };
+		9D4866C027594DB806CDFFB7 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E102 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E104 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		B2C3D4E5F6A7B8C9D0E106 /* GithubTokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GithubTokenStore.swift; sourceTree = "<group>"; };
+		C3D4E5F6A7B8C9D0E108 /* ReportMarkdownSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportMarkdownSanitizer.swift; sourceTree = "<group>"; };
 		B3A86C50CF18B812888665B9 /* ProgressTrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressTrackerView.swift; sourceTree = "<group>"; };
 		B664FC68652C5CD1FA6EFD91 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
 		C7FAC74B0641688A3E2FCE59 /* SprintAnalysisViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SprintAnalysisViewModel.swift; sourceTree = "<group>"; };
 		CF043ADD1E7AD52AFFD5F78D /* ReportModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportModalView.swift; sourceTree = "<group>"; };
 		D176ED4CAF905DD5B9C569BF /* Arc AgentTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = "Arc AgentTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D783947FCB242AA2A375D688 /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
+		EA2FD897B053BDFD89C48FC7 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		EF0AF8C0E795A628C626D4BE /* Arc Agent.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Arc Agent.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F2C8705BFF606CCF35EA9D96 /* Arc_AgentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arc_AgentTests.swift; sourceTree = "<group>"; };
-		06BEC13C17E9ABC493292B09 /* ReportDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportDocument.swift; sourceTree = "<group>"; };
-		054ACDE8737D2C66FE3A8280 /* ReportPDFRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportPDFRenderer.swift; sourceTree = "<group>"; };
-		80ACCD1C84876EB9C3F00889 /* OverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewView.swift; sourceTree = "<group>"; };
-		EA2FD897B053BDFD89C48FC7 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
-		9D4866C027594DB806CDFFB7 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -91,6 +95,8 @@
 				B664FC68652C5CD1FA6EFD91 /* APIService.swift */,
 				A1B2C3D4E5F6A7B8C9D0E104 /* KeychainStore.swift */,
 				A1B2C3D4E5F6A7B8C9D0E102 /* AuthService.swift */,
+				B2C3D4E5F6A7B8C9D0E106 /* GithubTokenStore.swift */,
+				C3D4E5F6A7B8C9D0E108 /* ReportMarkdownSanitizer.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -129,6 +135,15 @@
 				C7FAC74B0641688A3E2FCE59 /* SprintAnalysisViewModel.swift */,
 			);
 			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		73212FB8080CAC21C23735D8 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				EA2FD897B053BDFD89C48FC7 /* DesignTokens.swift */,
+				9D4866C027594DB806CDFFB7 /* Theme.swift */,
+			);
+			path = Theme;
 			sourceTree = "<group>";
 		};
 		B910B5B85402DA3099F7CCB8 /* Views */ = {
@@ -178,15 +193,6 @@
 				2F69ECEEDB9A1ADD1D82624E /* Arc_AgentUITestsLaunchTests.swift */,
 			);
 			path = "Arc AgentUITests";
-			sourceTree = "<group>";
-		};
-		73212FB8080CAC21C23735D8 /* Theme */ = {
-			isa = PBXGroup;
-			children = (
-				EA2FD897B053BDFD89C48FC7 /* DesignTokens.swift */,
-				9D4866C027594DB806CDFFB7 /* Theme.swift */,
-			);
-			path = Theme;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -317,6 +323,8 @@
 				0BC1B4CFA123BA5BC0C7D171 /* APIConfig.swift in Sources */,
 				B13052C91E76AEBEC2812B6C /* APIService.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E103 /* KeychainStore.swift in Sources */,
+				B2C3D4E5F6A7B8C9D0E105 /* GithubTokenStore.swift in Sources */,
+				C3D4E5F6A7B8C9D0E107 /* ReportMarkdownSanitizer.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E101 /* AuthService.swift in Sources */,
 				579AFDF83345FA57293089E4 /* Arc_AgentApp.swift in Sources */,
 				8A903EE192523967A78126D3 /* ContentView.swift in Sources */,
@@ -378,7 +386,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.bernsonfamily.com.Arc-Agent";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -530,7 +538,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
+				MARKETING_VERSION = 1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.bernsonfamily.com.Arc-Agent";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
