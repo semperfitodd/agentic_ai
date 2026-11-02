@@ -17,6 +17,27 @@ module "cdn" {
 
   default_root_object = "index.html"
 
+  # Serve prerendered routes: /features -> /features/index.html. Unknown paths still fall back to /index.html below.
+  cloudfront_functions = {
+    index_rewrite = {
+      name    = "${local.environment}-index-rewrite"
+      comment = "Map extensionless paths to prerendered index.html files"
+      publish = true
+      code    = <<-EOT
+        function handler(event) {
+          var request = event.request;
+          var uri = request.uri;
+          if (uri.endsWith('/')) {
+            request.uri = uri + 'index.html';
+          } else if (uri.lastIndexOf('.') < uri.lastIndexOf('/')) {
+            request.uri = uri + '/index.html';
+          }
+          return request;
+        }
+      EOT
+    }
+  }
+
   origin_access_control = {
     (local.domain_name) = {
       description      = "${local.domain_name} CloudFront access to S3"
@@ -54,6 +75,12 @@ module "cdn" {
     allowed_methods = ["GET", "HEAD", "OPTIONS"]
     cached_methods  = ["GET", "HEAD"]
     compress        = true
+
+    function_association = {
+      viewer-request = {
+        function_key = "index_rewrite"
+      }
+    }
   }
 
   viewer_certificate = {

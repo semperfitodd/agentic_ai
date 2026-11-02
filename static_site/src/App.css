@@ -643,7 +643,13 @@
     gap: var(--space-2) var(--space-4);
 }
 
+.footer-inner p.footer-credit {
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
 .footer-dot {
+    flex-shrink: 0;
     width: 6px;
     height: 6px;
     border-radius: var(--radius-full);
@@ -679,6 +685,11 @@
 
 .footer a.app-store-badge:hover {
     text-decoration: none;
+}
+
+.footer a.footer-author {
+    color: var(--color-text-primary);
+    font-weight: 600;
 }
 
 .footer a:hover {

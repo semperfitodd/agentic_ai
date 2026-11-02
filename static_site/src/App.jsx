@@ -8,7 +8,8 @@ import RunAgentPage from './components/RunAgentPage';
 import Footer from './components/Footer';
 import SettingsModal from './components/SettingsModal';
 import ConfirmDialog from './components/ConfirmDialog';
-import { useHashRoute } from './hooks/useHashRoute';
+import { useRoute } from './hooks/useRoute';
+import { PAGE_META } from './config/seo';
 import { useRunAnalysis } from './hooks/useRunAnalysis';
 import { useTheme } from './hooks/useTheme';
 import { deleteAccount } from './utils/api';
@@ -17,9 +18,18 @@ import { clearGithubToken, getEffectiveSettings, hasCustomSettings, reconcileGit
 
 const ReportModal = lazy(() => import('./components/ReportModal'));
 
-function App() {
+const setMeta = (selector, attribute, value) => document.head.querySelector(selector)?.setAttribute(attribute, value);
+
+function App({ initialRoute }) {
     const auth = useAuth();
-    const [route, navigate] = useHashRoute();
+    const [route, navigate] = useRoute(initialRoute);
+
+    useEffect(() => {
+        const { title, description, path } = PAGE_META[route];
+        document.title = title;
+        setMeta('meta[name="description"]', 'content', description);
+        setMeta('link[rel="canonical"]', 'href', `${window.location.origin}${path}`);
+    }, [route]);
     const theme = useTheme();
     const run = useRunAnalysis();
     const [showSettings, setShowSettings] = useState(false);

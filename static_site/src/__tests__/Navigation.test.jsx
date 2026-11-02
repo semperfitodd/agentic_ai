@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import Navigation from '../components/Navigation';
 import { applyTheme } from '../hooks/useTheme';
-import { routeFromHash } from '../hooks/useHashRoute';
+import { pathFor, routeFromLocation } from '../hooks/useRoute';
 import { getThemePreference, setThemePreference } from '../config/settings';
 
 const renderNav = (props = {}) =>
@@ -26,7 +26,9 @@ describe('Navigation', () => {
         renderNav({ route: 'features', onNavigate });
         const primary = screen.getByRole('navigation', { name: 'Primary' });
         expect(primary.querySelector('[aria-current="page"]')).toHaveTextContent('Features');
-        fireEvent.click(screen.getAllByRole('link', { name: 'Run agent' })[0]);
+        const runLink = screen.getAllByRole('link', { name: 'Run agent' })[0];
+        expect(runLink).toHaveAttribute('href', '/run');
+        fireEvent.click(runLink);
         expect(onNavigate).toHaveBeenCalledWith('run');
     });
 
@@ -79,10 +81,12 @@ describe('theme preference', () => {
     });
 });
 
-describe('routeFromHash', () => {
-    it('maps known hashes and falls back to overview', () => {
-        expect(routeFromHash('#/run')).toBe('run');
-        expect(routeFromHash('#/unknown')).toBe('overview');
-        expect(routeFromHash('')).toBe('overview');
+describe('routeFromLocation', () => {
+    it('maps paths, trailing slashes, and legacy hash links', () => {
+        expect(routeFromLocation({ pathname: '/run' })).toBe('run');
+        expect(routeFromLocation({ pathname: '/features/' })).toBe('features');
+        expect(routeFromLocation({ pathname: '/', hash: '#/features' })).toBe('features');
+        expect(routeFromLocation({ pathname: '/unknown' })).toBe('overview');
+        expect(pathFor('overview')).toBe('/');
     });
 });
