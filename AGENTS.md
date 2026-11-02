@@ -71,8 +71,6 @@ Every route must use `authorization_type = "JWT"`. Values are sourced from `loca
 
 ## Testing Commands
 
-When updating [README.md](README.md) **Project Status → Verification log**, record only commands you actually ran, with the date and the tool-reported pass/fail counts. Do not copy expected results from this section.
-
 Lambda Jest configs use `setupFilesAfterEnv: ['../shared/jest.setup.cjs']` (shared uses `<rootDir>/jest.setup.cjs`) to mock ESM-only `@octokit/rest` before loading `@sprint/shared`.
 
 ```bash
@@ -95,7 +93,7 @@ cd static_site && npm test
 xcodebuild test \
   -project "mobile/Arc Agent/Arc Agent.xcodeproj" \
   -scheme "Arc Agent" \
-  -destination "platform=iOS Simulator,name=iPhone 17 Pro"
+  -destination "platform=iOS Simulator,name=iPhone 17 Pro,OS=27.2"
 
 # Terraform
 cd terraform && terraform fmt -check -recursive && terraform validate

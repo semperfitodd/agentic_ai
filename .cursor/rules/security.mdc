@@ -40,4 +40,4 @@ The CORS `allow_origins` is restricted to `https://<env>.<domain>`. Wildcard ori
 
 ## S3
 
-Results bucket: SSE-S3 encryption, versioning enabled, 90-day lifecycle on non-current versions. Public access blocked. CloudFront frontend bucket is served via OAC only — no public bucket policy.
+Results bucket: SSE-S3 encryption, versioning enabled, objects expire after 3 days. Public access blocked. CloudFront frontend bucket is served via OAC only — no public bucket policy.

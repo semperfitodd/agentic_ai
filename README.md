@@ -1,6 +1,6 @@
 # Sprint Intelligence
 
-An agentic AI reference system that analyzes GitHub sprint activity and generates executive-quality reports: deterministic orchestration in Step Functions, with Claude on Amazon Bedrock analyzing each PR and writing the sprint summary.
+An agentic AI system that analyzes GitHub sprint activity and generates executive-quality reports: deterministic orchestration in Step Functions, with Claude on Amazon Bedrock analyzing each PR and writing the sprint summary.
 
 ![architecture.png](architecture/exports/architecture.png)
 
@@ -13,60 +13,21 @@ An agentic AI reference system that analyzes GitHub sprint activity and generate
 | Cognito user pool (managed login, PKCE) | Open sign-up through Google and Sign in with Apple; no password accounts |
 | API Gateway HTTP API + JWT authorizer | Every route requires a Cognito access token (`authorization_type = "JWT"`, enforced by a `terraform check`) |
 | `lambda_workflow` | Validates the request, KMS-encrypts the GitHub token, starts Step Functions |
-| `lambda_delete_account` | `DELETE /account`: deletes the caller's Cognito user (App Store guideline 5.1.1(v)); exposed in web Settings and iOS Settings |
+| `lambda_delete_account` | `DELETE /account`: deletes the caller's Cognito user (App Store guideline 5.1.1(v)); exposed in web and iOS Settings |
 | Step Functions workflow | Parse repos → fetch PRs → fetch PR details → analyze PRs → aggregate → store; `NoPRsFound` / `NoValidAnalyses` terminal paths |
 | `analyze_pr`, `aggregate_sprint` | Claude on Bedrock (`us.anthropic.claude-haiku-5-5` by default, `var.bedrock_model_id`) |
 | `fetch_repo_data`, `fetch_pr_details` | Only Lambdas allowed to decrypt the GitHub token |
 | KMS key (`alias/<env>_github_token`) | Per-execution encryption context; only ciphertext appears in execution history and logs |
-| S3 results bucket | Reports and intermediate JSON; SSE-S3, versioned |
+| S3 results bucket | Reports and intermediate JSON; SSE-S3, versioned, objects expire after 3 days |
 | React app (`static_site/`) | Vite + Vitest, `react-oidc-context`; served by CloudFront + S3 (OAC) |
-| iOS app (`mobile/Arc Agent/`) | SwiftUI; `WebAuthenticationSession` PKCE sign-in, tokens and GitHub PAT in the Keychain |
+| iOS app (`mobile/Arc Agent/`) | SwiftUI, iOS 27.2; `WebAuthenticationSession` PKCE sign-in, tokens and GitHub PAT in the Keychain |
 
-### Security model
+### Security
 
-- **No shared client secrets.** Clients hold only a public Cognito app client ID; each user signs in with Google or Apple and calls the API with a short-lived (1h) access token.
-- **Self-service deletion.** Signed-in users can delete their account from web or iOS Settings; the Lambda deletes only the user named in the caller's own token.
-- **GitHub token never in plaintext at rest.** The web app keeps it in `sessionStorage` (per tab), the iOS app in the Keychain. `lambda_workflow` encrypts it with KMS (context: `purpose`, `executionName`) before `StartExecution`; ciphertext from one execution cannot be decrypted under another.
+- **No shared client secrets.** Clients hold only the public Cognito app client ID; each user signs in with Google or Apple and calls the API with a 1-hour access token.
+- **GitHub token never stored in plaintext server-side.** The web app keeps it in `sessionStorage` (per tab), the iOS app in the Keychain. `lambda_workflow` encrypts it with KMS (context: `purpose`, `executionName`) before `StartExecution`; ciphertext from one execution cannot be decrypted under another.
+- **Self-service deletion.** Users delete their own account from Settings; the Lambda deletes only the user named in the caller's token.
 - CORS restricted to `https://<env>.<domain>`; the shared logger redacts `githubToken`, `authorization`, `token`, `secret`, `password`.
-
-## Project Status
-
-**Verification environment (2026-11-02):** macOS; Node v26.13.0; npm 11.20.0; Terraform v1.16.6 (CI: 1.17.1); Xcode 27.2. Record only commands actually run (see [AGENTS.md](AGENTS.md)).
-
-### Verification log
-
-| Date | Area | Command | Result |
-|---|---|---|---|
-| 2026-11-02 | `@sprint/shared` | `cd backend/shared && npm test` | **Pass** — 6 suites, 27 tests |
-| 2026-11-02 | All Lambdas | `npm test -- --passWithNoTests` per package | **Pass** — 11 suites, 37 tests |
-| 2026-11-02 | Backend deps | `npm audit --omit=dev` per package | **Pass** — 0 vulnerabilities in all 12 packages |
-| 2026-11-02 | React frontend | `cd static_site && npm test` (Vitest) | **Pass** — 6 files, 48 tests |
-| 2026-11-02 | React frontend | `npm run build` (Vite) | **Pass** |
-| 2026-11-02 | React frontend | `npm audit` | **Pass** — 0 vulnerabilities (was 57 under Create React App) |
-| 2026-11-02 | iOS | `xcodebuild test -only-testing:"Arc AgentTests"` on iPhone 17 Pro simulator, with `Secrets.swift` copied from the example | **Pass** — 13 tests |
-| 2026-11-02 | Terraform | `terraform fmt -check -recursive` + `terraform validate` | **Pass** |
-| 2026-11-02 | Terraform | `terraform plan` against remote state (`AWS_PROFILE=bscsandbox`) | **Pass** — 22 add, 15 change, 12 destroy (Cognito, KMS, JWT authorizer, `delete_account` added; API key authorizer and secret removed; Bedrock model updated; Google/Apple providers not yet configured) |
-| 2026-11-02 | Architecture export | `cd architecture/scripts && npm run export` | **Pass** |
-| 2026-11-02 | GitHub Actions (PR #10) | Backend, Frontend, Terraform Plan on PR | **Pass** — all jobs; CI plan 22 add, 15 change, 12 destroy |
-| 2026-11-02 | GitHub Actions (main) | Terraform Apply | **Fail, then pass** — first apply hit IAM propagation (`cognito-idp:CreateUserPool`, `kms:TagResource` denied right after the role policy update); full rerun: 18 added, 9 changed, 10 destroyed |
-| 2026-11-02 | GitHub Actions (main) | Backend deploy | **Pass** after re-running `Deploy delete_account` (function did not exist until apply finished) |
-| 2026-11-02 | GitHub Actions (main) | Frontend deploy (`workflow_dispatch` after setting Cognito variables) | **Pass** — S3 sync + CloudFront invalidation |
-| 2026-11-02 | Live API | `curl` each route with no token, `x-api-key`, and a forged Bearer token | **Pass** — 401 in every case |
-| 2026-11-02 | Live Cognito | `GET /oauth2/authorize` with PKCE; with an unregistered `redirect_uri` | **Pass** — 302 to managed login; `redirect_mismatch` for the unregistered URI |
-| 2026-11-02 | Live site | `curl https://<env>.<domain>/` | **Fail** — CloudFront 403: origin had no OAC attached since 2026-10-26 (module v6 key rename); fixed in PR #13 |
-
-### Not yet verified
-
-- Google and Apple sign-in (providers are created once their credentials are set; see Setup → Identity providers)
-- End-to-end sprint report with a signed-in user against live GitHub and Bedrock
-- Account deletion against the live user pool
-- Load, penetration, or accessibility testing
-
-### Known limitations
-
-- Any signed-in user can list and read every report; there is no per-user report ownership yet, so account deletion removes the sign-in but not reports.
-- Apple's Sign in with Apple token revocation on deletion is handled by Cognito's brokered session only; the app does not call Apple's revoke endpoint.
-- The Step Functions alarm has no SNS/PagerDuty action or dashboard yet.
 
 ## Prerequisites
 
@@ -75,7 +36,9 @@ An agentic AI reference system that analyzes GitHub sprint activity and generate
 | AWS CLI | ≥ 2 |
 | Node.js | 24.x |
 | Terraform | ≥ 1.10.5 |
-| Xcode | ≥ 16 (iOS 18 target) |
+| Xcode | ≥ 27.2, with the iOS 27.2 simulator runtime |
+| Google Cloud project | For Google sign-in |
+| Apple Developer Program membership | For Sign in with Apple and the iOS app |
 
 ## Setup
 
@@ -95,27 +58,72 @@ terraform apply plan.out
 | `cognito_authority` | `COGNITO_AUTHORITY` repo variable |
 | `cognito_client_id` | `COGNITO_CLIENT_ID` repo variable, `Secrets.cognitoClientId` |
 | `cognito_domain` | `COGNITO_DOMAIN` repo variable, `Secrets.cognitoDomain` |
-| `cognito_user_pool_id` | Inviting users |
+| `cognito_idp_response_url` | Redirect URI for Google and Apple (step 2) |
 | `github_actions_role_arn` | `AWS_ROLE_ARN` repo variable |
 | `cloudfront_distribution_id` | `CLOUDFRONT_DISTRIBUTION_ID` repo variable |
 | `site_bucket_name` | `SITE_BUCKET` repo variable |
-| `frontend_url`, `results_bucket`, `github_token_kms_key_arn` | Reference |
 
-### 2. Identity providers
+Until step 2 is done, the Cognito app client offers no social providers and nobody can sign up.
 
-Register `terraform output -raw cognito_idp_response_url` as the redirect URI on a Google OAuth web client and on an Apple Services ID (Sign in with Apple, with a `.p8` key). Then:
+### 2. Google and Apple sign-in
+
+Both providers redirect back to Cognito, not to the app. You need two values from Terraform:
+
+```bash
+terraform -chdir=terraform output -raw cognito_domain
+```
+
+```bash
+terraform -chdir=terraform output -raw cognito_idp_response_url
+```
+
+#### Google
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), select or create a project.
+2. **Google Auth Platform → Branding**: set the app name, support email, and the authorized domain (`<domain>`, e.g. `brewsentry.com`).
+3. **Google Auth Platform → Audience**: choose **External**, then **Publish app** so any Google account can sign in.
+4. **Google Auth Platform → Data access**: add the `openid`, `email`, and `profile` scopes.
+5. **Google Auth Platform → Clients → Create client**:
+   - Application type: **Web application**
+   - Authorized JavaScript origins: the `cognito_domain` value (`https://auth.<env>.<domain>`)
+   - Authorized redirect URIs: the `cognito_idp_response_url` value (`https://auth.<env>.<domain>/oauth2/idpresponse`)
+6. Copy the **Client ID** and **Client secret**.
+
+#### Apple
+
+In [Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/identifiers/list):
+
+1. **Identifiers → App IDs**: open (or register) the iOS app's App ID (`com.bernsonfamily.com.Arc-Agent`) and enable **Sign in with Apple**.
+2. **Identifiers → Services IDs → +**: register a Services ID, e.g. `com.bernsonfamily.arcagent.signin`. This identifier is `APPLE_SERVICES_ID`.
+3. Open the Services ID, enable **Sign in with Apple**, click **Configure**:
+   - Primary App ID: the App ID from step 1
+   - Domains and Subdomains: `auth.<env>.<domain>` (no scheme)
+   - Return URLs: the `cognito_idp_response_url` value
+4. **Keys → +**: name the key, enable **Sign in with Apple**, configure it with the same primary App ID, register, and **download the `.p8` file** (Apple only lets you download it once). Note the **Key ID**.
+5. Your **Team ID** is shown under **Membership details** (top right of the developer portal).
+
+#### Store the credentials and apply
 
 ```bash
 gh variable set GOOGLE_CLIENT_ID  --body "<google client id>"
 gh variable set APPLE_SERVICES_ID --body "<apple services id>"
 gh variable set APPLE_TEAM_ID     --body "<apple team id>"
 gh variable set APPLE_KEY_ID      --body "<apple key id>"
+```
+
+```bash
 gh secret set GOOGLE_CLIENT_SECRET
+```
+
+```bash
 gh secret set APPLE_PRIVATE_KEY < AuthKey_XXXXXXXXXX.p8
+```
+
+```bash
 gh workflow run terraform.yml
 ```
 
-Until a provider is configured the app client falls back to admin-created Cognito users only.
+Terraform creates the `Google` and `SignInWithApple` identity providers and switches the app client to them; the managed login page then shows both buttons.
 
 ### 3. Local config
 
@@ -151,7 +159,7 @@ cd static_site && npm test
 ```
 
 ```bash
-xcodebuild test -project "mobile/Arc Agent/Arc Agent.xcodeproj" -scheme "Arc Agent" -destination "platform=iOS Simulator,name=iPhone 17 Pro"
+xcodebuild test -project "mobile/Arc Agent/Arc Agent.xcodeproj" -scheme "Arc Agent" -destination "platform=iOS Simulator,name=iPhone 17 Pro,OS=27.2"
 ```
 
 ```bash
@@ -184,11 +192,11 @@ gh variable set COGNITO_CLIENT_ID          --body "$(terraform output -raw cogni
 gh variable set COGNITO_DOMAIN             --body "$(terraform output -raw cognito_domain)"
 ```
 
-Secrets: `GOOGLE_CLIENT_SECRET`, `APPLE_PRIVATE_KEY` (see Setup → Identity providers). AWS access uses GitHub OIDC.
+Secrets: `GOOGLE_CLIENT_SECRET`, `APPLE_PRIVATE_KEY` (step 2). AWS access uses GitHub OIDC.
 
 ## Monitoring
 
-- CloudWatch alarm on Step Functions `ExecutionsFailed` ([`terraform/cloudwatch_alarms.tf`](terraform/cloudwatch_alarms.tf))
+- CloudWatch alarm on Step Functions `ExecutionsFailed` ([`terraform/cloudwatch_alarms.tf`](terraform/cloudwatch_alarms.tf)); no SNS action is attached yet
 - Lambda logs retained 30 days; Step Functions and API Gateway access logs 7 days
 
 For repository structure, Lambda inventory, the authorization audit, and agent conventions, see [AGENTS.md](AGENTS.md).
