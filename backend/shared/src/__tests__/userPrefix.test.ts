@@ -1,7 +1,16 @@
 import { describe, it, expect } from 'vitest';
 
 import { AppError } from '../errors';
-import { assertOwnedKey, userPrefix, validateOwnerId } from '../userPrefix';
+import {
+  assertOwnedKey,
+  callerUsernameFromEvent,
+  cognitoUsernameFromClaims,
+  jwtClaimsFromEvent,
+  ownerIdFromClaims,
+  requireCognitoUsername,
+  userPrefix,
+  validateOwnerId,
+} from '../userPrefix';
 
 describe('validateOwnerId', () => {
   it('accepts email usernames', () => {
@@ -27,6 +36,67 @@ describe('validateOwnerId', () => {
 describe('userPrefix', () => {
   it('builds users/email/ prefix', () => {
     expect(userPrefix('todd@bscanalytics.com')).toBe('users/todd@bscanalytics.com/');
+  });
+});
+
+describe('jwtClaimsFromEvent', () => {
+  it('reads payload 1.0 authorizer.claims', () => {
+    const event = {
+      requestContext: {
+        authorizer: {
+          claims: { email: 'todd@example.com', username: 'Google_123' },
+        },
+      },
+    };
+    expect(jwtClaimsFromEvent(event)).toEqual({ email: 'todd@example.com', username: 'Google_123' });
+  });
+
+  it('reads payload 2.0 authorizer.jwt.claims', () => {
+    const event = {
+      requestContext: {
+        authorizer: {
+          jwt: { claims: { username: 'todd@example.com' } },
+        },
+      },
+    };
+    expect(jwtClaimsFromEvent(event)?.username).toBe('todd@example.com');
+  });
+});
+
+describe('ownerIdFromClaims', () => {
+  it('prefers email over federated username', () => {
+    expect(ownerIdFromClaims({ email: 'todd@b.com', username: 'Google_abc' })).toBe('todd@b.com');
+  });
+
+  it('falls back to username when email is absent', () => {
+    expect(ownerIdFromClaims({ username: 'todd@example.com' })).toBe('todd@example.com');
+  });
+});
+
+describe('callerUsernameFromEvent', () => {
+  it('resolves owner from payload 1.0 email claim only', () => {
+    const event = {
+      requestContext: {
+        authorizer: {
+          claims: { email: 'todd@bernsonfamily.com', username: 'Google_xyz' },
+        },
+      },
+    };
+    expect(callerUsernameFromEvent(event)).toBe('todd@bernsonfamily.com');
+  });
+});
+
+describe('requireCognitoUsername', () => {
+  it('uses Cognito username, not email, for AdminDeleteUser', () => {
+    const event = {
+      requestContext: {
+        authorizer: {
+          claims: { email: 'todd@b.com', username: 'Google_12345' },
+        },
+      },
+    };
+    expect(requireCognitoUsername(event)).toBe('Google_12345');
+    expect(cognitoUsernameFromClaims(jwtClaimsFromEvent(event))).toBe('Google_12345');
   });
 });
 
