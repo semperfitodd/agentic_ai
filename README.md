@@ -47,6 +47,13 @@ An agentic AI reference system that analyzes GitHub sprint activity and generate
 | 2026-11-02 | Terraform | `terraform fmt -check -recursive` + `terraform validate` | **Pass** |
 | 2026-11-02 | Terraform | `terraform plan` against remote state (`AWS_PROFILE=bscsandbox`) | **Pass** — 22 add, 15 change, 12 destroy (Cognito, KMS, JWT authorizer, `delete_account` added; API key authorizer and secret removed; Bedrock model updated; Google/Apple providers not yet configured) |
 | 2026-11-02 | Architecture export | `cd architecture/scripts && npm run export` | **Pass** |
+| 2026-11-02 | GitHub Actions (PR #10) | Backend, Frontend, Terraform Plan on PR | **Pass** — all jobs; CI plan 22 add, 15 change, 12 destroy |
+| 2026-11-02 | GitHub Actions (main) | Terraform Apply | **Fail, then pass** — first apply hit IAM propagation (`cognito-idp:CreateUserPool`, `kms:TagResource` denied right after the role policy update); full rerun: 18 added, 9 changed, 10 destroyed |
+| 2026-11-02 | GitHub Actions (main) | Backend deploy | **Pass** after re-running `Deploy delete_account` (function did not exist until apply finished) |
+| 2026-11-02 | GitHub Actions (main) | Frontend deploy (`workflow_dispatch` after setting Cognito variables) | **Pass** — S3 sync + CloudFront invalidation |
+| 2026-11-02 | Live API | `curl` each route with no token, `x-api-key`, and a forged Bearer token | **Pass** — 401 in every case |
+| 2026-11-02 | Live Cognito | `GET /oauth2/authorize` with PKCE; with an unregistered `redirect_uri` | **Pass** — 302 to managed login; `redirect_mismatch` for the unregistered URI |
+| 2026-11-02 | Live site | `curl https://<env>.<domain>/` | **Fail** — CloudFront 403: origin had no OAC attached since 2026-10-26 (module v6 key rename); fixed in PR #13 |
 
 ### Not yet verified
 
