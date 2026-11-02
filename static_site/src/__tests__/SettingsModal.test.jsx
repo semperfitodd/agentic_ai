@@ -53,6 +53,29 @@ describe('SettingsModal', () => {
         expect(screen.getByRole('button', { name: 'Save settings' })).toBeDisabled();
     });
 
+    it('does not store the default sprint dates as custom dates on save', () => {
+        vi.stubEnv('VITE_DEFAULT_SINCE', '2024-01-01T00:00:00Z');
+        vi.stubEnv('VITE_DEFAULT_UNTIL', '2024-01-14T00:00:00Z');
+        render(<SettingsModal show={true} onClose={vi.fn()} />);
+        fireEvent.change(screen.getByLabelText('Repositories'), { target: { value: 'acme/api' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+        expect(localStorage.getItem('arc_repos')).toBe('acme/api');
+        expect(localStorage.getItem('arc_since')).toBeNull();
+        expect(localStorage.getItem('arc_until')).toBeNull();
+        vi.unstubAllEnvs();
+    });
+
+    it('stores sprint dates that differ from the defaults', () => {
+        vi.stubEnv('VITE_DEFAULT_SINCE', '2024-01-01T00:00:00Z');
+        render(<SettingsModal show={true} onClose={vi.fn()} />);
+        fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2026-10-01' } });
+        fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2026-10-14' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+        expect(localStorage.getItem('arc_since')).toBe('2026-10-01T00:00:00Z');
+        expect(localStorage.getItem('arc_until')).toBe('2026-10-14T00:00:00Z');
+        vi.unstubAllEnvs();
+    });
+
     it('clears storage when Reset to defaults is clicked', () => {
         sessionStorage.setItem('arc_github_token', 'old_token');
         localStorage.setItem('arc_repos', 'owner/repo');

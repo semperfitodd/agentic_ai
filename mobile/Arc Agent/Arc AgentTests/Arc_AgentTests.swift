@@ -317,3 +317,45 @@ final class AppearancePreferenceTests: XCTestCase {
         XCTAssertEqual(AppearancePreference.dark.colorScheme, .dark)
     }
 }
+
+final class SprintDateSettingsTests: XCTestCase {
+
+    private var defaults: UserDefaults!
+    private let suiteName = "SprintDateSettingsTests"
+
+    override func setUp() {
+        super.setUp()
+        defaults = UserDefaults(suiteName: suiteName)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: suiteName)
+        super.tearDown()
+    }
+
+    func testEffectiveDatesPreferStoredCustomDates() {
+        defaults.set("2026-10-01T00:00:00Z", forKey: SettingsView.sinceKey)
+        defaults.set("2026-10-14T00:00:00Z", forKey: SettingsView.untilKey)
+        XCTAssertEqual(SettingsView.effectiveSince(in: defaults), "2026-10-01T00:00:00Z")
+        XCTAssertEqual(SettingsView.effectiveUntil(in: defaults), "2026-10-14T00:00:00Z")
+    }
+
+    func testEffectiveDatesFallBackToDefaultsWhenMissingOrEmpty() {
+        XCTAssertEqual(SettingsView.effectiveSince(in: defaults), Secrets.defaultSince)
+        defaults.set("", forKey: SettingsView.untilKey)
+        XCTAssertEqual(SettingsView.effectiveUntil(in: defaults), Secrets.defaultUntil)
+    }
+
+    func testPickingTheDefaultDateDoesNotStoreACustomDate() throws {
+        let defaultSince = try XCTUnwrap(SettingsView.sprintDate(nil, default: Secrets.defaultSince))
+        XCTAssertEqual(SettingsView.storedSprintDate(defaultSince, default: Secrets.defaultSince), "")
+    }
+
+    func testPickedCustomDateRoundTrips() throws {
+        let picked = try XCTUnwrap(SettingsView.sprintDate("2026-10-01T00:00:00Z", default: Secrets.defaultSince))
+        let stored = SettingsView.storedSprintDate(picked, default: Secrets.defaultSince)
+        XCTAssertEqual(stored, "2026-10-01T00:00:00Z")
+        XCTAssertEqual(SettingsView.sprintDate(stored, default: Secrets.defaultSince), picked)
+    }
+}

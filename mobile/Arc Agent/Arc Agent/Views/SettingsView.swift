@@ -8,8 +8,8 @@ struct SettingsView: View {
     @AppStorage("custom_repos") private var customReposString = ""
     @AppStorage("custom_sprint_name") private var customSprintName = ""
     @State private var customGithubToken = GithubTokenStore.token()
-    @State private var sinceDate = Date()
-    @State private var untilDate = Date()
+    @AppStorage(SettingsView.sinceKey) private var customSince = ""
+    @AppStorage(SettingsView.untilKey) private var customUntil = ""
     @State private var authError: String?
     @State private var showDeleteConfirmation = false
     @State private var isDeletingAccount = false
@@ -72,10 +72,8 @@ struct SettingsView: View {
 
             Section("Sprint") {
                 TextField("Sprint name", text: $customSprintName, prompt: Text(Secrets.sprintName))
-                DatePicker("Start date", selection: $sinceDate, displayedComponents: .date)
-                    .onChange(of: sinceDate) { saveDates() }
-                DatePicker("End date", selection: $untilDate, in: sinceDate..., displayedComponents: .date)
-                    .onChange(of: untilDate) { saveDates() }
+                DatePicker("Start date", selection: sinceDate, displayedComponents: .date)
+                DatePicker("End date", selection: untilDate, in: sinceDate.wrappedValue..., displayedComponents: .date)
             }
             // Sprint dates are stored as UTC midnight; show them in UTC so the picked day round-trips.
             .environment(\.timeZone, .gmt)
@@ -104,7 +102,6 @@ struct SettingsView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Palette.bgCanvas.ignoresSafeArea())
-        .onAppear(perform: loadDates)
         .onChange(of: auth.isSignedIn) { _, signedIn in
             if signedIn {
                 customGithubToken = GithubTokenStore.token()
@@ -190,31 +187,25 @@ struct SettingsView: View {
         GithubTokenStore.clear()
         customReposString = ""
         customSprintName = ""
-        sinceDate = parseDate(Secrets.defaultSince) ?? Date().addingTimeInterval(-14 * 86_400)
-        untilDate = parseDate(Secrets.defaultUntil) ?? Date()
-        saveDates()
+        customSince = ""
+        customUntil = ""
     }
 
     // MARK: - Dates
 
-    private static let iso8601Formatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
-    private func parseDate(_ string: String) -> Date? {
-        Self.iso8601Formatter.date(from: string)
+    // Bound straight to storage so only a user's pick is written; reading never persists the defaults.
+    private var sinceDate: Binding<Date> {
+        Binding(
+            get: { Self.sprintDate(customSince, default: Secrets.defaultSince) ?? Date().addingTimeInterval(-14 * 86_400) },
+            set: { customSince = Self.storedSprintDate($0, default: Secrets.defaultSince) }
+        )
     }
 
-    private func saveDates() {
-        UserDefaults.standard.set(Self.iso8601Formatter.string(from: sinceDate), forKey: "custom_since_date")
-        UserDefaults.standard.set(Self.iso8601Formatter.string(from: untilDate), forKey: "custom_until_date")
-    }
-
-    private func loadDates() {
-        sinceDate = parseDate(Self.effectiveSince()) ?? Date().addingTimeInterval(-14 * 86_400)
-        untilDate = parseDate(Self.effectiveUntil()) ?? Date()
+    private var untilDate: Binding<Date> {
+        Binding(
+            get: { Self.sprintDate(customUntil, default: Secrets.defaultUntil) ?? Date() },
+            set: { customUntil = Self.storedSprintDate($0, default: Secrets.defaultUntil) }
+        )
     }
 }
 
@@ -236,12 +227,29 @@ extension SettingsView {
         return custom.isEmpty ? Secrets.sprintName : custom
     }
 
-    nonisolated static func effectiveSince() -> String {
-        UserDefaults.standard.string(forKey: "custom_since_date") ?? Secrets.defaultSince
+    nonisolated static let sinceKey = "custom_since_date"
+    nonisolated static let untilKey = "custom_until_date"
+
+    nonisolated static func effectiveSince(in defaults: UserDefaults = .standard) -> String {
+        effectiveSprintDate(defaults.string(forKey: sinceKey), default: Secrets.defaultSince)
     }
 
-    nonisolated static func effectiveUntil() -> String {
-        UserDefaults.standard.string(forKey: "custom_until_date") ?? Secrets.defaultUntil
+    nonisolated static func effectiveUntil(in defaults: UserDefaults = .standard) -> String {
+        effectiveSprintDate(defaults.string(forKey: untilKey), default: Secrets.defaultUntil)
+    }
+
+    nonisolated static func effectiveSprintDate(_ custom: String?, default fallback: String) -> String {
+        guard let custom, !custom.isEmpty else { return fallback }
+        return custom
+    }
+
+    nonisolated static func sprintDate(_ custom: String?, default fallback: String) -> Date? {
+        try? Date(effectiveSprintDate(custom, default: fallback), strategy: .iso8601)
+    }
+
+    nonisolated static func storedSprintDate(_ date: Date, default fallback: String) -> String {
+        if let defaultDate = try? Date(fallback, strategy: .iso8601), defaultDate == date { return "" }
+        return date.formatted(.iso8601)
     }
 }
 
