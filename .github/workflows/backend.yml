@@ -107,9 +107,9 @@ jobs:
       - name: Upgrade npm
         run: npm install -g npm@${{ env.NPM_VERSION }}
 
-      - name: Install & build shared library
+      - name: Install, build & test shared library
         working-directory: backend/shared
-        run: npm ci && npm run build
+        run: npm ci && npm run build && npm test
 
       - name: Cache shared dist
         uses: actions/cache/save@v6
@@ -152,9 +152,9 @@ jobs:
           key: backend-shared-${{ github.sha }}
           fail-on-cache-miss: true
 
-      - name: Install & test
+      - name: Install, type-check & test
         working-directory: backend/${{ matrix.lambda }}
-        run: npm ci && npm test -- --passWithNoTests
+        run: npm ci && npm run build && npm test -- --passWithNoTests
 
   # ── 4. Deploy changed lambdas on push to main ────────────────────────────
   deploy:

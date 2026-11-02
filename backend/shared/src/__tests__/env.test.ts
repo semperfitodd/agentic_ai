@@ -1,10 +1,12 @@
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
+
 import { requireEnv } from '../env';
 
 describe('requireEnv', () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
-    jest.resetModules();
+    vi.resetModules();
     process.env = { ...OLD_ENV };
   });
 

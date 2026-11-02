@@ -1,3 +1,5 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+
 import { mockClient } from 'aws-sdk-client-mock';
 import { KMSClient, EncryptCommand, DecryptCommand } from '@aws-sdk/client-kms';
 import { encryptGithubToken, decryptGithubToken } from '../kms';

@@ -1,13 +1,15 @@
-jest.mock('@sprint/shared', () => ({
-  ...jest.requireActual('@sprint/shared'),
-  createOctokit: jest.fn(),
-  decryptGithubToken: jest.fn(),
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+
+vi.mock('@sprint/shared', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sprint/shared')>()),
+  createOctokit: vi.fn(),
+  decryptGithubToken: vi.fn(),
 }));
 
 import { decryptGithubToken, createOctokit } from '@sprint/shared';
 
-const createOctokitMock = createOctokit as jest.Mock;
-const decryptGithubTokenMock = decryptGithubToken as jest.Mock;
+const createOctokitMock = createOctokit as Mock;
+const decryptGithubTokenMock = decryptGithubToken as Mock;
 
 beforeEach(() => {
   createOctokitMock.mockReset();
@@ -28,12 +30,12 @@ describe('lambda_fetch_repo_data handler', () => {
   it('returns merged PRs in date range', async () => {
     createOctokitMock.mockReturnValue({
       repos: {
-        getReadme: jest.fn().mockResolvedValue({
+        getReadme: vi.fn().mockResolvedValue({
           data: { content: Buffer.from('# Readme').toString('base64') },
         }),
       },
       pulls: {
-        list: jest.fn().mockResolvedValue({
+        list: vi.fn().mockResolvedValue({
           data: [
             {
               number: 1,
@@ -67,8 +69,8 @@ describe('lambda_fetch_repo_data handler', () => {
 describe('lambda_fetch_repo_data token handling', () => {
   it('decrypts the token with the execution name before creating the client', async () => {
     createOctokitMock.mockReturnValue({
-      repos: { getReadme: jest.fn().mockRejectedValue(new Error('none')) },
-      pulls: { list: jest.fn().mockResolvedValue({ data: [] }) },
+      repos: { getReadme: vi.fn().mockRejectedValue(new Error('none')) },
+      pulls: { list: vi.fn().mockResolvedValue({ data: [] }) },
     });
 
     const { handler } = await import('../index');

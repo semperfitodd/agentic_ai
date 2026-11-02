@@ -1,24 +1,26 @@
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+
 import { mockClient } from 'aws-sdk-client-mock';
 import { SFNClient, DescribeExecutionCommand } from '@aws-sdk/client-sfn';
 
 const sfnMock = mockClient(SFNClient);
 
-jest.mock('@sprint/shared', () => {
-  const actual = jest.requireActual('@sprint/shared');
+vi.mock('@sprint/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sprint/shared')>();
   return {
     ...actual,
-    listObjects: jest.fn(),
-    getText: jest.fn(),
-    getJson: jest.fn(),
+    listObjects: vi.fn(),
+    getText: vi.fn(),
+    getJson: vi.fn(),
   };
 });
 
 import { listObjects } from '@sprint/shared';
-const listObjectsMock = listObjects as jest.Mock;
+const listObjectsMock = listObjects as Mock;
 
 beforeEach(() => {
   sfnMock.reset();
-  jest.clearAllMocks();
+  vi.clearAllMocks();
   process.env.RESULTS_BUCKET = 'test-bucket';
   process.env.API_URL = 'https://api.example.com';
 });
