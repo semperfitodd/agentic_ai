@@ -135,6 +135,17 @@ resource "aws_cognito_identity_provider" "google" {
     email_verified = "email_verified"
     username       = "sub"
   }
+
+  lifecycle {
+    ignore_changes = [
+      provider_details["attributes_url"],
+      provider_details["attributes_url_add_attributes"],
+      provider_details["authorize_url"],
+      provider_details["oidc_issuer"],
+      provider_details["token_request_method"],
+      provider_details["token_url"],
+    ]
+  }
 }
 
 resource "aws_cognito_identity_provider" "apple" {
@@ -155,5 +166,17 @@ resource "aws_cognito_identity_provider" "apple" {
   attribute_mapping = {
     email    = "email"
     username = "sub"
+  }
+
+  # Cognito never returns private_key; rotate the key with -replace on this resource.
+  lifecycle {
+    ignore_changes = [
+      provider_details["attributes_url_add_attributes"],
+      provider_details["authorize_url"],
+      provider_details["oidc_issuer"],
+      provider_details["private_key"],
+      provider_details["token_request_method"],
+      provider_details["token_url"],
+    ]
   }
 }

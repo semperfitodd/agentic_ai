@@ -28,17 +28,17 @@ output "site_bucket_name" {
 }
 
 output "cognito_client_id" {
-  description = "Cognito app client ID — use as REACT_APP_COGNITO_CLIENT_ID repo variable and Secrets.cognitoClientId in the iOS app"
+  description = "Cognito app client ID — use as COGNITO_CLIENT_ID repo variable and Secrets.cognitoClientId in the iOS app"
   value       = aws_cognito_user_pool_client.app.id
 }
 
 output "cognito_authority" {
-  description = "Cognito OIDC issuer — use as REACT_APP_COGNITO_AUTHORITY repo variable"
+  description = "Cognito OIDC issuer — use as COGNITO_AUTHORITY repo variable"
   value       = "https://${aws_cognito_user_pool.main.endpoint}"
 }
 
 output "cognito_domain" {
-  description = "Cognito managed login base URL — use as Secrets.cognitoDomain in the iOS app"
+  description = "Cognito managed login base URL — use as COGNITO_DOMAIN repo variable and Secrets.cognitoDomain in the iOS app"
   value       = "https://${aws_cognito_user_pool_domain.main.domain}"
 }
 

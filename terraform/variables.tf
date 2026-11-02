@@ -55,7 +55,7 @@ variable "ios_auth_callback_url" {
 }
 
 variable "auth_dev_callback_urls" {
-  description = "Additional OAuth redirect URIs for local development (e.g. http://localhost:3000/)"
+  description = "Additional OAuth redirect URIs for local development (e.g. http://localhost:5173/)"
   type        = list(string)
   default     = []
 }
