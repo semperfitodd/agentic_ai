@@ -48,9 +48,10 @@ jobs:
           VITE_COGNITO_AUTHORITY: ${{ vars.COGNITO_AUTHORITY }}
           VITE_COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
           VITE_COGNITO_DOMAIN: ${{ vars.COGNITO_DOMAIN }}
+          REQUIRE_CONFIG: ${{ github.event_name != 'pull_request' }}
         run: |
           for name in VITE_API_URL VITE_COGNITO_AUTHORITY VITE_COGNITO_CLIENT_ID VITE_COGNITO_DOMAIN; do
-            if [ -z "${!name}" ]; then
+            if [ "$REQUIRE_CONFIG" = "true" ] && [ -z "${!name}" ]; then
               echo "::error::Missing GitHub variable for $name (see README)."
               exit 1
             fi
