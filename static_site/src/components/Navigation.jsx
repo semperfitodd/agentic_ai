@@ -57,8 +57,8 @@ const Navigation = ({
         <header className="nav" ref={header}>
             <div className="nav-inner">
                 <a className="nav-brand" href="#/overview" onClick={() => setMenuOpen(false)}>
-                    <img src={bscLogo} alt="BSC Analytics" className="nav-logo nav-logo-light" />
-                    <img src={bscLogoDark} alt="BSC Analytics" className="nav-logo nav-logo-dark" />
+                    <img src={bscLogo} alt="BSC Analytics" className="nav-logo theme-light-only" />
+                    <img src={bscLogoDark} alt="BSC Analytics" className="nav-logo theme-dark-only" />
                     <span className="nav-divider" aria-hidden="true" />
                     <span className="nav-wordmark">
                         <span className="nav-product">Arc Agent</span>
