@@ -15,7 +15,7 @@ An agentic AI reference system that analyzes GitHub sprint activity and generate
 | `lambda_workflow` | Validates the request, KMS-encrypts the GitHub token, starts Step Functions |
 | `lambda_delete_account` | `DELETE /account`: deletes the caller's Cognito user (App Store guideline 5.1.1(v)); exposed in web Settings and iOS Settings |
 | Step Functions workflow | Parse repos → fetch PRs → fetch PR details → analyze PRs → aggregate → store; `NoPRsFound` / `NoValidAnalyses` terminal paths |
-| `analyze_pr`, `aggregate_sprint` | Claude on Bedrock (`us.anthropic.claude-opus-5-5` by default, `var.bedrock_model_id`) |
+| `analyze_pr`, `aggregate_sprint` | Claude on Bedrock (`us.anthropic.claude-haiku-5-5` by default, `var.bedrock_model_id`) |
 | `fetch_repo_data`, `fetch_pr_details` | Only Lambdas allowed to decrypt the GitHub token |
 | KMS key (`alias/<env>_github_token`) | Per-execution encryption context; only ciphertext appears in execution history and logs |
 | S3 results bucket | Reports and intermediate JSON; SSE-S3, versioned |

@@ -9,7 +9,7 @@ const respond = (body: unknown) =>
 
 beforeEach(() => {
   bedrockMock.reset();
-  process.env.BEDROCK_MODEL_ID = 'us.anthropic.claude-opus-5-5';
+  process.env.BEDROCK_MODEL_ID = 'us.anthropic.claude-haiku-5-5';
 });
 
 describe('invokeClaude', () => {
@@ -18,7 +18,7 @@ describe('invokeClaude', () => {
     await invokeClaude({ system: 'You are a reviewer.', user: 'Analyze this PR' });
 
     const input = bedrockMock.commandCalls(InvokeModelCommand)[0].args[0].input;
-    expect(input.modelId).toBe('us.anthropic.claude-opus-5-5');
+    expect(input.modelId).toBe('us.anthropic.claude-haiku-5-5');
     const body = JSON.parse(input.body as string);
     expect(body.system).toBe('You are a reviewer.');
     expect(body.messages).toEqual([{ role: 'user', content: 'Analyze this PR' }]);
