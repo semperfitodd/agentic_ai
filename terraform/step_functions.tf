@@ -41,6 +41,7 @@ module "step_function" {
             "until.$"                = "$.until"
             "encryptedGithubToken.$" = "$.encryptedGithubToken"
             "sprintName.$"           = "$.sprintName"
+            "ownerId.$"              = "$.ownerId"
           }
         }
         ResultSelector = {
@@ -79,6 +80,7 @@ module "step_function" {
           "until.$"                = "$.parsedRepos.body.until"
           "encryptedGithubToken.$" = "$.parsedRepos.body.encryptedGithubToken"
           "sprintName.$"           = "$.parsedRepos.body.sprintName"
+          "ownerId.$"              = "$.ownerId"
         }
         Next = "FetchRepoData"
       }
@@ -168,6 +170,7 @@ module "step_function" {
             "sprintName.$"      = "$.sprintName"
             "repos.$"           = "$.repos"
             "repoDataResults.$" = "$.repoDataResults"
+            "ownerId.$"         = "$.ownerId"
           }
         }
         ResultSelector = {
@@ -218,6 +221,7 @@ module "step_function" {
           "repo.$"                 = "$$.Map.Item.Value.repo"
           "prNumber.$"             = "$$.Map.Item.Value.prNumber"
           "encryptedGithubToken.$" = "$.encryptedGithubToken"
+          "ownerId.$"              = "$.ownerId"
         }
         Iterator = {
           StartAt = "FetchSinglePRDetails"
@@ -233,6 +237,7 @@ module "step_function" {
                   "prNumber.$"             = "$.prNumber"
                   "encryptedGithubToken.$" = "$.encryptedGithubToken"
                   "executionName.$"        = "$$.Execution.Name"
+                  "ownerId.$"              = "$.ownerId"
                 }
               }
               Retry = local.sfn_lambda_retry
@@ -272,6 +277,7 @@ module "step_function" {
           "readmeS3Key.$" = "$.preparedData.body.readmeS3Key"
           "s3Bucket.$"    = "$.preparedData.body.s3Bucket"
           "totalPRs.$"    = "$.preparedData.body.totalPRs"
+          "ownerId.$"     = "$.ownerId"
         }
         OutputPath = "$"
         Next       = "AnalyzePRs"
@@ -287,6 +293,7 @@ module "step_function" {
           "prNumber.$"    = "$$.Map.Item.Value.prNumber"
           "readmeS3Key.$" = "$.readmeS3Key"
           "s3Bucket.$"    = "$.s3Bucket"
+          "ownerId.$"     = "$.ownerId"
         }
         Iterator = {
           StartAt = "AnalyzeSinglePR"
@@ -302,6 +309,7 @@ module "step_function" {
                   "prNumber.$"    = "$.prNumber"
                   "readmeS3Key.$" = "$.readmeS3Key"
                   "s3Bucket.$"    = "$.s3Bucket"
+                  "ownerId.$"     = "$.ownerId"
                 }
               }
               Retry = local.sfn_lambda_retry
@@ -341,6 +349,7 @@ module "step_function" {
             "until.$"      = "$.until"
             "repos.$"      = "$.repos"
             "analyses.$"   = "$.prList"
+            "ownerId.$"    = "$.ownerId"
           }
         }
         ResultSelector = {

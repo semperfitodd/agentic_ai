@@ -32,4 +32,7 @@ locals {
   }
 
   lambda_stub_zip = "${path.module}/lambda_stub.zip"
+
+  results_bucket_arn        = module.s3_results_bucket.s3_bucket_arn
+  results_users_object_arn  = "${module.s3_results_bucket.s3_bucket_arn}/users/*"
 }

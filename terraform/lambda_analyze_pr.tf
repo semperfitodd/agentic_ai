@@ -28,12 +28,12 @@ module "lambda_analyze_pr" {
     s3_read = {
       effect    = "Allow"
       actions   = ["s3:GetObject", "s3:ListBucket"]
-      resources = ["${module.s3_results_bucket.s3_bucket_arn}/pr-details/*", "${module.s3_results_bucket.s3_bucket_arn}/readmes/*", module.s3_results_bucket.s3_bucket_arn]
+      resources = [local.results_users_object_arn, local.results_bucket_arn]
     }
     s3_write = {
       effect    = "Allow"
       actions   = ["s3:PutObject"]
-      resources = ["${module.s3_results_bucket.s3_bucket_arn}/pr-analyses/*"]
+      resources = [local.results_users_object_arn]
     }
   }
 

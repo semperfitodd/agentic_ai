@@ -22,10 +22,13 @@ beforeEach(() => {
   process.env.RESULTS_BUCKET = 'test-bucket';
 });
 
+const ownerId = 'todd@bernsonfamily.com';
+
 const baseEvent = {
   sprintName: 'Test Sprint',
   since: '2024-01-01T00:00:00Z',
   until: '2024-01-14T00:00:00Z',
+  ownerId,
   repos: [{ owner: 'acme', repo: 'app' }],
   analyses: [{ owner: 'acme', repo: 'app', prNumber: 1 }],
 };
@@ -53,7 +56,7 @@ describe('lambda_aggregate_sprint handler', () => {
   });
 
   it('returns warning body when loaded analyses lack metadata', async () => {
-    listLatestKeyMock.mockResolvedValue('pr-analyses/acme/app/1/foo.json');
+    listLatestKeyMock.mockResolvedValue(`users/${ownerId}/pr-analyses/acme/app/1/foo.json`);
     getJsonMock.mockResolvedValue({ owner: 'acme', repo: 'app', prNumber: 1, prTitle: 'x', analysis: 'y' });
 
     const { handler } = await import('../index');
@@ -67,7 +70,7 @@ describe('lambda_aggregate_sprint handler', () => {
   });
 
   it('returns markdownS3Key and s3Bucket on success', async () => {
-    listLatestKeyMock.mockResolvedValue('pr-analyses/acme/app/1/foo.json');
+    listLatestKeyMock.mockResolvedValue(`users/${ownerId}/pr-analyses/acme/app/1/foo.json`);
     getJsonMock.mockResolvedValue({
       owner: 'acme',
       repo: 'app',
@@ -94,7 +97,7 @@ describe('lambda_aggregate_sprint handler', () => {
     expect(result.statusCode).toBe(200);
     const body = result.body as any;
     expect(body.totalPRs).toBe(1);
-    expect(body.markdownS3Key).toMatch(/^reports\/test-sprint\/.*\.md$/);
+    expect(body.markdownS3Key).toMatch(new RegExp(`^users/${ownerId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/reports/test-sprint/.*\\.md$`));
     expect(body.s3Bucket).toBe('test-bucket');
     expect(putMarkdownMock).toHaveBeenCalledTimes(1);
   });

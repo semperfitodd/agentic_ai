@@ -1,4 +1,4 @@
-import { requireEnv, logger, stepResponse, putJson } from '@sprint/shared';
+import { requireEnv, logger, stepResponse, putJson, validateOwnerId, userPrefix } from '@sprint/shared';
 
 interface RepoDataResult {
   statusCode: number;
@@ -22,12 +22,15 @@ interface PrepareInput {
   sprintName?: string;
   repos: Array<{ owner: string; repo: string }>;
   repoDataResults: RepoDataResult[];
+  ownerId: string;
 }
 
 export const handler = async (event: PrepareInput) => {
   logger.info('Preparing data structure for analysis');
 
   const bucketName = requireEnv('RESULTS_BUCKET');
+  const ownerId = validateOwnerId(event.ownerId);
+  const prefix = userPrefix(ownerId);
   const { since, until, sprintName, repos, repoDataResults } = event;
 
   const repoReadmeMap: Record<string, string> = {};
@@ -38,7 +41,7 @@ export const handler = async (event: PrepareInput) => {
   }
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const readmeS3Key = `readmes/${timestamp}.json`;
+  const readmeS3Key = `${prefix}readmes/${timestamp}.json`;
 
   await putJson(bucketName, readmeS3Key, repoReadmeMap);
   logger.info(`Stored README map to S3`, { key: readmeS3Key });

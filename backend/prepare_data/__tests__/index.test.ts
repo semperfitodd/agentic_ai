@@ -20,6 +20,7 @@ describe('lambda_prepare_data handler', () => {
     since: '2024-01-01T00:00:00Z',
     until: '2024-01-14T00:00:00Z',
     sprintName: 'Test Sprint',
+    ownerId: 'todd@bernsonfamily.com',
     repos: [{ owner: 'acme', repo: 'app' }],
     repoDataResults: [
       {
@@ -48,7 +49,7 @@ describe('lambda_prepare_data handler', () => {
     expect(result.statusCode).toBe(200);
     const body = result.body as Record<string, unknown>;
     expect(body.totalPRs).toBe(1);
-    expect(body.readmeS3Key).toMatch(/^readmes\//);
+    expect(body.readmeS3Key).toMatch(/^users\/todd@bernsonfamily.com\/readmes\//);
     expect(body.s3Bucket).toBe('test-bucket');
     expect(body.prDetailsInputs).toEqual([{ owner: 'acme', repo: 'app', prNumber: 42 }]);
     expect(putJsonMock).toHaveBeenCalledTimes(1);

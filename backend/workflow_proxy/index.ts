@@ -1,5 +1,14 @@
 import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
-import { requireEnv, logger, apiResponse, toPublicError, encryptGithubToken } from '@sprint/shared';
+import {
+  requireEnv,
+  logger,
+  apiResponse,
+  toPublicError,
+  encryptGithubToken,
+  requireCallerUsername,
+  AppError,
+  JwtAuthorizerContext,
+} from '@sprint/shared';
 
 const sfnClient = new SFNClient({});
 
@@ -14,13 +23,14 @@ function parseBody(body: string | Record<string, unknown> | undefined): Record<s
   }
 }
 
-export const handler = async (event: { body?: string | Record<string, unknown> }) => {
+export const handler = async (event: JwtAuthorizerContext & { body?: string | Record<string, unknown> }) => {
   try {
     const stateMachineArn = requireEnv('STATE_MACHINE_ARN');
+    const ownerId = requireCallerUsername(event);
     const body = parseBody(event.body);
     if (!body) return apiResponse(400, { error: 'Request body must be a JSON object' });
 
-    const { githubToken, ...rest } = body;
+    const { githubToken, ownerId: _ignoredOwnerId, ...rest } = body;
     const executionName = `execution-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const encryptedGithubToken = await encryptGithubToken(
       typeof githubToken === 'string' ? githubToken : undefined,
@@ -30,12 +40,12 @@ export const handler = async (event: { body?: string | Record<string, unknown> }
     const response = await sfnClient.send(
       new StartExecutionCommand({
         stateMachineArn,
-        input: JSON.stringify({ ...rest, encryptedGithubToken }),
+        input: JSON.stringify({ ...rest, ownerId, encryptedGithubToken }),
         name: executionName,
       })
     );
 
-    logger.info('Execution started', { executionArn: response.executionArn });
+    logger.info('Execution started', { executionArn: response.executionArn, ownerId });
 
     return apiResponse(202, {
       message: 'Sprint analysis started',
@@ -45,6 +55,9 @@ export const handler = async (event: { body?: string | Record<string, unknown> }
       status: 'RUNNING',
     });
   } catch (error) {
+    if (error instanceof AppError) {
+      return apiResponse(error.statusCode, toPublicError(error));
+    }
     logger.error('Failed to start execution', { message: error instanceof Error ? error.message : 'unknown' });
     return apiResponse(500, toPublicError(error));
   }

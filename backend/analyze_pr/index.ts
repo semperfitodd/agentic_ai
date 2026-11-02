@@ -1,4 +1,4 @@
-import { requireEnv, logger, stepResponse, getJson, putJson, listLatestKey, invokeModel } from '@sprint/shared';
+import { requireEnv, logger, stepResponse, getJson, putJson, listLatestKey, invokeModel, validateOwnerId, userPrefix } from '@sprint/shared';
 
 interface PRDetails {
   owner: string;
@@ -38,6 +38,7 @@ interface PRAnalysisInput {
   prNumber: number;
   readmeS3Key?: string;
   s3Bucket?: string;
+  ownerId: string;
 }
 
 function buildAnalysisPrompt(details: PRDetails, readme: string): string {
@@ -107,6 +108,8 @@ export const handler = async (event: PRAnalysisInput) => {
   try {
     if (!owner || !repo || !prNumber) throw new Error('owner, repo, and prNumber are required');
 
+    const prefix = userPrefix(validateOwnerId(event.ownerId));
+
     let readme = '';
     if (event.readmeS3Key) {
       const readmeMap = await getJson<Record<string, string>>(bucketName, event.readmeS3Key);
@@ -114,7 +117,7 @@ export const handler = async (event: PRAnalysisInput) => {
       logger.info('Loaded README map', { owner, repo, bytes: readme.length });
     }
 
-    const s3Prefix = `pr-details/${owner}/${repo}/${prNumber}/`;
+    const s3Prefix = `${prefix}pr-details/${owner}/${repo}/${prNumber}/`;
     const detailsKey = await listLatestKey(bucketName, s3Prefix);
     if (!detailsKey) throw new Error(`No PR details found in S3 at prefix: ${s3Prefix}`);
 
@@ -129,7 +132,7 @@ export const handler = async (event: PRAnalysisInput) => {
     });
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const analysisS3Key = `pr-analyses/${owner}/${repo}/${prDetails.pr.number}/${timestamp}.json`;
+    const analysisS3Key = `${prefix}pr-analyses/${owner}/${repo}/${prDetails.pr.number}/${timestamp}.json`;
 
     const fullAnalysis = {
       owner,

@@ -1,4 +1,4 @@
-import { requireEnv, logger, stepResponse, putJson, createOctokit, decryptGithubToken } from '@sprint/shared';
+import { requireEnv, logger, stepResponse, putJson, createOctokit, decryptGithubToken, validateOwnerId, userPrefix } from '@sprint/shared';
 
 interface PRFile {
   filename: string;
@@ -116,10 +116,12 @@ interface PRDetailsInput {
   prNumber: number;
   encryptedGithubToken: string;
   executionName: string;
+  ownerId: string;
 }
 
 export const handler = async (event: PRDetailsInput) => {
   const { owner, repo, prNumber, encryptedGithubToken, executionName } = event;
+  const prefix = userPrefix(validateOwnerId(event.ownerId));
   logger.info('Fetching PR details', { owner, repo, prNumber });
 
   try {
@@ -195,7 +197,7 @@ export const handler = async (event: PRDetailsInput) => {
     };
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const s3Key = `pr-details/${owner}/${repo}/${prNumber}/${timestamp}.json`;
+    const s3Key = `${prefix}pr-details/${owner}/${repo}/${prNumber}/${timestamp}.json`;
 
     await putJson(bucketName, s3Key, summary);
 

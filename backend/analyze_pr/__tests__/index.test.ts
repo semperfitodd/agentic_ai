@@ -21,11 +21,13 @@ beforeEach(() => {
 });
 
 describe('lambda_analyze_pr handler', () => {
+  const ownerId = 'todd@bernsonfamily.com';
   const baseEvent = {
     owner: 'acme',
     repo: 'app',
     prNumber: 42,
-    readmeS3Key: 'readmes/2024.json',
+    ownerId,
+    readmeS3Key: `users/${ownerId}/readmes/2024.json`,
     s3Bucket: 'test-bucket',
   };
 
@@ -71,7 +73,7 @@ describe('lambda_analyze_pr handler', () => {
           discussionIntensity: 'low' as const,
         },
       });
-    listLatestKeyMock.mockResolvedValue('pr-details/acme/app/42/foo.json');
+    listLatestKeyMock.mockResolvedValue(`users/${ownerId}/pr-details/acme/app/42/foo.json`);
     invokeModelMock.mockResolvedValue('## Analysis');
     putJsonMock.mockResolvedValue(undefined);
 

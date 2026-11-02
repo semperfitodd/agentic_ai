@@ -29,6 +29,7 @@ describe('lambda_fetch_pr_details handler', () => {
     prNumber: 7,
     encryptedGithubToken: 'Y2lwaGVy',
     executionName: 'exec-1',
+    ownerId: 'todd@bernsonfamily.com',
   };
 
   it('fetches PR data and writes summary to S3', async () => {

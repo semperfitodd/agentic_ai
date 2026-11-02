@@ -1,4 +1,4 @@
-import { requireEnv, logger, stepResponse, getJson, putMarkdown, listLatestKey, invokeModel, parseModelJson } from '@sprint/shared';
+import { requireEnv, logger, stepResponse, getJson, putMarkdown, listLatestKey, invokeModel, parseModelJson, validateOwnerId, userPrefix } from '@sprint/shared';
 
 interface PRAnalysisReference {
   owner: string;
@@ -28,6 +28,7 @@ interface AggregateInput {
   until: string;
   repos: Array<{ owner: string; repo: string }>;
   analyses: PRAnalysisReference[];
+  ownerId: string;
 }
 
 interface SprintReportData {
@@ -42,9 +43,15 @@ interface SprintReportData {
   appendix?: string;
 }
 
-async function loadAnalysis(bucket: string, owner: string, repo: string, prNumber: number): Promise<PRAnalysis | null> {
+async function loadAnalysis(
+  bucket: string,
+  ownerPrefix: string,
+  owner: string,
+  repo: string,
+  prNumber: number
+): Promise<PRAnalysis | null> {
   try {
-    const key = await listLatestKey(bucket, `pr-analyses/${owner}/${repo}/${prNumber}/`);
+    const key = await listLatestKey(bucket, `${ownerPrefix}pr-analyses/${owner}/${repo}/${prNumber}/`);
     if (!key) return null;
     return await getJson<PRAnalysis>(bucket, key);
   } catch {
@@ -242,6 +249,7 @@ Guidelines:
 
 export const handler = async (event: AggregateInput) => {
   const bucketName = requireEnv('RESULTS_BUCKET');
+  const prefix = userPrefix(validateOwnerId(event.ownerId));
 
   if (!event.analyses || !Array.isArray(event.analyses)) {
     throw new Error('Analyses array is missing or invalid');
@@ -250,7 +258,7 @@ export const handler = async (event: AggregateInput) => {
   logger.info('Aggregating sprint', { sprintName: event.sprintName, analysisCount: event.analyses.length });
 
   const loadedAnalyses = await Promise.all(
-    event.analyses.map((ref) => loadAnalysis(bucketName, ref.owner, ref.repo, ref.prNumber))
+    event.analyses.map((ref) => loadAnalysis(bucketName, prefix, ref.owner, ref.repo, ref.prNumber))
   );
 
   const validAnalyses = loadedAnalyses.filter((a): a is PRAnalysis => a !== null && a.metadata !== undefined);
@@ -321,7 +329,7 @@ export const handler = async (event: AggregateInput) => {
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const sanitizedName = sprintName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
-  const markdownS3Key = `reports/${sanitizedName}/${timestamp}.md`;
+  const markdownS3Key = `${prefix}reports/${sanitizedName}/${timestamp}.md`;
 
   await putMarkdown(bucketName, markdownS3Key, markdownReport, {
     sprintName: sanitizedName,

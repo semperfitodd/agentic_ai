@@ -26,7 +26,7 @@ module "lambda_prepare_data" {
     s3_write = {
       effect    = "Allow"
       actions   = ["s3:PutObject"]
-      resources = ["${module.s3_results_bucket.s3_bucket_arn}/readmes/*"]
+      resources = [local.results_users_object_arn]
     }
   }
 

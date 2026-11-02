@@ -1,0 +1,49 @@
+import { describe, it, expect } from 'vitest';
+
+import { AppError } from '../errors';
+import { assertOwnedKey, userPrefix, validateOwnerId } from '../userPrefix';
+
+describe('validateOwnerId', () => {
+  it('accepts email usernames', () => {
+    expect(validateOwnerId('todd@bernsonfamily.com')).toBe('todd@bernsonfamily.com');
+  });
+
+  it('trims whitespace', () => {
+    expect(validateOwnerId('  user@example.com  ')).toBe('user@example.com');
+  });
+
+  it('rejects path separators and traversal', () => {
+    expect(() => validateOwnerId('a/b')).toThrow(AppError);
+    expect(() => validateOwnerId('..')).toThrow(AppError);
+    expect(() => validateOwnerId('user@x.com/evil')).toThrow(AppError);
+  });
+
+  it('rejects empty values', () => {
+    expect(() => validateOwnerId('')).toThrow(AppError);
+    expect(() => validateOwnerId('   ')).toThrow(AppError);
+  });
+});
+
+describe('userPrefix', () => {
+  it('builds users/email/ prefix', () => {
+    expect(userPrefix('todd@bscanalytics.com')).toBe('users/todd@bscanalytics.com/');
+  });
+});
+
+describe('assertOwnedKey', () => {
+  const owner = 'todd@bernsonfamily.com';
+
+  it('allows keys under the user prefix', () => {
+    expect(() => assertOwnedKey(owner, 'users/todd@bernsonfamily.com/reports/x.md')).not.toThrow();
+  });
+
+  it('denies another user prefix', () => {
+    expect(() => assertOwnedKey(owner, 'users/other@example.com/reports/x.md')).toThrow(AppError);
+    try {
+      assertOwnedKey(owner, 'reports/legacy/x.md');
+    } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect((e as AppError).statusCode).toBe(403);
+    }
+  });
+});

@@ -6,3 +6,4 @@ export * from './kms';
 export * from './logger';
 export * from './responses';
 export * from './s3';
+export * from './userPrefix';

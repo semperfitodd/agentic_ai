@@ -34,6 +34,8 @@ Every API Gateway route must set `authorization_type = "JWT"` and reference the 
 
 Never hardcode secrets in `.tf` files. Use `aws_secretsmanager_secret` or KMS and reference via data sources or outputs. Sensitive outputs must use `sensitive = true`.
 
+Saved Terraform plans (`terraform plan -out=…`) embed sensitive variable values. Do not upload them as GitHub Actions artifacts. CI applies from a runner-local plan inside the `production`-protected apply job; PR workflows use text-only `terraform plan` for comments.
+
 ## Step Functions
 
 All `Task` states must include a `Retry` block using `local.sfn_lambda_retry` and a `Catch` block using `local.sfn_lambda_catch`.

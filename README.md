@@ -18,7 +18,7 @@ An agentic AI system that analyzes GitHub sprint activity and generates executiv
 | `analyze_pr`, `aggregate_sprint` | Bedrock Converse API with Amazon Nova 2 Lite (`us.amazon.nova-2-lite-v1:0` by default, `var.bedrock_model_id`); IAM allows only the configured model |
 | `fetch_repo_data`, `fetch_pr_details` | Only Lambdas allowed to decrypt the GitHub token |
 | KMS key (`alias/<env>_github_token`) | Per-execution encryption context; only ciphertext appears in execution history and logs |
-| S3 results bucket | Reports and intermediate JSON; SSE-S3, versioned, objects expire after 3 days |
+| S3 results bucket | Per-user prefixes `users/<cognito-email>/…` for reports and workflow JSON; SSE-S3, versioned, objects expire after 3 days |
 | React app (`static_site/`) | Vite + Vitest, `react-oidc-context`; light/dark/system themes, vector PDF export (jsPDF); served by CloudFront + S3 (OAC) |
 | iOS app (`mobile/Arc Agent/`) | SwiftUI, iOS 27.2, iPhone tab bar and iPad sidebar; `WebAuthenticationSession` PKCE sign-in, tokens and GitHub PAT in the Keychain; CoreText PDF export |
 
@@ -27,6 +27,7 @@ An agentic AI system that analyzes GitHub sprint activity and generates executiv
 - **No shared client secrets.** Clients hold only the public Cognito app client ID; each user signs in with Google or Apple and calls the API with a 1-hour access token.
 - **GitHub token never stored in plaintext server-side.** The web app keeps it in `sessionStorage` (per tab), the iOS app in the Keychain. `lambda_workflow` encrypts it with KMS (context: `purpose`, `executionName`) before `StartExecution`; ciphertext from one execution cannot be decrypted under another.
 - **Self-service deletion.** Users delete their own account from Settings; the Lambda deletes only the user named in the caller's token.
+- **Per-user report isolation.** `lambda_workflow` sets `ownerId` from the JWT `username` (email). All workflow artifacts live under `users/<email>/` in the results bucket. `GET /results` and `GET /markdown` reject keys and executions that belong to another user.
 - CORS restricted to `https://<env>.<domain>`; the shared logger redacts `githubToken`, `authorization`, `token`, `secret`, `password`.
 
 ## Prerequisites
@@ -182,7 +183,7 @@ Path-filtered GitHub Actions workflows; each also supports `workflow_dispatch`. 
 |---|---|---|---|
 | `backend.yml` | `backend/**` | build shared → test changed Lambdas | test → `aws lambda update-function-code` |
 | `frontend.yml` | `static_site/**` | test + build | test + build + S3 sync + CloudFront invalidation |
-| `terraform.yml` | `terraform/**` | plan (PR comment) | plan → apply (`production` environment) |
+| `terraform.yml` | `terraform/**` | plan (PR comment, text only) | plan + apply in one job (`production` environment; plan file stays on runner, not uploaded) |
 
 ### Repository variables
 

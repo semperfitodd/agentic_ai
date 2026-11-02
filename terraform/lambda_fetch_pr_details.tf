@@ -26,7 +26,7 @@ module "lambda_fetch_pr_details" {
     s3_write = {
       effect    = "Allow"
       actions   = ["s3:PutObject"]
-      resources = ["${module.s3_results_bucket.s3_bucket_arn}/pr-details/*"]
+      resources = [local.results_users_object_arn]
     }
     kms_decrypt = local.github_token_decrypt_statement
   }

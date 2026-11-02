@@ -26,7 +26,7 @@ module "lambda_get_markdown" {
     s3_read = {
       effect    = "Allow"
       actions   = ["s3:GetObject"]
-      resources = ["${module.s3_results_bucket.s3_bucket_arn}/reports/*"]
+      resources = [local.results_users_object_arn]
     }
   }
 

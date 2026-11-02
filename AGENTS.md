@@ -35,6 +35,8 @@ Guidance for AI coding agents working in this repository.
 
 All API routes are protected by the Cognito JWT authorizer (`authorization_type = "JWT"`). The GitHub token only travels through Step Functions as KMS ciphertext (`encryptedGithubToken`) bound to the execution name.
 
+**Per-user S3 layout:** `lambda_workflow` injects `ownerId` from `jwt.claims.username` (email sign-in). Step Functions passes `ownerId` to every write step. Object keys use `users/<ownerId>/reports|readmes|pr-details|pr-analyses/…`. API reads use `userPrefix`, `assertOwnedKey`, and `requireCallerUsername` from `@sprint/shared`. Legacy keys under `reports/` (no `users/` prefix) are not listed or served.
+
 ## API Gateway Authorization Audit
 
 Every route must use `authorization_type = "JWT"`. Values are sourced from `local.api_route_auth` in `apigw.tf` and a `terraform check` block will fail `terraform plan` if any route deviates from this policy.
@@ -58,6 +60,7 @@ Every route must use `authorization_type = "JWT"`. Values are sourced from `loca
 - `s3Client`, `putJson`, `putMarkdown`, `getJson`, `getText`, `listLatestKey`, `listObjects`
 - `bedrockClient`, `invokeModel` (Bedrock Converse API), `parseModelJson`
 - `kmsClient`, `encryptGithubToken`, `decryptGithubToken`
+- `validateOwnerId`, `userPrefix`, `assertOwnedKey`, `requireCallerUsername`, `callerUsernameFromEvent`
 - `createOctokit`, `DEFAULT_PER_PAGE`
 
 **Never** duplicate these in individual Lambda handlers. When adding a new shared utility, add it to `backend/shared/src/` and re-export it from `src/index.ts`.

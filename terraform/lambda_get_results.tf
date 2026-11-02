@@ -27,7 +27,7 @@ module "lambda_get_results" {
     s3_read = {
       effect    = "Allow"
       actions   = ["s3:GetObject", "s3:ListBucket"]
-      resources = [module.s3_results_bucket.s3_bucket_arn, "${module.s3_results_bucket.s3_bucket_arn}/*"]
+      resources = [local.results_bucket_arn, local.results_users_object_arn]
     }
     sfn_describe = {
       effect    = "Allow"
