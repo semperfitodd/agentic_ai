@@ -9,16 +9,16 @@
     "test": "vitest run --config ../vitest.config.mjs"
   },
   "dependencies": {
-    "@aws-sdk/client-bedrock-runtime": "^3.1161.0",
-    "@aws-sdk/client-kms": "^3.1161.0",
-    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.1163.0",
+    "@aws-sdk/client-kms": "^3.1163.0",
+    "@aws-sdk/client-s3": "^3.1163.0",
     "@octokit/rest": "^22.0.1"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.164",
     "@types/node": "^24.19.2",
     "aws-sdk-client-mock": "^4.1.0",
-    "nock": "^15.0.5",
+    "nock": "^15.0.6",
     "typescript": "~7.0.2",
     "vitest": "^5.1.0"
   },
